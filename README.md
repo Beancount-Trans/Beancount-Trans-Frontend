@@ -1,6 +1,6 @@
 # Beancount-Trans Frontend
 
-一个为 [`Beancount-Trans`](https://github.com/dhr2333/Beancount-Trans) 项目提供的现代化、功能丰富的前端界面。本项目使用 Vue 3、TypeScript 和 Element Plus 构建，旨在为您的 Beancount 复式记账系统提供一个直观、易用的 Web 操作体验。
+一个为 [`Beancount-Trans`](https://github.com/Beancount-Trans/Beancount-Trans) 项目提供的现代化、功能丰富的前端界面。本项目使用 Vue 3、TypeScript 和 Element Plus 构建，旨在为您的 Beancount 复式记账系统提供一个直观、易用的 Web 操作体验。
 
 ![Vue](https://img.shields.io/badge/Vue.js-35495E?style=for-the-badge&logo=vuedotjs&logoColor=4FC08D)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
@@ -26,7 +26,7 @@
 - **文件管理**: 查看和管理已上传的账单文件及生成的 Beancount 账本文件。
 - **账本访问**: 查看和检索已生成的 Beancount 交易记录。
 
-> 项目界面截图可在主项目 [Beancount-Trans](https://github.com/dhr2333/Beancount-Trans) 中查看。
+> 项目界面截图可在主项目 [Beancount-Trans](https://github.com/Beancount-Trans/Beancount-Trans) 中查看。
 
 ## 🛠️ 开发准备
 
@@ -39,10 +39,10 @@
 
 ```bash
 # 使用 SSH
-git clone git@github.com:dhr2333/Beancount-Trans-Frontend.git
+git clone git@github.com:Beancount-Trans/Beancount-Trans-Frontend.git
 
 # 或者使用 HTTPS
-git clone https://github.com/dhr2333/Beancount-Trans-Frontend.git
+git clone https://github.com/Beancount-Trans/Beancount-Trans-Frontend.git
 
 # 进入项目目录
 cd Beancount-Trans-Frontend
@@ -59,7 +59,7 @@ npm install
 
 ### 启动开发服务器
 
-这将启动一个带有热重载的开发服务器（通常为 `http://localhost:5173`）。您需要确保 [`Beancount-Trans`](https://github.com/dhr2333/Beancount-Trans) 后端 API 服务已在 `http://localhost:8000` 运行。
+这将启动一个带有热重载的开发服务器（通常为 `http://localhost:5173`）。您需要确保 [`Beancount-Trans`](https://github.com/Beancount-Trans/Beancount-Trans) 后端 API 服务已在 `http://localhost:8000` 运行。
 
 ```bash
 npm run dev
@@ -128,4 +128,4 @@ VITE_API_BASE_URL="http://localhost:8000/api"
 
 ## 📄 许可证
 
-本项目根据 MIT 许可证授权 - 详见 [LICENSE](https://github.com/dhr2333/Beancount-Trans-Frontend/blob/main/LICENSE.txt) 文件。
+本项目根据 MIT 许可证授权 - 详见 [LICENSE](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/blob/main/LICENSE.txt) 文件。

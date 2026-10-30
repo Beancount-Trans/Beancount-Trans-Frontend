@@ -17,4 +17,4 @@
 
 ## Optional
 - [OpenAPI](https://trans.dhr2333.cn/api/schema/)
-- [GitHub](https://github.com/dhr2333/Beancount-Trans)
+- [GitHub](https://github.com/Beancount-Trans/Beancount-Trans)

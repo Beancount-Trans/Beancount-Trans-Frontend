@@ -49,9 +49,9 @@
         inactive-text="日间" />
     </el-menu-item>
     <el-menu-item>
-      <el-link href="https://github.com/dhr2333/Beancount-Trans" target="_blank"
+      <el-link href="https://github.com/Beancount-Trans/Beancount-Trans" target="_blank"
         style="display: inline-flex; align-items: center;"> <img
-          src="https://img.shields.io/github/stars/dhr2333/Beancount-Trans?style=social" alt="GitHub stars"
+          src="https://img.shields.io/github/stars/Beancount-Trans/Beancount-Trans?style=social" alt="GitHub stars"
           style="height: 30px; margin-left: 6px; vertical-align: middle;" />
       </el-link>
     </el-menu-item>
