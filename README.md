@@ -128,4 +128,4 @@ VITE_API_BASE_URL="http://localhost:8000/api"
 
 ## 📄 许可证
 
-本项目根据 MIT 许可证授权 - 详见 [LICENSE](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/blob/main/LICENSE.txt) 文件。
+本项目根据 GNU AGPL-3.0-or-later 许可证授权 - 详见 [LICENSE](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/blob/main/LICENSE.txt) 文件。
