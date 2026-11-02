@@ -40,15 +40,14 @@
     </template>
   </el-upload>
 
-  <div class="result-toolbar">
-    <el-button type="success" :icon="DocumentCopy" @click="copyResponseData" :disabled="!hasEntries">
+  <div v-if="hasEntries" class="result-toolbar">
+    <el-button type="success" :icon="DocumentCopy" @click="copyResponseData">
       复制结果
     </el-button>
-    <el-button @click="handlePreview" :disabled="!hasEntries">
+    <el-button @click="handlePreview">
       预览
     </el-button>
-    <el-button type="primary" :icon="DocumentChecked" @click="handleWriteCollect" :disabled="!hasEntries"
-      :loading="writing">
+    <el-button type="primary" :icon="DocumentChecked" @click="handleWriteCollect" :loading="writing">
       写入账本
     </el-button>
   </div>
