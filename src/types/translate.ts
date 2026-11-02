@@ -31,3 +31,21 @@ export interface WriteCollectErrorResponse {
   error: string
   error_entries?: ErrorEntry[]
 }
+
+/**
+ * 单个账单类型的解析可用性
+ */
+export interface BillSupportItem {
+  bill_type: string
+  /** 最近一次成功解析时间（ISO 8601），无记录为 null */
+  last_success_at: string | null
+  /** 成功解析的账单中最新一笔交易日期，无记录为 null */
+  latest_bill_date: string | null
+}
+
+/**
+ * 账单解析可用性查询响应
+ */
+export interface BillSupportResponse {
+  bills: BillSupportItem[]
+}

@@ -12,23 +12,29 @@
     </p>
     <template #tip>
       <div class="el-upload__tip">
-        当前支持<a :href="wechatUrl" download>微信</a>、<a :href="alipayUrl" download>支付宝</a>、
-        <el-popover placement="top-start" :width="260" trigger="hover">
-          <div class="bill-guide-links">
-            <span>中国工商银行储蓄卡（ICBC）</span>
-            <span>中国建设银行储蓄卡（CCB）</span>
-            <a :href="bocDebitBillGuideUrl" target="_blank" rel="noopener">中国银行储蓄卡（BOC）</a>
+        <el-popover placement="top-start" :width="380" trigger="hover">
+          <div class="bill-support-panel">
+            <div v-for="group in billSupportGroups" :key="group.title" class="bill-support-group">
+              <div class="bill-support-group-title">{{ group.title }}</div>
+              <div v-for="item in group.bills" :key="item.billType" class="bill-support-row">
+                <a v-if="item.href" :href="item.href" :download="item.download || undefined"
+                  :target="item.download ? undefined : '_blank'" rel="noopener" class="bill-support-link">
+                  {{ item.label }}
+                </a>
+                <span v-else class="bill-support-name">{{ item.label }}</span>
+                <span v-if="billSupportState === 'loading'" class="bill-support-empty">加载中…</span>
+                <span v-else-if="billSupportState === 'error'" class="bill-support-empty">暂时无法获取</span>
+                <span v-else-if="getBillSupportText(item.billType)" class="bill-support-time">
+                  {{ getBillSupportText(item.billType) }}
+                </span>
+                <span v-else class="bill-support-empty">暂无成功记录</span>
+              </div>
+            </div>
           </div>
-          <template #reference><a>储蓄卡</a>
+          <template #reference>
+            <span class="bill-support-trigger">当前支持微信、支付宝、储蓄卡、信用卡账单</span>
           </template>
-        </el-popover>、
-        <el-popover placement="top-start" :width="260" trigger="hover">
-          <div class="bill-guide-links">
-            <a :href="cmbCreditBillGuideUrl" target="_blank" rel="noopener">招商银行信用卡（CMB）</a>
-          </div>
-          <template #reference><a>信用卡</a>
-          </template>
-        </el-popover>账单
+        </el-popover>
         <el-select v-model="value4" multiple collapse-tags collapse-tags-tooltip :max-collapse-tags="2"
           placeholder="可选功能" style="width: 300px">
           <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value" />
@@ -143,13 +149,14 @@ import {
   parsePreviewContent
 } from '../../utils/parse-review-preview'
 import { applyTagOverridesToHeader } from '../../utils/beancount-header-tags'
-import { writeCollectEntries } from '../../api/translate'
+import { writeCollectEntries, getBillSupportStatus } from '../../api/translate'
 import {
   clearParseDraft,
   loadParseDraft,
   saveParseDraft
 } from '../../composables/useParseDraft'
 import type { FormattedEntry, TagDetail, OriginalRow } from '../../types/parse-review'
+import type { BillSupportItem } from '../../types/translate'
 
 const router = useRouter()
 
@@ -184,6 +191,70 @@ const options = [
 
 const csrfToken = ref('')
 const action = axios.defaults.baseURL + '/translate/trans'
+
+/** 账单解析可用性悬浮框：分组与展示顺序由前端维护，后端只返回类型码与时间 */
+interface BillSupportGroup {
+  title: string
+  bills: Array<{ billType: string; label: string; href?: string; download?: boolean }>
+}
+
+const billSupportGroups: BillSupportGroup[] = [
+  {
+    title: '支付平台',
+    bills: [
+      { billType: 'wechat', label: '微信', href: wechatUrl.value, download: true },
+      { billType: 'alipay', label: '支付宝', href: alipayUrl.value, download: true }
+    ]
+  },
+  {
+    title: '储蓄卡',
+    bills: [
+      { billType: 'ICBC_Debit', label: '中国工商银行储蓄卡（ICBC）' },
+      { billType: 'CCB_Debit', label: '中国建设银行储蓄卡（CCB）' },
+      { billType: 'BOC_Debit', label: '中国银行储蓄卡（BOC）', href: bocDebitBillGuideUrl }
+    ]
+  },
+  {
+    title: '信用卡',
+    bills: [
+      { billType: 'CMB_Credit', label: '招商银行信用卡（CMB）', href: cmbCreditBillGuideUrl }
+    ]
+  }
+]
+
+const billSupportByType = ref<Record<string, BillSupportItem>>({})
+const billSupportState = ref<'loading' | 'ready' | 'error'>('loading')
+
+async function loadBillSupport() {
+  billSupportState.value = 'loading'
+  try {
+    const { data } = await getBillSupportStatus()
+    const supportMap: Record<string, BillSupportItem> = {}
+    for (const item of data.bills ?? []) {
+      supportMap[item.bill_type] = item
+    }
+    billSupportByType.value = supportMap
+    billSupportState.value = 'ready'
+  } catch {
+    billSupportState.value = 'error'
+  }
+}
+
+function formatBillDateTime(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  const pad = (num: number) => String(num).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
+    `${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+function getBillSupportText(billType: string): string {
+  const item = billSupportByType.value[billType]
+  if (!item?.last_success_at) return ''
+  const text = `最近成功：${formatBillDateTime(item.last_success_at)}`
+  return item.latest_bill_date ? `${text} · 账单最新：${item.latest_bill_date}` : text
+}
+
 const isWrite = ref(false)
 const cmbCreditIgnore = ref(false)
 const bocDebitIgnore = ref(false)
@@ -609,6 +680,7 @@ const copyResponseData = async () => {
 
 /** 挂载时恢复解析草稿（匿名用户「写入账本」引导登录后回跳继续） */
 onMounted(() => {
+  loadBillSupport()
   const draft = loadParseDraft()
   if (!draft || formattedEntries.value.length > 0) return
   formattedEntries.value = draft.entries
@@ -923,10 +995,48 @@ const handleRemoveEntry = async (uuid: string) => {
   margin: 6px 0 0;
 }
 
-.bill-guide-links {
+.bill-support-trigger {
+  border-bottom: 1px dashed var(--ep-border-color);
+}
+
+.bill-support-panel {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.bill-support-group-title {
+  margin-bottom: 2px;
+  font-weight: 600;
+  color: var(--ep-text-color-primary);
+}
+
+.bill-support-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.bill-support-link,
+.bill-support-name {
+  flex: 0 0 auto;
+  color: var(--ep-text-color-regular);
+}
+
+.bill-support-link {
+  color: var(--ep-color-primary);
+  text-decoration: none;
+}
+
+.bill-support-time {
+  color: var(--ep-text-color-secondary);
+  text-align: right;
+}
+
+.bill-support-empty {
+  color: var(--ep-text-color-placeholder);
 }
 
 .parse-status {
