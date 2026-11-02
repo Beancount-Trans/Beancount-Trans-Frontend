@@ -1,3 +1,17 @@
+## [5.20.0](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/compare/5.19.0...5.20.0) (2026-11-02)
+
+### Features
+
+* **router:** 根路径按登录态分流到解析页或文件管理 ([c167ade](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/c167ade4c1245c733f94ba170fdd281bf0a406bf))
+* **trans:** 优化错误账单与加密账单的上传交互 ([547e6a7](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/547e6a74fedc71a79f241116c1ea810d3aca13b8))
+* **trans:** 完善上传提示弹窗，添加银行账单指南跳转链接 ([e259e35](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/e259e35f1a470e7e7d3d934157c9008384f631b0))
+* **trans:** 解析首页支持按次使用平台 LLM ([22e1091](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/22e109154f3347f7d1c5314b1c2c61a560106503))
+* **trans:** 解析首页新增账单解析可用性悬浮框 ([049e013](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/049e013b3506d6c80946fd8a174a364b5382dd5d))
+
+### Bug Fixes
+
+* **trans:** 复制成功后清除解析草稿并优化弹窗文案 ([d5472e4](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/d5472e49404a6dffc64563876cd29b9b9f42fd83))
+
 ## [5.19.0](https://github.com/dhr2333/Beancount-Trans-Frontend/compare/5.18.1...5.19.0) (2026-10-23)
 
 ### Features
