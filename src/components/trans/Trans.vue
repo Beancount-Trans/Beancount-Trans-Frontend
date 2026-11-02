@@ -329,6 +329,8 @@ const handleUploadError = (err: any, _file: any) => {
 const copyResponseData = async () => {
   try {
     await navigator.clipboard.writeText(joinedEditedText.value)
+    // 复制即视为结果已导出，清掉登录前草稿，刷新后不再恢复
+    clearParseDraft()
     ElMessage.success('复制成功')
   } catch (err) {
     console.error('复制失败:', err)
@@ -357,9 +359,8 @@ const handleWriteCollect = async () => {
     saveParseDraft(formattedEntries.value)
     try {
       await ElMessageBox.confirm(
-        '写入账本需要登录。当前解析结果已暂存在本页，登录成功后会自动恢复，' +
-        '可继续写入你的 trans/collect.bean。',
-        '写入账本需要登录',
+        '当前解析结果已暂存在本页，登录成功后会自动恢复。',
+        '写入账本需登录',
         { confirmButtonText: '去登录', cancelButtonText: '取消', type: 'warning' }
       )
     } catch {
