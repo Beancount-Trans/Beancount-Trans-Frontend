@@ -1,7 +1,8 @@
 <template>
-  <el-upload class="upload-demo" :drag="true" :action="action" method="POST" :data="getUploadData" :multiple="false"
-    :headers="headers" accept=".csv,.pdf,.xls,.xlsx,.zip" show-file-list name="trans" @success="handleUploadSuccess"
-    @error="handleUploadError">
+  <el-upload ref="uploadRef" class="upload-demo" :drag="true" :action="action" method="POST" :data="getUploadData"
+    :multiple="false" :headers="headers" accept=".csv,.pdf,.xls,.xlsx,.zip" show-file-list name="trans"
+    :disabled="uploading" :before-upload="handleBeforeUpload" @progress="handleUploadProgress"
+    @success="handleUploadSuccess" @error="handleUploadError">
     <div class="el-upload__text">
       <el-icon class="el-icon--upload"><upload-filled /></el-icon>
       拖拽文件至此处 或 <em>单击上传</em>
@@ -28,8 +29,8 @@
           placeholder="可选功能" style="width: 300px">
           <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
-        <el-input v-model="input" style="width: 250px" type="password" v-if="showPassword" placeholder="PDF/ZIP 文件解密密码"
-          show-password>
+        <el-input ref="passwordInputRef" v-model="input" style="width: 250px" type="password" v-if="showPassword"
+          placeholder="PDF/ZIP 文件解密密码" show-password>
           <template #prefix>
             <el-icon>
               <Lock />
@@ -39,6 +40,48 @@
       </div>
     </template>
   </el-upload>
+
+  <div v-if="uploading" class="parse-status" role="status" aria-live="polite">
+    <div class="parse-status-main">
+      <el-icon class="is-loading">
+        <Loading />
+      </el-icon>
+      <span>正在解析 {{ pendingFileName }}…</span>
+    </div>
+    <span class="parse-status-hint">请勿刷新页面；大文件可能需要数秒</span>
+    <el-progress v-if="uploadPercent > 0 && uploadPercent < 100" :percentage="uploadPercent" :show-text="false" />
+  </div>
+
+  <div v-if="parseFailure" class="parse-failure" :class="`is-${parseFailure.code.toLowerCase()}`" role="alert"
+    aria-live="assertive">
+    <div class="parse-failure-title">
+      <el-icon>
+        <WarningFilled />
+      </el-icon>
+      {{ parseFailure.title }}
+    </div>
+    <p class="parse-failure-message">{{ parseFailure.message }}</p>
+    <ul v-if="parseFailure.hints.length" class="parse-failure-hints">
+      <li v-for="hint in parseFailure.hints" :key="hint">{{ hint }}</li>
+    </ul>
+    <div class="parse-failure-actions">
+      <el-button v-if="isDecryptionFailure" type="primary" @click="focusPasswordInput">
+        填写密码
+      </el-button>
+      <el-button @click="openFilePicker">重新选择文件</el-button>
+      <el-button v-if="parseFailure.suggestNoIgnore" link @click="retryWithNoIgnore">
+        关闭默认忽略后重试
+      </el-button>
+      <el-button v-if="parseFailure.showBillGuides" link @click="openBillExportDocs">
+        查看账单导出教程
+      </el-button>
+    </div>
+    <div v-if="parseFailure.showBillGuides" class="parse-failure-guides">
+      示例账单：
+      <a :href="wechatUrl" download>微信</a>
+      <a :href="alipayUrl" download>支付宝</a>
+    </div>
+  </div>
 
   <div v-if="hasEntries" class="result-toolbar">
     <el-button type="success" :icon="DocumentCopy" @click="copyResponseData">
@@ -52,7 +95,8 @@
     </el-button>
   </div>
 
-  <el-input v-if="!hasEntries" class="result-textarea" type="textarea" :rows="30" readonly :value="''" placeholder='解析结果如下：
+  <el-input v-if="!hasEntries && !uploading && !parseFailure" class="result-textarea" type="textarea" :rows="30"
+    readonly :value="''" placeholder='解析结果如下：
 
 2022-06-19 * "温州市数据管理发展集团有限公司" "HIK-停车缴费-洞头人民路停车场(人民路区域共享)"
     time: "15:27:44"
@@ -82,12 +126,14 @@
 
 <script setup lang="ts">
 import { ElMessage, ElMessageBox, ElPopover } from 'element-plus'
-import { UploadFilled, DocumentCopy, DocumentChecked, Lock } from '@element-plus/icons-vue'
-import { ref, computed, watch, onMounted } from 'vue'
+import type { InputInstance } from 'element-plus'
+import { UploadFilled, DocumentCopy, DocumentChecked, Lock, Loading, WarningFilled } from '@element-plus/icons-vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from '../../utils/request'
 import { hasAuthTokens, setLoginRedirect } from '../../utils/auth'
 import ParseEntryTable from '../parse/ParseEntryTable.vue'
+import { BILLS_EXPORT_DOCS_URL } from '../../utils/userTour'
 import {
   alignPreviewBlocksToEntries,
   parsePreviewContent
@@ -114,7 +160,7 @@ const options = [
   },
   {
     value: '文件若加密请选择',
-    label: '文件若加密请选择',
+    label: '文件已加密（PDF/ZIP 需密码）',
   },
   {
     value: '关闭默认忽略',
@@ -139,6 +185,45 @@ const noIgnore = ref(false)
 const showPassword = ref(false)
 /** 是否按次使用平台 LLM；不勾选时按用户配置（默认本地 BERT） */
 const usePlatformLlm = ref(false)
+
+/** 上传/解析状态与失败原因（错误账单、加密账单的就地引导） */
+type ParseFailureCode =
+  | 'DECRYPTION_REQUIRED'
+  | 'DECRYPTION_FAILED'
+  | 'UNSUPPORTED_BILL'
+  | 'EMPTY_RESULT'
+  | 'PARSE_FAILED'
+  | 'NETWORK_ERROR'
+
+interface ParseFailure {
+  code: ParseFailureCode
+  title: string
+  message: string
+  hints: string[]
+  /** 展示「关闭默认忽略后重试」按钮 */
+  suggestNoIgnore?: boolean
+  /** 展示示例账单 / 导出教程入口 */
+  showBillGuides?: boolean
+}
+
+interface ParseDiagnostics {
+  total_rows?: number
+  prefiltered_rows?: number
+  filtered_rows?: number
+}
+
+const uploadRef = ref<any>()
+const passwordInputRef = ref<InputInstance>()
+const uploading = ref(false)
+const uploadPercent = ref(0)
+const pendingFileName = ref('')
+const parseFailure = ref<ParseFailure | null>(null)
+const isDecryptionFailure = computed(
+  () =>
+    parseFailure.value?.code === 'DECRYPTION_REQUIRED' ||
+    parseFailure.value?.code === 'DECRYPTION_FAILED'
+)
+const SUPPORTED_EXTENSIONS = ['csv', 'pdf', 'xls', 'xlsx', 'zip']
 
 type LocalFormattedEntry = FormattedEntry & {
   /** 最近一次解析/重解析返回的标签明细（不含本地 manual 覆盖） */
@@ -290,38 +375,217 @@ function applyLocalTagOverrides(entry: LocalFormattedEntry): LocalFormattedEntry
   }
 }
 
+function buildFailure(
+  code: ParseFailureCode,
+  options: { detail?: string; diagnostics?: ParseDiagnostics } = {}
+): ParseFailure {
+  const detail = (options.detail || '').trim()
+  const diagnostics = options.diagnostics
+
+  switch (code) {
+    case 'DECRYPTION_REQUIRED':
+      return {
+        code,
+        title: '该账单文件已加密',
+        message: '已为你勾选「文件已加密」并展开密码输入框。填写打开密码后，重新选择该文件上传。',
+        hints: [
+          '常见密码：身份证后 6 位、手机号后 6 位或银行预留密码',
+          '若文件本身没有密码，可能是文件已损坏，请重新导出后再试',
+        ],
+      }
+    case 'DECRYPTION_FAILED':
+      return {
+        code,
+        title: '密码不正确或文件已损坏',
+        message: detail || '请确认解密密码后重新上传。',
+        hints: ['可先在本地打开文件，确认能否正常查看', 'ZIP 可解压后单独上传内部账单'],
+      }
+    case 'UNSUPPORTED_BILL':
+      return {
+        code,
+        title: '暂不支持该账单类型',
+        message: '请确认上传的是银行或支付平台导出的原始账单文件，而不是截图、回单或自制表格。',
+        hints: [
+          '目前支持：微信、支付宝、工行/建行/中行储蓄卡、招行信用卡账单',
+          '请按官方导出方式重新导出，或下载示例账单核对格式',
+        ],
+        showBillGuides: true,
+      }
+    case 'EMPTY_RESULT': {
+      const filteredOut =
+        (diagnostics?.prefiltered_rows ?? 0) > 0 && (diagnostics?.filtered_rows ?? 0) === 0
+      if (filteredOut) {
+        return {
+          code,
+          title: '未生成条目：交易被默认规则过滤',
+          message: `账单共 ${diagnostics?.total_rows ?? 0} 条，过滤后 0 条。`,
+          hints: ['如需保留交易关闭、退款等条目，勾选「关闭默认忽略」后重新上传'],
+          suggestNoIgnore: true,
+        }
+      }
+      return {
+        code,
+        title: '未从账单中识别到交易',
+        message: diagnostics
+          ? `账单共 ${diagnostics.total_rows ?? 0} 条，过滤后 ${diagnostics.filtered_rows ?? 0} 条。`
+          : '未能从该文件中解析出任何交易。',
+        hints: ['请确认导出的是原始账单文件，未修改表头或另存为其它格式', '可下载示例账单对照格式'],
+        showBillGuides: true,
+      }
+    }
+    case 'NETWORK_ERROR':
+      return {
+        code,
+        title: '上传失败',
+        message: '网络连接异常，请检查网络后重试。',
+        hints: ['上传的文件不会被保存，处理完成后会立即删除'],
+      }
+    default:
+      return {
+        code: 'PARSE_FAILED',
+        title: '解析失败',
+        message: detail || '请确认文件可以正常打开后重试。',
+        hints: ['若持续失败，请换用 CSV / PDF 原始导出文件'],
+      }
+  }
+}
+
+/** 勾选「文件已加密」选项，用于失败后就地展开密码框 */
+function ensurePasswordOption() {
+  if (!value4.value.includes('文件若加密请选择')) {
+    value4.value = [...value4.value, '文件若加密请选择']
+  }
+}
+
+function focusPasswordInput() {
+  ensurePasswordOption()
+  nextTick(() => {
+    passwordInputRef.value?.focus()
+    const el = passwordInputRef.value?.$el as HTMLElement | undefined
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  })
+}
+
+/** 打开文件选择器，让用户重新选择文件（不保留上一次文件） */
+function openFilePicker() {
+  const root = uploadRef.value?.$el as HTMLElement | undefined
+  const trigger = root?.querySelector<HTMLElement>('.ep-upload')
+  if (trigger) {
+    trigger.click()
+  } else {
+    ElMessage.info('请点击上方上传区域重新选择文件')
+  }
+}
+
+function openBillExportDocs() {
+  window.open(BILLS_EXPORT_DOCS_URL, '_blank', 'noopener')
+}
+
+function retryWithNoIgnore() {
+  if (!value4.value.includes('关闭默认忽略')) {
+    value4.value = [...value4.value, '关闭默认忽略']
+  }
+  openFilePicker()
+}
+
+const applyFailure = (failure: ParseFailure) => {
+  parseFailure.value = failure
+}
+
+const handleBeforeUpload = (file: File) => {
+  const extension = (file?.name || '').split('.').pop()?.toLowerCase() || ''
+  if (!SUPPORTED_EXTENSIONS.includes(extension)) {
+    ElMessage.error('仅支持 CSV / Excel / PDF / ZIP 账单文件')
+    return false
+  }
+  if (!file.size) {
+    ElMessage.error('文件为空，请重新导出账单后上传')
+    return false
+  }
+
+  uploading.value = true
+  uploadPercent.value = 0
+  pendingFileName.value = file.name
+  parseFailure.value = null
+  // 新文件开始解析即清空旧结果，避免把上一次结果误写入账本
+  formattedEntries.value = []
+  errorEntries.value = {}
+  validationWarnings.value = {}
+  clearParseDraft()
+  return true
+}
+
+const handleUploadProgress = (evt: { percent?: number }) => {
+  uploadPercent.value = Math.round(evt?.percent || 0)
+}
+
 const handleUploadSuccess = (response: any, file: any) => {
+  uploading.value = false
+  uploadPercent.value = 100
   if (file.status === 'error') return
+
+  if (response?.status === 'error') {
+    applyFailure(
+      buildFailure(response?.error_code || 'PARSE_FAILED', { detail: response?.error })
+    )
+    return
+  }
+
   const normalized: FormattedEntry[] = Array.isArray(response.results)
     ? response.results.map((item: Record<string, any>) => toFormattedEntry(item))
     : []
 
+  if (normalized.length === 0) {
+    formattedEntries.value = []
+    errorEntries.value = {}
+    validationWarnings.value = {}
+    clearParseDraft()
+    applyFailure(buildFailure('EMPTY_RESULT', { diagnostics: response?.diagnostics }))
+    return
+  }
+
   formattedEntries.value = normalized
   errorEntries.value = {}
   validationWarnings.value = {}
+  parseFailure.value = null
   // 新解析结果取代旧结果，清掉可能存在的登录前草稿
   clearParseDraft()
 }
 
 const handleUploadError = (err: any, _file: any) => {
-  let errMsg = ''
+  uploading.value = false
+
+  let payload: any = null
   try {
-    const parsed = JSON.parse(err.message)
-    errMsg = parsed?.error || parsed?.message || ''
+    payload = JSON.parse(err?.message || '')
   } catch {
-    errMsg = err?.message || ''
+    payload = null
+  }
+  const detail: string = payload?.error || payload?.message || ''
+  let code = payload?.error_code as ParseFailureCode | undefined
+
+  // 兼容旧后端：没有 error_code 时按状态码与文案回退
+  if (!code) {
+    if (err?.status === 415) {
+      code = 'UNSUPPORTED_BILL'
+    } else if (detail.includes('请提供解密密码')) {
+      code = 'DECRYPTION_REQUIRED'
+    } else if (detail.includes('解密失败')) {
+      code = 'DECRYPTION_FAILED'
+    } else if (err?.status === 0) {
+      code = 'NETWORK_ERROR'
+    } else {
+      code = 'PARSE_FAILED'
+    }
   }
 
-  if (errMsg.includes('PDF解密失败') || errMsg.includes('ZIP 解密失败') || errMsg.includes('解密失败')) {
-    ElMessage.error(errMsg || '解密失败，请检查口令')
-  } else if (errMsg === '当前账单不支持' || errMsg.includes('Unsupported')) {
-    ElMessage.error('当前账单不支持或文件损坏')
-  } else if (errMsg.includes('API密钥') || errMsg.includes('API 密钥')) {
-    ElMessage.error(errMsg)
-  } else if (errMsg === 'DeepSeek调用失败，请检查API密钥是否正确') {
-    ElMessage.error('DeepSeek调用失败，请检查API密钥是否正确')
-  } else {
-    ElMessage.error(errMsg || '未知错误')
+  applyFailure(buildFailure(code, { detail }))
+
+  if (code === 'DECRYPTION_REQUIRED' || code === 'DECRYPTION_FAILED') {
+    ensurePasswordOption()
+  }
+  if (code === 'DECRYPTION_REQUIRED') {
+    ElMessage.warning('该文件已加密，请输入密码后重新上传')
   }
 }
 
@@ -651,6 +915,103 @@ const handleRemoveEntry = async (uuid: string) => {
   color: var(--ep-text-color-secondary);
   font-size: 0.9em;
   margin: 6px 0 0;
+}
+
+.parse-status {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 14px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--ep-color-primary-light-7);
+  border-radius: var(--ep-border-radius-base);
+  background-color: var(--ep-color-primary-light-9);
+  color: var(--ep-text-color-regular);
+  font-size: 13px;
+  text-align: left;
+}
+
+.parse-status-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.parse-status-hint {
+  font-size: 12px;
+  color: var(--ep-text-color-secondary);
+}
+
+.parse-failure {
+  margin: 12px 14px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--ep-color-warning-light-5);
+  border-left: 3px solid var(--ep-color-warning);
+  border-radius: var(--ep-border-radius-base);
+  background-color: var(--ep-color-warning-light-9);
+  color: var(--ep-text-color-regular);
+  font-size: 13px;
+  text-align: left;
+}
+
+.parse-failure.is-decryption_required,
+.parse-failure.is-decryption_failed {
+  border-color: var(--ep-color-warning-light-5);
+  border-left-color: var(--ep-color-warning);
+  background-color: var(--ep-color-warning-light-9);
+}
+
+.parse-failure.is-unsupported_bill,
+.parse-failure.is-parse_failed,
+.parse-failure.is-network_error {
+  border-color: var(--ep-color-danger-light-5);
+  border-left-color: var(--ep-color-danger);
+  background-color: var(--ep-color-danger-light-9);
+}
+
+.parse-failure.is-empty_result {
+  border-color: var(--ep-color-info-light-5);
+  border-left-color: var(--ep-color-info);
+  background-color: var(--ep-color-info-light-9);
+}
+
+.parse-failure-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--ep-text-color-primary);
+}
+
+.parse-failure-message {
+  margin: 8px 0 0;
+  line-height: 1.6;
+}
+
+.parse-failure-hints {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ep-text-color-secondary);
+}
+
+.parse-failure-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.parse-failure-guides {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--ep-text-color-secondary);
+}
+
+.parse-failure-guides a {
+  margin-left: 4px;
+  color: var(--ep-color-primary);
 }
 
 .result-toolbar {
