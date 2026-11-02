@@ -120,20 +120,20 @@
                         </div>
                     </el-form-item>
 
-                    <el-divider>解析引擎（仅用于账单分类）</el-divider>
+                    <el-divider>解析引擎（用于文件管理后台解析）</el-divider>
                     <el-form-item label="解析引擎" prop="aiModel">
                         <div class="ai-engine-container">
-                            <el-select v-model="aiModel" :placeholder="isAuthenticated ? '选择解析引擎' : '默认解析'"
-                                class="model-selector" :disabled="!isAuthenticated">
+                            <el-select v-model="aiModel" placeholder="选择解析引擎" class="model-selector"
+                                :disabled="!isAuthenticated">
                                 <el-option label="单规则匹配" value="None" :disabled="!isAuthenticated" />
-                                <el-option label="BERT - 本地模型（平衡模式）" value="BERT" :disabled="!isAuthenticated" />
+                                <el-option label="BERT - 本地模型（默认，平衡模式）" value="BERT" :disabled="!isAuthenticated" />
                                 <el-option label="DeepSeek - 自有密钥（高精度模式）" value="DeepSeek"
                                     :disabled="!isAuthenticated || !hasUserAssistantKey" />
                             </el-select>
 
                             <el-alert v-if="!isAuthenticated" type="info" :closable="false"
                                 class="engine-description-alert">
-                                未登录时使用默认解析；登录后可选择单规则匹配、BERT 或自有 DeepSeek 密钥。
+                                未登录时默认使用本地 BERT；登录后可选择单规则匹配、BERT 或自有 DeepSeek 密钥。解析首页不读取这里的引擎设置。
                             </el-alert>
                             <el-alert v-else-if="engineDescription" type="info" :closable="false"
                                 class="engine-description-alert">
@@ -172,7 +172,8 @@
                     </el-form-item>
 
                     <el-alert type="info" :closable="false" class="engine-description-alert">
-                        Copilot 只读查询账本，不会改账。默认解析由平台自动完成；只有把解析引擎切到「DeepSeek - 自有密钥」时，才会使用这里填写的密钥与模型。
+                        Copilot 只读查询账本，不会改账。账单解析默认使用本地 BERT；如需云端解析，可在解析首页勾选「平台 LLM」，或把解析引擎切到「DeepSeek -
+                        自有密钥」后使用这里填写的密钥与模型。
                     </el-alert>
                 </div>
             </el-collapse-item>
@@ -283,7 +284,7 @@ const incomeTemplateId = ref<number | null>(null)
 const commissionTemplateId = ref<number | null>(null)
 const reconciliationFallbackAccountId = ref<number | null>(null)
 const currency = ref('')
-const aiModel = ref('') // 未配置时由后端默认解析，前端不展示平台默认项
+const aiModel = ref('BERT') // 默认使用本地 BERT；平台 LLM 在解析首页按次选择
 const isAuthenticated = ref(hasAuthTokens())
 const assistantPreset = ref<AssistantPreset>('deepseek')
 const assistantBaseUrl = ref('')
@@ -308,9 +309,9 @@ const engineDescription = computed(() => {
         case 'None':
             return '仅按关键词与账户层级规则选择，不调用模型'
         case 'BERT':
-            return '本地模型，不调用云端；仅在登录后手动选择时生效'
+            return '后台多文件解析默认使用本地模型，不调用云端大模型'
         case 'DeepSeek':
-            return '使用你在 BYOK 中填写的密钥与模型'
+            return '后台多文件解析使用你在 BYOK 中填写的密钥与模型'
         default:
             return ''
     }
@@ -318,14 +319,14 @@ const engineDescription = computed(() => {
 
 // 转换配置格式：前端 camelCase <-> 后端 snake_case
 const convertToFrontend = (config: Config) => {
-    const engine = config.ai_model === 'spaCy' ? 'BERT' : (config.ai_model || '')
+    const engine = config.ai_model === 'spaCy' || config.ai_model === 'Platform' ? 'BERT' : (config.ai_model || 'BERT')
     return {
         flag: config.flag,
         incomeTemplate: config.income_template || '',
         commissionTemplate: config.commission_template || '',
         reconciliationFallbackAccount: config.reconciliation_fallback_account || 'Equity:Adjustments',
         currency: config.currency || 'CNY',
-        aiModel: ['None', 'BERT', 'DeepSeek'].includes(engine) ? engine : '',
+        aiModel: ['None', 'BERT', 'DeepSeek'].includes(engine) ? engine : 'BERT',
         assistantBaseUrl: config.assistant_base_url || '',
         assistantApiKey: config.assistant_api_key || config.deepseek_apikey || '',
         assistantModel: config.assistant_model || '',
@@ -430,7 +431,7 @@ const loadConfig = async () => {
             axios.get<Config>('config/')
         ])
         const frontendConfig = convertToFrontend(data)
-        aiModel.value = isAuthenticated.value ? frontendConfig.aiModel : ''
+        aiModel.value = frontendConfig.aiModel
         assistantBaseUrl.value = frontendConfig.assistantBaseUrl
         assistantApiKey.value = frontendConfig.assistantApiKey
         assistantModel.value = frontendConfig.assistantModel

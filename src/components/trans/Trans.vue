@@ -110,6 +110,10 @@ const alipayUrl = ref('https://dl.dhr2333.cn/%E5%AE%8C%E6%95%B4%E6%B5%8B%E8%AF%9
 const value4 = ref<string[]>([])
 const options = [
   {
+    value: '使用平台 LLM',
+    label: '使用 LLM（提高准确率但更慢）',
+  },
+  {
     value: '文件若加密请选择',
     label: '文件若加密请选择',
   },
@@ -134,6 +138,8 @@ const cmbCreditIgnore = ref(false)
 const bocDebitIgnore = ref(false)
 const noIgnore = ref(false)
 const showPassword = ref(false)
+/** 是否按次使用平台 LLM；不勾选时按用户配置（默认本地 BERT） */
+const usePlatformLlm = ref(false)
 
 type LocalFormattedEntry = FormattedEntry & {
   /** 最近一次解析/重解析返回的标签明细（不含本地 manual 覆盖） */
@@ -165,7 +171,8 @@ const getUploadData = () => {
     no_ignore: noIgnore.value,
     write: isWrite.value,
     password: input.value,
-    csrfmiddlewaretoken: csrfToken.value
+    csrfmiddlewaretoken: csrfToken.value,
+    ...(usePlatformLlm.value ? { parse_engine: 'Platform' } : {}),
   }
 }
 
@@ -175,6 +182,7 @@ watch(value4, (newValue) => {
   bocDebitIgnore.value = newValue.includes('中国银行借记卡忽略支付宝微信条目')
   noIgnore.value = newValue.includes('关闭默认忽略')
   showPassword.value = newValue.includes('文件若加密请选择')
+  usePlatformLlm.value = newValue.includes('使用平台 LLM')
 })
 
 axios.defaults.withCredentials = true
