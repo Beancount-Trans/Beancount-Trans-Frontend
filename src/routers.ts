@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { hasAuthTokens } from './utils/auth'
 
 // 引入组件
 import Trans from "./components/trans/Trans.vue"
@@ -30,7 +31,8 @@ const router = createRouter({
     {
       path: '/',
       name: "index",
-      redirect: '/login' // 默认重定向到登录页，路由守卫会处理已登录用户的重定向
+      // 根路径：已登录进入文件管理，未登录进入解析页（解析支持匿名使用）
+      redirect: () => (hasAuthTokens() ? '/file' : '/trans')
     },
     { path: '/auth/github/token', component: AuthenticateByGithubToken },
     { path: '/trans', name: "trans", component: Trans },
@@ -88,19 +90,6 @@ router.beforeEach(async (to, from, next) => {
   } catch (error) {
     // 如果导入失败，继续正常流程
     console.warn('导览恢复检查失败:', error);
-  }
-
-  // 处理根路径重定向
-  if (to.path === '/') {
-    // 根据登录状态重定向
-    if (token && username) {
-      // 已登录用户，重定向到文件管理页面
-      next('/file');
-    } else {
-      // 未登录用户，重定向到登录页面
-      next('/login');
-    }
-    return;
   }
 
   // 如果是登录页面，检查是否已登录
