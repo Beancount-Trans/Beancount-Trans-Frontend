@@ -13,15 +13,19 @@
     <template #tip>
       <div class="el-upload__tip">
         当前支持<a :href="wechatUrl" download>微信</a>、<a :href="alipayUrl" download>支付宝</a>、
-        <el-popover placement="top-start" :width="220" trigger="hover" content="
-        中国工商银行储蓄卡（ICBC）
-        中国建设银行储蓄卡（CCB）
-        中国银行储蓄卡（BOC）
-        ">
+        <el-popover placement="top-start" :width="260" trigger="hover">
+          <div class="bill-guide-links">
+            <span>中国工商银行储蓄卡（ICBC）</span>
+            <span>中国建设银行储蓄卡（CCB）</span>
+            <a :href="bocDebitBillGuideUrl" target="_blank" rel="noopener">中国银行储蓄卡（BOC）</a>
+          </div>
           <template #reference><a>储蓄卡</a>
           </template>
         </el-popover>、
-        <el-popover placement="top-start" :width="220" trigger="hover" content="招商银行信用卡（CMB）">
+        <el-popover placement="top-start" :width="260" trigger="hover">
+          <div class="bill-guide-links">
+            <a :href="cmbCreditBillGuideUrl" target="_blank" rel="noopener">招商银行信用卡（CMB）</a>
+          </div>
           <template #reference><a>信用卡</a>
           </template>
         </el-popover>账单
@@ -152,6 +156,8 @@ const router = useRouter()
 const input = ref()
 const wechatUrl = ref('https://dl.dhr2333.cn/%E5%AE%8C%E6%95%B4%E6%B5%8B%E8%AF%95_%E5%BE%AE%E4%BF%A1.csv')
 const alipayUrl = ref('https://dl.dhr2333.cn/%E5%AE%8C%E6%95%B4%E6%B5%8B%E8%AF%95_%E6%94%AF%E4%BB%98%E5%AE%9D.csv')
+const bocDebitBillGuideUrl = `${BILLS_EXPORT_DOCS_URL}#%E4%B8%AD%E5%9B%BD%E9%93%B6%E8%A1%8Cboc%E5%82%A8%E8%93%84debit%E5%8D%A1`
+const cmbCreditBillGuideUrl = `${BILLS_EXPORT_DOCS_URL}#%E6%8B%9B%E5%95%86%E9%93%B6%E8%A1%8Ccmb%E4%BF%A1%E7%94%A8credit%E5%8D%A1`
 const value4 = ref<string[]>([])
 const options = [
   {
@@ -915,6 +921,12 @@ const handleRemoveEntry = async (uuid: string) => {
   color: var(--ep-text-color-secondary);
   font-size: 0.9em;
   margin: 6px 0 0;
+}
+
+.bill-guide-links {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .parse-status {
