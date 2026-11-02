@@ -12,7 +12,7 @@
     </p>
     <template #tip>
       <div class="el-upload__tip">
-        <el-popover placement="top-start" :width="380" trigger="hover">
+        <el-popover placement="top-start" :width="560" trigger="hover">
           <div class="bill-support-panel">
             <div v-for="group in billSupportGroups" :key="group.title" class="bill-support-group">
               <div class="bill-support-group-title">{{ group.title }}</div>
@@ -996,6 +996,7 @@ const handleRemoveEntry = async (uuid: string) => {
 }
 
 .bill-support-trigger {
+  margin-right: 12px;
   border-bottom: 1px dashed var(--ep-border-color);
 }
 
@@ -1015,13 +1016,16 @@ const handleRemoveEntry = async (uuid: string) => {
 
 .bill-support-row {
   display: flex;
+  align-items: baseline;
   justify-content: space-between;
   gap: 12px;
+  white-space: nowrap;
 }
 
 .bill-support-link,
 .bill-support-name {
   flex: 0 0 auto;
+  white-space: nowrap;
   color: var(--ep-text-color-regular);
 }
 
@@ -1031,11 +1035,13 @@ const handleRemoveEntry = async (uuid: string) => {
 }
 
 .bill-support-time {
+  white-space: nowrap;
   color: var(--ep-text-color-secondary);
   text-align: right;
 }
 
 .bill-support-empty {
+  white-space: nowrap;
   color: var(--ep-text-color-placeholder);
 }
 
