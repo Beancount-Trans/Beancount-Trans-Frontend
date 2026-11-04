@@ -5,30 +5,6 @@
     <!-- 格式配置面板，只在非匿名用户或已跳过提示时显示 -->
     <el-form v-if="!showAnonymousPrompt" class="format-config" :model="formModel" :rules="formRules" ref="configForm">
         <el-collapse v-model="activePanels" class="config-panel">
-            <!-- 基础设置 -->
-            <el-collapse-item title="基础设置" name="basic" class="config-item">
-                <div class="config-group" style="padding-top: 10px;">
-                    <el-form-item label="标记符号">
-                        <el-select v-model="flagSymbol" placeholder="选择日期标记符号" class="symbol-selector">
-                            <el-option label="星号 *" value="*" />
-                            <el-option label="叹号 !" value="!" />
-                            <el-option label="井号 #" value="#" />
-                        </el-select>
-                    </el-form-item>
-
-                    <el-form-item label="显示字段">
-                        <el-checkbox-group v-model="formatSettings" class="checkbox-grid" style="width: 100%;">
-                            <el-checkbox label="showNote">显示备注内容</el-checkbox>
-                            <el-checkbox label="showTag">显示交易标签</el-checkbox>
-                            <el-checkbox label="showTime">显示交易时间</el-checkbox>
-                            <el-checkbox label="showUUID">显示交易流水号</el-checkbox>
-                            <el-checkbox label="showStatus">显示交易状态</el-checkbox>
-                            <el-checkbox label="showDiscount">显示折扣信息</el-checkbox>
-                        </el-checkbox-group>
-                    </el-form-item>
-                </div>
-            </el-collapse-item>
-
             <!-- 模板配置 -->
             <el-collapse-item title="高级配置" name="template" class="config-item">
                 <div class="config-group">
@@ -274,7 +250,7 @@ const ASSISTANT_PRESETS: Record<AssistantPreset, { baseUrl: string; model: strin
 }
 
 // 响应式配置状态
-const activePanels = ref(['basic', 'template', 'parsing', 'assistant'])
+const activePanels = ref(['template', 'parsing', 'assistant'])
 const formatSettings = ref<string[]>([])
 const accountTree = ref<AccountOption[]>([])
 const incomeTemplate = ref('')
@@ -679,10 +655,6 @@ const resetToDefault = async () => {
     cursor: help;
 }
 
-.symbol-selector {
-    width: 220px;
-}
-
 .config-item {
     padding: 0 16px;
 }
@@ -713,12 +685,6 @@ const resetToDefault = async () => {
 
 .el-form-item {
     margin-bottom: 18px;
-}
-
-.checkbox-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 10px;
 }
 
 .ai-engine-container {
