@@ -103,6 +103,9 @@
                                 </span>
                                 <span v-else style="color: var(--ep-text-color-secondary);">未设置</span>
                             </el-descriptions-item>
+                            <el-descriptions-item label="币种" v-if="shouldShowCurrency(selectedAccount)">
+                                {{ selectedAccount.currency || '不限制' }}
+                            </el-descriptions-item>
                             <el-descriptions-item label="描述">
                                 {{ selectedAccount.description || '-' }}
                             </el-descriptions-item>
@@ -214,6 +217,14 @@
                 <el-form-item label="描述">
                     <el-input v-model="newAccount.description" maxlength="256" placeholder="早餐" />
                 </el-form-item>
+                <el-form-item label="币种" v-if="shouldShowCurrencyForNewAccount()">
+                    <el-select :model-value="splitCurrencies(newAccount.currency)"
+                        @update:model-value="(v: string[]) => newAccount.currency = v.join(',')"
+                        multiple filterable allow-create default-first-option :reserve-keyword="false"
+                        placeholder="留空表示不限制，可输入多个">
+                        <el-option v-for="code in COMMON_CURRENCIES" :key="code" :label="code" :value="code" />
+                    </el-select>
+                </el-form-item>
                 <template v-if="shouldShowReconciliationCycleForNewAccount()">
                     <el-divider content-position="left">对账周期设置（可选）</el-divider>
                     <el-form-item label="对账规则" prop="reconciliation_rule">
@@ -241,6 +252,14 @@
                 </el-form-item>
                 <el-form-item label="描述">
                     <el-input v-model="editAccountForm.description" maxlength="256" placeholder="早餐" />
+                </el-form-item>
+                <el-form-item label="币种" v-if="shouldShowCurrency(selectedAccount)">
+                    <el-select :model-value="splitCurrencies(editAccountForm.currency)"
+                        @update:model-value="(v: string[]) => editAccountForm.currency = v.join(',')"
+                        multiple filterable allow-create default-first-option :reserve-keyword="false"
+                        placeholder="留空表示不限制，可输入多个">
+                        <el-option v-for="code in COMMON_CURRENCIES" :key="code" :label="code" :value="code" />
+                    </el-select>
                 </el-form-item>
                 <template v-if="shouldShowReconciliationCycle(selectedAccount)">
                     <el-divider content-position="left">对账周期设置（可选）</el-divider>
@@ -390,6 +409,7 @@ interface Account {
     parent_account?: string
     account_type: string
     enable: boolean
+    currency?: string
     created: string
     modified: string
     reconciliation_rule?: string | null
@@ -466,14 +486,22 @@ const activeMappingTab = ref('expense')
 const newAccount = ref({
     account: '',
     description: '',
+    currency: '',
     reconciliation_rule: ''
 })
 
 const editAccountForm = ref({
     account: '',
     description: '',
+    currency: '',
     reconciliation_rule: ''
 })
+
+// 仅资产 / 负债账户支持币种；常用币种作为下拉预设，允许自由输入
+const CURRENCY_ACCOUNT_TYPES = ['Assets', 'Liabilities']
+const COMMON_CURRENCIES = ['CNY', 'USD', 'COIN']
+const splitCurrencies = (value?: string): string[] =>
+    (value || '').split(',').map(item => item.trim()).filter(Boolean)
 
 // 对账周期极简预设：点击即把 DSL 写入对账规则（均为后端解析器已验证可解析的规则）
 const RECONCILIATION_CYCLE_PRESETS: Array<{ label: string; rule: string }> = [
@@ -705,6 +733,7 @@ const showAddAccountDialog = () => {
     newAccount.value = {
         account: '',
         description: '',
+        currency: '',
         reconciliation_rule: ''
     }
     addAccountDialog.value = true
@@ -716,7 +745,18 @@ const createAccount = async () => {
 
     try {
         await accountForm.value.validate()
-        await axios.post('/account/', newAccount.value)
+        // 非资产 / 负债账户不提交币种（避免切换路径后残留旧值）
+        const createRoot = newAccount.value.account.trim().split(':')[0]
+        const payload = {
+            ...newAccount.value,
+            currency: CURRENCY_ACCOUNT_TYPES.includes(createRoot)
+                ? newAccount.value.currency
+                : ''
+        }
+        const response = await axios.post('/account/', payload)
+        if (response.data?.ledger_sync_warning) {
+            ElMessage.warning(response.data.ledger_sync_warning)
+        }
         ElMessage.success('账户创建成功')
         addAccountDialog.value = false
         await fetchAccountTree()
@@ -731,7 +771,7 @@ const createAccount = async () => {
         if (error.response?.status === 401) {
             ElMessage.info('未认证，请登录后重试')
         } else if (error.response?.status === 400) {
-            ElMessage.error(extractApiErrorMessage(error.response?.data, '创建失败，请检查账户路径格式'))
+            ElMessage.error(extractApiErrorMessage(error.response?.data, '创建失败，请检查账户路径、币种或对账规则'))
         } else {
             ElMessage.error(extractApiErrorMessage(error.response?.data, '创建账户失败'))
         }
@@ -745,6 +785,7 @@ const editAccount = () => {
     editAccountForm.value = {
         account: selectedAccount.value.account,
         description: selectedAccount.value.description || '',
+        currency: selectedAccount.value.currency || '',
         reconciliation_rule: selectedAccount.value.reconciliation_rule || ''
     }
     editAccountDialog.value = true
@@ -761,11 +802,18 @@ const updateAccount = async () => {
         const updateData: {
             account: string
             description?: string
+            currency?: string
             reconciliation_rule?: string
         } = {
             account: editAccountForm.value.account,
             description: editAccountForm.value.description || ''
         }
+
+        // 仅资产 / 负债账户保留币种；改为其它类型时清空
+        const finalRoot = editAccountForm.value.account.split(':')[0]
+        updateData.currency = CURRENCY_ACCOUNT_TYPES.includes(finalRoot)
+            ? editAccountForm.value.currency
+            : ''
 
         // 如果账户应该显示对账周期，则包含对账规则；否则清除该字段
         const shouldShow = shouldShowReconciliationCycle(selectedAccount.value)
@@ -781,7 +829,10 @@ const updateAccount = async () => {
         // 开启对账周期（从无到有）或删除对账周期（从有到无）时，待办任务会变化，需要刷新横幅
         const cycleConfigChanged = (!!oldRule && !newRule) || (!oldRule && !!newRule)
 
-        await axios.put(`/account/${selectedAccount.value.id}/`, updateData)
+        const response = await axios.put(`/account/${selectedAccount.value.id}/`, updateData)
+        if (response.data?.ledger_sync_warning) {
+            ElMessage.warning(response.data.ledger_sync_warning)
+        }
         ElMessage.success('账户更新成功')
         editAccountDialog.value = false
 
@@ -790,6 +841,7 @@ const updateAccount = async () => {
             await fetchAccountTree()
         } else {
             selectedAccount.value.description = updateData.description
+            selectedAccount.value.currency = updateData.currency || ''
             selectedAccount.value.reconciliation_rule = updateData.reconciliation_rule ?? null
             // 同步刷新映射详情（其 reconciliation_cycle_display 由对账规则派生）
             await fetchAccountMappings()
@@ -805,7 +857,7 @@ const updateAccount = async () => {
         if (error.response?.status === 401) {
             ElMessage.info('未认证，请登录后重试')
         } else if (error.response?.status === 400) {
-            ElMessage.error(extractApiErrorMessage(error.response?.data, '更新失败，请检查账户路径格式'))
+            ElMessage.error(extractApiErrorMessage(error.response?.data, '更新失败，请检查账户路径、币种或对账规则'))
         } else {
             ElMessage.error(extractApiErrorMessage(error.response?.data, '更新账户失败'))
         }
@@ -963,6 +1015,19 @@ const formatDateTime = (dateString: string): string => {
 }
 
 // 判断是否应该显示对账周期字段
+// 判断账户是否显示币种（仅资产 / 负债）
+const shouldShowCurrency = (account: AccountOption | null): boolean => {
+    if (!account) return false
+    return CURRENCY_ACCOUNT_TYPES.includes(account.account.split(':')[0])
+}
+
+// 判断新增账户时是否显示币种设置
+const shouldShowCurrencyForNewAccount = (): boolean => {
+    const accountPath = newAccount.value.account.trim()
+    if (!accountPath) return true
+    return CURRENCY_ACCOUNT_TYPES.includes(accountPath.split(':')[0])
+}
+
 const shouldShowReconciliationCycle = (account: AccountOption | null): boolean => {
     if (!account) return false
 
