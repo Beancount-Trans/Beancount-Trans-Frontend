@@ -251,8 +251,8 @@
 
         <!-- 编辑账户对话框 -->
         <el-dialog v-model="editAccountDialog" title="编辑账户" width="500px">
-            <el-alert v-if="isAccountPathChanged" type="warning" :closable="false" show-icon title="修改账户路径会触发账本同步"
-                description="非 Git 用户将由平台改写账户引用；Git 用户请先在账本中改名并同步，再使用「账户对账」确认。" style="margin-bottom: 16px;" />
+            <el-alert v-if="isAccountPathChanged && gitEnabled" type="warning" :closable="false" show-icon
+                title="请在账本中改名" description="平台不支持直接改名：先在账本中改名并同步，再用「账户对账」完成配对。" style="margin-bottom: 16px;" />
             <el-form :model="editAccountForm" :rules="editAccountRules" ref="editAccountFormRef" label-width="120px">
                 <el-form-item label="账户路径" prop="account">
                     <el-input v-model="editAccountForm.account" />
@@ -392,8 +392,8 @@
                 <el-alert v-if="!reconcileData.ledger_available" type="warning" :closable="false" show-icon
                     title="账本不可用" description="未找到 main.bean，无法对比账户。" />
                 <template v-else>
-                    <el-alert type="info" :closable="false" show-icon title="用于 Git 用户：先在账本中改名并同步，再在这里确认旧 → 新配对"
-                        description="配对后只更新平台账户，不改写账本文件。" />
+                    <el-alert type="info" :closable="false" show-icon title="先在账本中改名并同步"
+                        description="在这里确认旧 → 新配对；只更新平台账户，不改写账本文件。" />
 
                     <h4>平台有、账本无（疑似改名或删除）</h4>
                     <el-table v-if="reconcileRows.length" :data="reconcileRows" size="small">
