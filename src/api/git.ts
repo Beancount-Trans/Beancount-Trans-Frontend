@@ -44,6 +44,17 @@ export const linkGitRepository = async (data: LinkRepositoryRequest): Promise<Gi
 }
 
 /**
+ * 更新仓库设置（如自动导入账本新增账户）
+ * PATCH /api/git/repository/settings/
+ */
+export const updateGitRepositorySettings = async (
+  data: Pick<GitRepository, 'auto_import_ledger_accounts'>
+): Promise<GitRepository> => {
+  const response = await axios.patch(`/git/repository/settings/`, data)
+  return response.data
+}
+
+/**
  * 删除用户 Git 仓库
  * DELETE /api/git/repository/delete/
  */

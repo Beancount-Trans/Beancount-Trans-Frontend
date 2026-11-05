@@ -31,6 +31,8 @@ export interface GitRepository {
   sync_error: string | null
   /** 是否已取消同步（暂停自动拉取） */
   sync_paused: boolean
+  /** 同步后是否自动导入账本中显式 open、平台缺失的账户 */
+  auto_import_ledger_accounts: boolean
   deploy_key_download_url: string
   created: string
   modified: string
@@ -102,6 +104,8 @@ export interface SyncResponse {
   message: string
   synced_at?: string | null
   error?: string
+  /** 本次同步自动导入的平台账户 */
+  imported_accounts?: string[]
 }
 
 // Deploy Key 响应

@@ -262,7 +262,7 @@ EOF</code></pre>
               <div class="advanced-title">
                 高级设置
                 <el-text type="info" size="small" class="ml-2">
-                  （{{ isLinkedRemote ? '删除同步配置' : 'Deploy Key 重置、删除仓库' }}）
+                  （{{ isLinkedRemote ? '账户导入、删除同步配置' : 'Deploy Key 重置、账户导入、删除仓库' }}）
                 </el-text>
               </div>
             </template>
@@ -289,8 +289,24 @@ EOF</code></pre>
                 <div class="setting-divider"></div>
               </template>
 
-              <!-- 删除仓库 -->
+              <!-- 自动导入账本新增账户 -->
               <div class="setting-item" :class="{ 'first-item': isLinkedRemote }">
+                <div class="setting-info">
+                  <span class="setting-label">自动导入账本新增账户</span>
+                  <span class="setting-desc">
+                    同步后把账本中显式 open、平台缺失的账户加入平台；只新增账户，不推断币种、不改写账本
+                  </span>
+                </div>
+                <div class="setting-actions">
+                  <el-switch :model-value="repository.auto_import_ledger_accounts" :loading="savingAutoImportSettings"
+                    @change="handleAutoImportChange" />
+                </div>
+              </div>
+
+              <div class="setting-divider"></div>
+
+              <!-- 删除仓库 -->
+              <div class="setting-item">
                 <div class="setting-info">
                   <span class="setting-label text-danger">{{ isLinkedRemote ? '删除同步配置' : '删除仓库' }}</span>
                   <span class="setting-desc">
@@ -328,7 +344,8 @@ import {
   commitTrans,
   pollSyncStatus,
   deleteGitRepository as apiDeleteGitRepository,
-  cancelSync as apiCancelSync
+  cancelSync as apiCancelSync,
+  updateGitRepositorySettings
 } from '../../api/git'
 import {
   SyncStatusText,
@@ -355,6 +372,7 @@ const regeneratingKey = ref(false)
 const committingTrans = ref(false)
 const deletingRepository = ref(false)
 const cancellingSync = ref(false)
+const savingAutoImportSettings = ref(false)
 
 // 计算属性
 const username = computed(() => localStorage.getItem('username') || 'user')
@@ -513,7 +531,12 @@ const triggerSync = async () => {
 
   try {
     const response = await apiTriggerSync()
-    ElMessage.success(response.message)
+    const importedCount = response.imported_accounts?.length ?? 0
+    ElMessage.success(
+      importedCount > 0
+        ? `${response.message}（自动导入 ${importedCount} 个账户）`
+        : response.message
+    )
 
     // 开始轮询状态
     await pollSyncStatus((status) => {
@@ -539,6 +562,31 @@ const triggerSync = async () => {
     }
   } finally {
     syncing.value = false
+  }
+}
+
+/**
+ * 切换「自动导入账本新增账户」开关
+ */
+const handleAutoImportChange = async (value: string | number | boolean) => {
+  const enabled = Boolean(value)
+  savingAutoImportSettings.value = true
+
+  try {
+    const repo = await updateGitRepositorySettings({
+      auto_import_ledger_accounts: enabled
+    })
+    emit('updated', repo)
+    ElMessage.success(enabled ? '已开启自动导入账本新增账户' : '已关闭自动导入账本新增账户')
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as { response?: { data?: { error?: string } } }
+      ElMessage.error(axiosError.response?.data?.error || '设置保存失败，请稍后重试')
+    } else {
+      ElMessage.error('网络错误，请稍后重试')
+    }
+  } finally {
+    savingAutoImportSettings.value = false
   }
 }
 
