@@ -289,7 +289,7 @@ const loading = ref(false)
 const selectedOption = ref<boolean | undefined>(undefined)
 
 const gitSyncDocUrl =
-  'https://trans.dhr2333.cn/docs/%E6%93%8D%E4%BD%9C%E6%8C%87%E5%8D%97/git-sync'
+  'https://trans.dhr2333.cn/docs/%E6%93%8D%E4%BD%9C%E6%8C%87%E5%8D%97/git-sync/'
 
 interface LinkForm {
   remote_ssh_url: string

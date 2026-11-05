@@ -5,9 +5,9 @@
 ## 产品
 - [主页](https://trans.dhr2333.cn/)
 - [用户文档](https://trans.dhr2333.cn/docs/)
-- [Copilot 说明](https://trans.dhr2333.cn/docs/操作指南/ai-ledger-assistant)
-- [快速入门](https://trans.dhr2333.cn/docs/教程/quick-start)
-- [自托管](https://trans.dhr2333.cn/docs/developer/self-host)
+- [Copilot 说明](https://trans.dhr2333.cn/docs/教程/copilot/)
+- [快速入门](https://trans.dhr2333.cn/docs/教程/quick-start/)
+- [自托管](https://trans.dhr2333.cn/docs/developer/self-host/)
 
 ## Copilot
 - 路径: /assistant
