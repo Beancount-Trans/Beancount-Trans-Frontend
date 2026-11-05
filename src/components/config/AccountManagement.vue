@@ -7,6 +7,12 @@
         <div v-if="!showAnonymousPrompt" class="management-header">
             <h2>账户管理</h2>
             <div class="header-actions">
+                <el-button v-if="gitEnabled" @click="openReconcileDialog">
+                    <el-icon>
+                        <Refresh />
+                    </el-icon>
+                    账户对账
+                </el-button>
                 <el-button type="primary" @click="showAddAccountDialog">
                     <el-icon>
                         <Plus />
@@ -27,7 +33,7 @@
                     <template #default="{ node, data }">
                         <div class="tree-node">
                             <span class="node-label">{{ data.account }}</span>
-                            <div class="node-actions">
+                            <div v-if="!data.is_virtual" class="node-actions">
                                 <el-tag size="small" :type="getAccountTypeColor(data.account_type)">
                                     {{ data.account_type }}
                                 </el-tag>
@@ -219,9 +225,8 @@
                 </el-form-item>
                 <el-form-item label="币种" v-if="shouldShowCurrencyForNewAccount()">
                     <el-select :model-value="splitCurrencies(newAccount.currency)"
-                        @update:model-value="(v: string[]) => newAccount.currency = v.join(',')"
-                        multiple filterable allow-create default-first-option :reserve-keyword="false"
-                        placeholder="留空表示不限制，可输入多个">
+                        @update:model-value="(v: string[]) => newAccount.currency = v.join(',')" multiple filterable
+                        allow-create default-first-option :reserve-keyword="false" placeholder="留空表示不限制，可输入多个">
                         <el-option v-for="code in COMMON_CURRENCIES" :key="code" :label="code" :value="code" />
                     </el-select>
                 </el-form-item>
@@ -246,6 +251,8 @@
 
         <!-- 编辑账户对话框 -->
         <el-dialog v-model="editAccountDialog" title="编辑账户" width="500px">
+            <el-alert v-if="isAccountPathChanged" type="warning" :closable="false" show-icon title="修改账户路径会触发账本同步"
+                description="非 Git 用户将由平台改写账户引用；Git 用户请先在账本中改名并同步，再使用「账户对账」确认。" style="margin-bottom: 16px;" />
             <el-form :model="editAccountForm" :rules="editAccountRules" ref="editAccountFormRef" label-width="120px">
                 <el-form-item label="账户路径" prop="account">
                     <el-input v-model="editAccountForm.account" />
@@ -255,8 +262,8 @@
                 </el-form-item>
                 <el-form-item label="币种" v-if="shouldShowCurrency(selectedAccount)">
                     <el-select :model-value="splitCurrencies(editAccountForm.currency)"
-                        @update:model-value="(v: string[]) => editAccountForm.currency = v.join(',')"
-                        multiple filterable allow-create default-first-option :reserve-keyword="false"
+                        @update:model-value="(v: string[]) => editAccountForm.currency = v.join(',')" multiple
+                        filterable allow-create default-first-option :reserve-keyword="false"
                         placeholder="留空表示不限制，可输入多个">
                         <el-option v-for="code in COMMON_CURRENCIES" :key="code" :label="code" :value="code" />
                     </el-select>
@@ -341,10 +348,10 @@
                                             selectedMigrationAccountInfo.mapping_count.expense }}支出</el-tag>
                                         <el-tag type="success" size="small">{{
                                             selectedMigrationAccountInfo.mapping_count.assets
-                                            }}资产</el-tag>
+                                        }}资产</el-tag>
                                         <el-tag type="primary" size="small">{{
                                             selectedMigrationAccountInfo.mapping_count.income
-                                            }}收入</el-tag>
+                                        }}收入</el-tag>
                                     </div>
                                 </div>
                             </el-card>
@@ -378,13 +385,56 @@
                 </el-button>
             </template>
         </el-dialog>
+
+        <!-- 账户对账（账本 → 平台） -->
+        <el-dialog v-model="reconcileDialog" title="账户对账" width="760px">
+            <div v-loading="reconcileLoading" class="reconcile-content">
+                <el-alert v-if="!reconcileData.ledger_available" type="warning" :closable="false" show-icon
+                    title="账本不可用" description="未找到 main.bean，无法对比账户。" />
+                <template v-else>
+                    <el-alert type="info" :closable="false" show-icon title="用于 Git 用户：先在账本中改名并同步，再在这里确认旧 → 新配对"
+                        description="配对后只更新平台账户，不改写账本文件。" />
+
+                    <h4>平台有、账本无（疑似改名或删除）</h4>
+                    <el-table v-if="reconcileRows.length" :data="reconcileRows" size="small">
+                        <el-table-column prop="account" label="平台账户（旧）" min-width="240" />
+                        <el-table-column label="账本中的新账户" min-width="280">
+                            <template #default="{ row }">
+                                <el-select v-model="reconcileTargets[row.account]" clearable filterable
+                                    placeholder="选择账本中的新账户" style="width: 100%;">
+                                    <el-option v-for="name in reconcileData.ledger_only" :key="name" :label="name"
+                                        :value="name" />
+                                </el-select>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                    <el-empty v-else description="没有需要配对的平台账户" :image-size="60" />
+
+                    <h4>账本有、平台无（新增候选）</h4>
+                    <div class="reconcile-ledger-only">
+                        <el-tag v-for="name in reconcileData.ledger_only" :key="name" type="success" size="small">
+                            {{ name }}
+                        </el-tag>
+                        <span v-if="!reconcileData.ledger_only.length" class="empty-hint">无</span>
+                    </div>
+                </template>
+            </div>
+            <template #footer>
+                <el-button @click="reconcileDialog = false">关闭</el-button>
+                <el-button @click="fetchReconcile" :loading="reconcileLoading">重新检测</el-button>
+                <el-button type="primary" :disabled="!hasReconcilePairs" :loading="reconcileApplying"
+                    @click="applyReconcile">
+                    应用配对
+                </el-button>
+            </template>
+        </el-dialog>
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Edit, Delete } from '@element-plus/icons-vue'
+import { Plus, Edit, Delete, Refresh } from '@element-plus/icons-vue'
 import axios from '../../utils/request'
 import { emitAccountTreeUpdated, emitTaskBannerRefresh } from '~/utils/accountEvents'
 import type {
@@ -400,10 +450,12 @@ import { hasAuthTokens } from '../../utils/auth'
 import { getAccountTypeColor } from '~/utils/accountTypeColor'
 import { extractApiErrorMessage } from '../../utils/errorHelper'
 import { shouldShowAnonymousPrompt } from '~/composables/useAnonymousPrompt'
+import { groupAccountsByRoot, type AccountTreeNode } from '~/utils/accountTree'
+import { getGitRepository } from '../../api/git'
 
 // 接口定义
 interface Account {
-    id: number
+    id: number | string
     account: string
     parent?: number
     parent_account?: string
@@ -415,6 +467,7 @@ interface Account {
     reconciliation_rule?: string | null
     description?: string
     children?: Account[]
+    is_virtual?: boolean
     mapping_count?: {
         expense: number
         assets: number
@@ -452,12 +505,12 @@ type AccountOption = Omit<Account, 'children'> & CascaderOption & {
 const loading = ref(false)
 const accountTree = ref<AccountOption[]>([])
 const selectedAccount = ref<AccountOption | null>(null)
-const accountTreeRef = ref<{ setCurrentKey: (key: number | null) => void } | null>(null)
+const accountTreeRef = ref<{ setCurrentKey: (key: number | string | null) => void } | null>(null)
 const accountTreeRenderKey = ref(0)
 
 // 树形结构状态保持
-const expandedKeys = ref<number[]>([])
-const currentSelectedAccountId = ref<number | null>(null)
+const expandedKeys = ref<Array<number | string>>([])
+const currentSelectedAccountId = ref<number | string | null>(null)
 
 // 对话框状态
 const addAccountDialog = ref(false)
@@ -466,6 +519,17 @@ const deleteAccountDialog = ref(false)
 
 // 匿名用户提示
 const showAnonymousPrompt = ref(false)
+
+// 是否启用 Git 同步（仅 Git 用户展示账户对账）
+const gitEnabled = ref(false)
+const checkGitEnabled = async () => {
+    try {
+        await getGitRepository()
+        gitEnabled.value = true
+    } catch {
+        gitEnabled.value = false
+    }
+}
 
 // 映射详情相关
 const showMappingDetails = ref(false)
@@ -520,9 +584,34 @@ const selectedMigrationAccount = ref<MigrationModelValue>(null)
 const selectedMigrationAccountInfo = ref<AccountOption | null>(null)
 const deleteAccountLoading = ref(false)
 
+// 账户对账（账本 → 平台）
+interface AccountReconcileResult {
+    ledger_available: boolean
+    ledger_only: string[]
+    db_only: string[]
+    matched: string[]
+}
+
+const reconcileDialog = ref(false)
+const reconcileLoading = ref(false)
+const reconcileApplying = ref(false)
+const reconcileData = ref<AccountReconcileResult>({
+    ledger_available: false,
+    ledger_only: [],
+    db_only: [],
+    matched: []
+})
+const reconcileTargets = ref<Record<string, string>>({})
+const reconcileRows = computed(() =>
+    reconcileData.value.db_only.map(account => ({ account }))
+)
+const hasReconcilePairs = computed(() =>
+    Object.values(reconcileTargets.value).some(Boolean)
+)
+
 const migrationCascaderValue = computed<CascaderValue | undefined>({
     get: () => selectedMigrationAccount.value === null ? undefined : selectedMigrationAccount.value as unknown as CascaderValue,
-    set: (value) => {
+    set: (value: CascaderValue | null | undefined) => {
         selectedMigrationAccount.value = (value ?? null) as MigrationModelValue
     }
 })
@@ -582,9 +671,11 @@ const normalizeCascaderValue = (value: MigrationModelValue): number | null => {
 const selectedMigrationAccountId = computed(() => normalizeCascaderValue(selectedMigrationAccount.value))
 
 // 表单验证规则（新增 / 编辑分开：对账周期间隔只读当前表单，避免两套 model 共用规则时互相污染）
+// 账户路径至少包含「根账户 + 一级子账户」，与 Beancount 规范一致
+const ACCOUNT_PATH_PATTERN = /^[A-Z][A-Za-z0-9-]*(?::[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)+$/
 const accountPathRules = [
     { required: true, message: '请输入账户路径', trigger: 'blur' },
-    { pattern: /^[A-Z][A-Za-z0-9:-]*$/, message: '账户路径必须以大写字母开头，只能包含字母、数字、冒号和连字符', trigger: 'blur' }
+    { pattern: ACCOUNT_PATH_PATTERN, message: '账户路径至少包含根账户和一级子账户，例如 Assets:Savings', trigger: 'blur' }
 ]
 
 // 对账规则字段：仅做「填写了就不能是空白」的简单校验，DSL 语法由后端校验并返回 400
@@ -611,10 +702,16 @@ const editAccountRules: FormRules = {
 
 
 // 计算默认展开的节点
-const calculateDefaultExpandedKeys = (accounts: AccountOption[], level: number = 1): number[] => {
-    const expandedKeys: number[] = []
+const calculateDefaultExpandedKeys = (accounts: AccountOption[], level: number = 1): Array<number | string> => {
+    const expandedKeys: Array<number | string> = []
 
     accounts.forEach(account => {
+        // 展示层的虚拟根节点默认展开，便于直接看到五类账户
+        if (account.is_virtual) {
+            expandedKeys.push(account.id)
+            return
+        }
+
         const accountType = account.account.split(':')[0]
 
         // 只展开Expenses类型的账户
@@ -638,6 +735,13 @@ const hasMappings = computed(() => {
     return selectedAccount.value?.mapping_count && selectedAccount.value.mapping_count.total > 0
 })
 
+// 编辑时账户路径是否发生变化（改名会同步账本）
+const isAccountPathChanged = computed(() => {
+    if (!selectedAccount.value) return false
+    const newPath = editAccountForm.value.account.trim()
+    return Boolean(newPath) && newPath !== selectedAccount.value.account
+})
+
 // 获取账户树形数据
 const fetchAccountTree = async () => {
     try {
@@ -648,12 +752,14 @@ const fetchAccountTree = async () => {
         const previousSelectedId = currentSelectedAccountId.value
 
         const response = await axios.get('/account/tree/')
-        accountTree.value = response.data as AccountOption[]
+        accountTree.value = groupAccountsByRoot(
+            response.data as AccountTreeNode[]
+        ) as unknown as AccountOption[]
 
         // default-expanded-keys 只在挂载时生效，刷新数据后重挂载以保留展开状态
         expandedKeys.value = previousExpandedKeys.length > 0
             ? previousExpandedKeys
-            : calculateDefaultExpandedKeys(response.data)
+            : calculateDefaultExpandedKeys(accountTree.value)
         accountTreeRenderKey.value += 1
         await nextTick()
 
@@ -681,7 +787,13 @@ const fetchAccountTree = async () => {
 }
 
 // 节点点击处理
-const handleNodeClick = async (data: AccountOption) => {
+const handleNodeClick = async (data: AccountOption, node?: { expanded: boolean }) => {
+    // 虚拟根节点只负责展开/收起，不作为可编辑账户
+    if (data.is_virtual) {
+        if (node) node.expanded = !node.expanded
+        return
+    }
+
     selectedAccount.value = data
     currentSelectedAccountId.value = data.id
     // 重置映射详情状态
@@ -898,9 +1010,75 @@ const fetchMigrationCandidates = async () => {
     }
 }
 
+// 获取账户对账候选
+const fetchReconcile = async () => {
+    try {
+        reconcileLoading.value = true
+        const response = await axios.get<AccountReconcileResult>('/account/reconcile/')
+        reconcileData.value = response.data
+
+        // 清理已不存在的配对
+        const validAccounts = new Set(response.data.db_only)
+        Object.keys(reconcileTargets.value).forEach((account) => {
+            if (!validAccounts.has(account)) {
+                delete reconcileTargets.value[account]
+            }
+        })
+    } catch (error: any) {
+        console.error('获取账户对账数据失败:', error)
+        if (error.response?.status === 401) {
+            ElMessage.info('未认证，请登录后重试')
+        } else {
+            ElMessage.error(extractApiErrorMessage(error.response?.data, '获取账户对账数据失败'))
+        }
+    } finally {
+        reconcileLoading.value = false
+    }
+}
+
+const openReconcileDialog = async () => {
+    reconcileDialog.value = true
+    reconcileTargets.value = {}
+    await fetchReconcile()
+}
+
+// 应用用户确认的旧 → 新配对
+const applyReconcile = async () => {
+    const pairs = Object.entries(reconcileTargets.value)
+        .filter(([, newAccount]) => Boolean(newAccount))
+        .map(([oldAccount, newAccount]) => ({
+            old_account: oldAccount,
+            new_account: newAccount
+        }))
+
+    if (pairs.length === 0) {
+        ElMessage.warning('请先为需要改名的账户选择账本中的新账户')
+        return
+    }
+
+    try {
+        reconcileApplying.value = true
+        await axios.post('/account/reconcile/apply/', { pairs })
+        ElMessage.success('账户对账已应用')
+        reconcileTargets.value = {}
+        await fetchAccountTree()
+        emitAccountTreeUpdated()
+        await fetchReconcile()
+    } catch (error: any) {
+        console.error('应用账户对账失败:', error)
+        if (error.response?.status === 401) {
+            ElMessage.info('未认证，请登录后重试')
+        } else {
+            ElMessage.error(extractApiErrorMessage(error.response?.data, '应用账户对账失败'))
+        }
+    } finally {
+        reconcileApplying.value = false
+    }
+}
+
 // 构建账户树形结构
 const buildAccountTree = (accounts: Account[]): AccountOption[] => {
-    const accountMap = new Map<number, AccountOption>()
+    const accountMap = new Map<number | string, AccountOption>()
     const rootAccounts: AccountOption[] = []
 
     accounts.forEach(account => {
@@ -926,7 +1104,7 @@ const buildAccountTree = (accounts: Account[]): AccountOption[] => {
 }
 
 // 查找账户对象
-const findAccountById = (accounts: AccountOption[], id: number): AccountOption | null => {
+const findAccountById = (accounts: AccountOption[], id: number | string): AccountOption | null => {
     for (const account of accounts) {
         if (account.id === id) return account
         if (account.children) {
@@ -938,8 +1116,8 @@ const findAccountById = (accounts: AccountOption[], id: number): AccountOption |
 }
 
 // 处理迁移账户选择变化
-const handleMigrationAccountChange = (value: CascaderValue | null) => {
-    const normalizedValue = normalizeCascaderValue(value)
+const handleMigrationAccountChange = (value: CascaderValue | null | undefined) => {
+    const normalizedValue = normalizeCascaderValue(value ?? null)
     if (normalizedValue !== null) {
         const account = findAccountById(migrationCandidates.value, normalizedValue)
         selectedMigrationAccountInfo.value = account
@@ -1153,6 +1331,7 @@ onMounted(() => {
 
     if (isAuthenticated) {
         // 已登录用户直接加载数据
+        checkGitEnabled()
         fetchAccountTree()
     } else {
         // 未登录用户：检查是否应该显示提示（仅显示一次）
@@ -1537,6 +1716,26 @@ onMounted(() => {
 
 .currency-tag {
     margin: 0;
+}
+
+/* 账户对账 */
+.reconcile-content h4 {
+    margin: 18px 0 10px;
+    color: var(--ep-text-color-primary);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.reconcile-ledger-only {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 24px;
+}
+
+.reconcile-ledger-only .empty-hint {
+    color: var(--ep-text-color-secondary);
+    font-size: 13px;
 }
 
 /* 响应式设计 */

@@ -8,8 +8,8 @@
                 <div class="cascader-node">
                     <span class="node-label">{{ data.account }}</span>
                     <template v-if="showDetails">
-                        <el-tag v-if="node.level === 1 && data.account_type" :type="getAccountTypeColor(data.account_type)" size="small"
-                            class="node-tag">
+                        <el-tag v-if="node.level === 1 && data.account_type"
+                            :type="getAccountTypeColor(data.account_type)" size="small" class="node-tag">
                             {{ data.account_type }}
                         </el-tag>
                         <el-tag v-else-if="node.level > 1 && data.description" type="info" size="small"
@@ -22,17 +22,14 @@
         </el-cascader>
 
         <!-- 账户详情预览：完整卡片（映射编辑）或仅描述标签（差额分配等表格内选择） -->
-        <div
-            v-if="showPreview && selectedAccount"
-            class="account-preview"
-            :class="{ 'is-compact': compact }"
-        >
+        <div v-if="showPreview && selectedAccount" class="account-preview" :class="{ 'is-compact': compact }">
             <el-card v-if="!compact" size="small">
                 <div class="preview-content">
                     <div class="account-info">
                         <div class="account-path">{{ selectedAccount.account }}</div>
                         <div class="account-meta">
-                            <el-tag v-if="selectedAccount.account_type" :type="getAccountTypeColor(selectedAccount.account_type)">
+                            <el-tag v-if="selectedAccount.account_type"
+                                :type="getAccountTypeColor(selectedAccount.account_type)">
                                 {{ selectedAccount.account_type }}
                             </el-tag>
                             <el-tag v-if="selectedAccount.description" type="info">
@@ -58,16 +55,18 @@ import type { CascaderProps, CascaderValue, CascaderOption } from 'element-plus'
 import axios from '../../utils/request'
 import { subscribeAccountTreeUpdated } from '~/utils/accountEvents'
 import { getAccountTypeColor } from '~/utils/accountTypeColor'
+import { groupAccountsByRoot, type AccountTreeNode } from '~/utils/accountTree'
 
 // 接口定义
 interface AccountBase {
-    id: number
+    id: number | string
     account: string
     parent?: number
     parent_account?: string
     account_type: string
     description?: string
     enable: boolean
+    is_virtual?: boolean
     mapping_count?: {
         expense: number
         assets: number
@@ -114,10 +113,11 @@ type InternalCascaderValue = CascaderValue | CascaderValue[] | null
 
 // 是否由父组件注入账户树（传入即视为注入，即使为空也不自行请求）
 const hasInjectedTree = computed(() => props.accountTree != null)
-// 实际用于选项的树：优先使用注入的树
-const effectiveAccountTree = computed<AccountOption[]>(() =>
-    hasInjectedTree.value ? (props.accountTree ?? []) : internalAccountTree.value
-)
+// 实际用于选项的树：优先使用注入的树；展示层按五类账户合成虚拟根节点
+const effectiveAccountTree = computed<AccountOption[]>(() => {
+    const tree = hasInjectedTree.value ? (props.accountTree ?? []) : internalAccountTree.value
+    return groupAccountsByRoot(tree as unknown as AccountTreeNode[]) as unknown as AccountOption[]
+})
 const selectedValue = ref<InternalCascaderValue>(props.modelValue ?? null)
 
 const cascaderValue = computed<CascaderValue | undefined>({
@@ -143,7 +143,9 @@ const cascaderProps: CascaderProps = {
     children: 'children',
     emitPath: false,
     checkStrictly: true,
-    expandTrigger: 'hover'
+    expandTrigger: 'hover',
+    // 虚拟根节点只用于分组，不能被选中
+    disabled: (data: CascaderOption) => Boolean((data as AccountOption).is_virtual)
 }
 
 // 计算属性：过滤后的账户选项
@@ -213,7 +215,7 @@ const filterAccountsByType = (accounts: AccountOption[], type: string): AccountO
 }
 
 // 查找账户对象
-const findAccountById = (accounts: AccountOption[], id: number): AccountOption | null => {
+const findAccountById = (accounts: AccountOption[], id: number | string): AccountOption | null => {
     for (const account of accounts) {
         if (account.id === id) return account
         if (account.children) {
@@ -262,8 +264,8 @@ const normalizeCascaderValue = (value: InternalCascaderValue): number | null => 
     return null
 }
 
-const handleChange = async (value: CascaderValue | CascaderValue[] | null) => {
-    const normalizedValue = normalizeCascaderValue(value)
+const handleChange = async (value: CascaderValue | CascaderValue[] | null | undefined) => {
+    const normalizedValue = normalizeCascaderValue(value ?? null)
     selectedValue.value = (value ?? null) as InternalCascaderValue
 
     // 先更新 modelValue，确保值不会丢失
