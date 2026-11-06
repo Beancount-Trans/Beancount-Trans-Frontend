@@ -11,7 +11,7 @@
                     <el-icon>
                         <Refresh />
                     </el-icon>
-                    账户对账
+                    账户核对
                 </el-button>
                 <el-button type="primary" @click="showAddAccountDialog">
                     <el-icon>
@@ -53,6 +53,9 @@
             <div class="account-detail-panel">
                 <div v-if="selectedAccount" class="account-detail">
                     <h3>{{ selectedAccount.account }}</h3>
+
+                    <el-alert v-if="selectedAccount.is_ledger_custodied" type="info" :closable="false" show-icon
+                        title="该账户由账本管理" description="改名、币种与删除需在账本中处理；改完同步后可用「账户核对」确认。" style="margin-bottom: 12px;" />
 
                     <!-- 账户基本信息 -->
                     <el-card class="info-card">
@@ -201,12 +204,18 @@
                             </el-icon>
                             编辑账户
                         </el-button>
-                        <el-button type="danger" @click="deleteAccount">
-                            <el-icon>
-                                <Delete />
-                            </el-icon>
-                            删除账户
-                        </el-button>
+                        <el-tooltip :disabled="!selectedAccount.is_ledger_custodied" content="该账户由账本管理，请先在账本中删除并同步"
+                            placement="top">
+                            <span>
+                                <el-button type="danger" :disabled="selectedAccount.is_ledger_custodied"
+                                    @click="deleteAccount">
+                                    <el-icon>
+                                        <Delete />
+                                    </el-icon>
+                                    删除账户
+                                </el-button>
+                            </span>
+                        </el-tooltip>
                     </div>
                 </div>
 
@@ -216,6 +225,8 @@
 
         <!-- 新增账户对话框 -->
         <el-dialog v-model="addAccountDialog" title="新增账户" width="500px">
+            <el-alert v-if="gitEnabled" type="info" :closable="false" show-icon title="Git 用户新增账户"
+                description="账户会先建在平台区；点「提交到账本」后才会写入仓库，此后改名、币种与删除需在账本处理。" style="margin-bottom: 16px;" />
             <el-form :model="newAccount" :rules="addAccountRules" ref="accountForm" label-width="120px">
                 <el-form-item label="账户路径" prop="account">
                     <el-input v-model="newAccount.account" placeholder="Assets:Savings:Bank" />
@@ -251,17 +262,16 @@
 
         <!-- 编辑账户对话框 -->
         <el-dialog v-model="editAccountDialog" title="编辑账户" width="500px">
-            <el-alert v-if="isAccountPathChanged && gitEnabled" type="warning" :closable="false" show-icon
-                title="请在账本中改名" description="平台不支持直接改名：先在账本中改名并同步，再用「账户对账」完成配对。" style="margin-bottom: 16px;" />
             <el-form :model="editAccountForm" :rules="editAccountRules" ref="editAccountFormRef" label-width="120px">
                 <el-form-item label="账户路径" prop="account">
-                    <el-input v-model="editAccountForm.account" />
+                    <el-input v-model="editAccountForm.account" :disabled="selectedAccount?.is_ledger_custodied" />
                 </el-form-item>
                 <el-form-item label="描述">
                     <el-input v-model="editAccountForm.description" maxlength="256" placeholder="早餐" />
                 </el-form-item>
                 <el-form-item label="币种" v-if="shouldShowCurrency(selectedAccount)">
                     <el-select :model-value="splitCurrencies(editAccountForm.currency)"
+                        :disabled="selectedAccount?.is_ledger_custodied"
                         @update:model-value="(v: string[]) => editAccountForm.currency = v.join(',')" multiple
                         filterable allow-create default-first-option :reserve-keyword="false"
                         placeholder="留空表示不限制，可输入多个">
@@ -348,10 +358,10 @@
                                             selectedMigrationAccountInfo.mapping_count.expense }}支出</el-tag>
                                         <el-tag type="success" size="small">{{
                                             selectedMigrationAccountInfo.mapping_count.assets
-                                        }}资产</el-tag>
+                                            }}资产</el-tag>
                                         <el-tag type="primary" size="small">{{
                                             selectedMigrationAccountInfo.mapping_count.income
-                                        }}收入</el-tag>
+                                            }}收入</el-tag>
                                     </div>
                                 </div>
                             </el-card>
@@ -386,8 +396,8 @@
             </template>
         </el-dialog>
 
-        <!-- 账户对账（账本 → 平台） -->
-        <el-dialog v-model="reconcileDialog" title="账户对账" width="760px">
+        <!-- 账户核对（账本 → 平台） -->
+        <el-dialog v-model="reconcileDialog" title="账户核对" width="760px">
             <div v-loading="reconcileLoading" class="reconcile-content">
                 <el-alert v-if="!reconcileData.ledger_available" type="warning" :closable="false" show-icon
                     title="账本不可用" description="未找到 main.bean，无法对比账户。" />
@@ -468,6 +478,8 @@ interface Account {
     description?: string
     children?: Account[]
     is_virtual?: boolean
+    /** 账户由账本管理：路径、币种、删除需在账本处理（仅 Git 用户） */
+    is_ledger_custodied?: boolean
     mapping_count?: {
         expense: number
         assets: number
@@ -520,7 +532,7 @@ const deleteAccountDialog = ref(false)
 // 匿名用户提示
 const showAnonymousPrompt = ref(false)
 
-// 是否启用 Git 同步（仅 Git 用户展示账户对账）
+// 是否启用 Git 同步（仅 Git 用户展示账户核对）
 const gitEnabled = ref(false)
 const checkGitEnabled = async () => {
     try {
@@ -584,7 +596,7 @@ const selectedMigrationAccount = ref<MigrationModelValue>(null)
 const selectedMigrationAccountInfo = ref<AccountOption | null>(null)
 const deleteAccountLoading = ref(false)
 
-// 账户对账（账本 → 平台）
+// 账户核对（账本 → 平台）
 interface AccountReconcileResult {
     ledger_available: boolean
     ledger_only: string[]
@@ -733,13 +745,6 @@ const calculateDefaultExpandedKeys = (accounts: AccountOption[], level: number =
 // 计算属性
 const hasMappings = computed(() => {
     return selectedAccount.value?.mapping_count && selectedAccount.value.mapping_count.total > 0
-})
-
-// 编辑时账户路径是否发生变化（改名会同步账本）
-const isAccountPathChanged = computed(() => {
-    if (!selectedAccount.value) return false
-    const newPath = editAccountForm.value.account.trim()
-    return Boolean(newPath) && newPath !== selectedAccount.value.account
 })
 
 // 获取账户树形数据
@@ -1010,7 +1015,7 @@ const fetchMigrationCandidates = async () => {
     }
 }
 
-// 获取账户对账候选
+// 获取账户核对候选
 const fetchReconcile = async () => {
     try {
         reconcileLoading.value = true
@@ -1025,11 +1030,11 @@ const fetchReconcile = async () => {
             }
         })
     } catch (error: any) {
-        console.error('获取账户对账数据失败:', error)
+        console.error('获取账户核对数据失败:', error)
         if (error.response?.status === 401) {
             ElMessage.info('未认证，请登录后重试')
         } else {
-            ElMessage.error(extractApiErrorMessage(error.response?.data, '获取账户对账数据失败'))
+            ElMessage.error(extractApiErrorMessage(error.response?.data, '获取账户核对数据失败'))
         }
     } finally {
         reconcileLoading.value = false
@@ -1059,17 +1064,17 @@ const applyReconcile = async () => {
     try {
         reconcileApplying.value = true
         await axios.post('/account/reconcile/apply/', { pairs })
-        ElMessage.success('账户对账已应用')
+        ElMessage.success('账户核对已应用')
         reconcileTargets.value = {}
         await fetchAccountTree()
         emitAccountTreeUpdated()
         await fetchReconcile()
     } catch (error: any) {
-        console.error('应用账户对账失败:', error)
+        console.error('应用账户核对失败:', error)
         if (error.response?.status === 401) {
             ElMessage.info('未认证，请登录后重试')
         } else {
-            ElMessage.error(extractApiErrorMessage(error.response?.data, '应用账户对账失败'))
+            ElMessage.error(extractApiErrorMessage(error.response?.data, '应用账户核对失败'))
         }
     } finally {
         reconcileApplying.value = false
@@ -1718,7 +1723,7 @@ onMounted(() => {
     margin: 0;
 }
 
-/* 账户对账 */
+/* 账户核对 */
 .reconcile-content h4 {
     margin: 18px 0 10px;
     color: var(--ep-text-color-primary);

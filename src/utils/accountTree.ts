@@ -38,6 +38,8 @@ export interface AccountTreeNode {
   };
   children?: AccountTreeNode[];
   is_virtual?: boolean;
+  /** 账户由账本管理：路径、币种、删除需在账本处理（仅 Git 用户） */
+  is_ledger_custodied?: boolean;
 }
 
 const isRootName = (account: string): boolean =>
