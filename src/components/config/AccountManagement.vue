@@ -56,7 +56,13 @@
                 <div v-if="selectedAccount" class="account-detail">
                     <div class="account-title">
                         <h3>{{ selectedAccount.account }}</h3>
-                        <el-tooltip v-if="selectedAccount.is_ledger_custodied" placement="top" effect="dark"
+                        <el-tooltip v-if="selectedAccount.is_ledger_closed" placement="top" effect="dark"
+                            content="账本中已 close，平台记录可直接删除；无需再同步或配对">
+                            <el-tag size="small" type="warning" effect="plain">
+                                账本已关闭
+                            </el-tag>
+                        </el-tooltip>
+                        <el-tooltip v-else-if="selectedAccount.is_ledger_custodied" placement="top" effect="dark"
                             content="该账户由账本管理：改名、币种与删除需在账本中处理，改完同步后可用「账户核对」确认">
                             <el-tag size="small" type="info" effect="plain">
                                 账本管理
@@ -211,10 +217,12 @@
                             </el-icon>
                             编辑账户
                         </el-button>
-                        <el-tooltip :disabled="!selectedAccount.is_ledger_custodied" content="该账户由账本管理，请先在账本中删除并同步"
-                            placement="top">
+                        <el-tooltip
+                            :disabled="Boolean(!selectedAccount.is_ledger_custodied || selectedAccount.is_ledger_closed)"
+                            content="该账户由账本管理，请先在账本中删除并同步" placement="top">
                             <span>
-                                <el-button type="danger" :disabled="selectedAccount.is_ledger_custodied"
+                                <el-button type="danger"
+                                    :disabled="Boolean(selectedAccount.is_ledger_custodied && !selectedAccount.is_ledger_closed)"
                                     @click="deleteAccount">
                                     <el-icon>
                                         <Delete />
@@ -410,7 +418,7 @@
                     <el-alert type="info" :closable="false" show-icon title="先在账本中改名并同步"
                         description="在这里确认旧 → 新配对；只更新平台账户，不改写账本文件。" />
 
-                    <h4>平台有、账本无（疑似改名或删除）</h4>
+                    <h4>平台有、账本无（疑似改名）</h4>
                     <el-table v-if="reconcileRows.length" :data="reconcileRows" size="small">
                         <el-table-column prop="account" label="平台账户（旧）" min-width="240" />
                         <el-table-column label="账本中的新账户" min-width="280">
@@ -424,6 +432,14 @@
                         </el-table-column>
                     </el-table>
                     <el-empty v-else description="没有需要配对的平台账户" :image-size="60" />
+
+                    <h4>账本已关闭（平台仍有，可直接删除平台记录）</h4>
+                    <div class="reconcile-ledger-only">
+                        <el-tag v-for="name in reconcileData.ledger_closed" :key="name" type="info" size="small">
+                            {{ name }}
+                        </el-tag>
+                        <span v-if="!reconcileData.ledger_closed.length" class="empty-hint">无</span>
+                    </div>
 
                     <h4>账本有、平台无（新增候选）</h4>
                     <div class="reconcile-ledger-only">
@@ -485,6 +501,8 @@ interface Account {
     is_virtual?: boolean
     /** 账户由账本管理：路径、币种、删除需在账本处理（仅 Git 用户） */
     is_ledger_custodied?: boolean
+    /** 账本中已 close：平台记录可直接清理 */
+    is_ledger_closed?: boolean
     mapping_count?: {
         expense: number
         assets: number
@@ -611,6 +629,7 @@ interface AccountReconcileResult {
     ledger_available: boolean
     ledger_only: string[]
     db_only: string[]
+    ledger_closed: string[]
     matched: string[]
 }
 
@@ -621,6 +640,7 @@ const reconcileData = ref<AccountReconcileResult>({
     ledger_available: false,
     ledger_only: [],
     db_only: [],
+    ledger_closed: [],
     matched: []
 })
 const reconcileTargets = ref<Record<string, string>>({})
