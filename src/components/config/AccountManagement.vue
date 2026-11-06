@@ -25,11 +25,13 @@
         <div v-if="!showAnonymousPrompt" class="management-content">
             <!-- 左侧：账户树形结构 -->
             <div class="account-tree-panel">
+                <el-input v-model="searchKeyword" class="account-search" placeholder="搜索账户路径或描述" :prefix-icon="Search"
+                    clearable />
                 <el-tree ref="accountTreeRef" :key="accountTreeRenderKey" :data="accountTree" :props="treeProps"
                     node-key="id" :expand-on-click-node="false" :default-expand-all="false"
                     :default-expanded-keys="expandedKeys" :current-node-key="currentSelectedAccountId ?? undefined"
-                    highlight-current class="account-tree" v-loading="loading" @node-click="handleNodeClick"
-                    @node-expand="handleNodeExpand" @node-collapse="handleNodeCollapse">
+                    :filter-node-method="filterAccountNode" highlight-current class="account-tree" v-loading="loading"
+                    @node-click="handleNodeClick" @node-expand="handleNodeExpand" @node-collapse="handleNodeCollapse">
                     <template #default="{ node, data }">
                         <div class="tree-node">
                             <span class="node-label">{{ data.account }}</span>
@@ -361,10 +363,10 @@
                                             selectedMigrationAccountInfo.mapping_count.expense }}支出</el-tag>
                                         <el-tag type="success" size="small">{{
                                             selectedMigrationAccountInfo.mapping_count.assets
-                                            }}资产</el-tag>
+                                        }}资产</el-tag>
                                         <el-tag type="primary" size="small">{{
                                             selectedMigrationAccountInfo.mapping_count.income
-                                            }}收入</el-tag>
+                                        }}收入</el-tag>
                                     </div>
                                 </div>
                             </el-card>
@@ -445,9 +447,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Edit, Delete, Refresh } from '@element-plus/icons-vue'
+import { Plus, Edit, Delete, Refresh, Search } from '@element-plus/icons-vue'
 import axios from '../../utils/request'
 import { emitAccountTreeUpdated, emitTaskBannerRefresh } from '~/utils/accountEvents'
 import type {
@@ -520,7 +522,12 @@ type AccountOption = Omit<Account, 'children'> & CascaderOption & {
 const loading = ref(false)
 const accountTree = ref<AccountOption[]>([])
 const selectedAccount = ref<AccountOption | null>(null)
-const accountTreeRef = ref<{ setCurrentKey: (key: number | string | null) => void } | null>(null)
+const searchKeyword = ref('')
+const accountTreeRef = ref<{
+    setCurrentKey: (key: number | string | null) => void
+    filter: (value: string) => void
+    getNode: (key: number | string) => { expanded: boolean } | null
+} | null>(null)
 const accountTreeRenderKey = ref(0)
 
 // 树形结构状态保持
@@ -640,6 +647,43 @@ const treeProps = {
     children: 'children',
     label: 'account'
 }
+
+// 账户搜索：匹配路径或描述，并保留命中节点的祖先
+const matchesAccountKeyword = (data: any, keyword: string): boolean => {
+    const account = (data?.account || '').toLowerCase()
+    const description = (data?.description || '').toLowerCase()
+    return account.includes(keyword) || description.includes(keyword)
+}
+
+const filterAccountNode = (value: string, data: any): boolean => {
+    const keyword = value.trim().toLowerCase()
+    if (!keyword) return true
+    if (matchesAccountKeyword(data, keyword)) return true
+    return Boolean(data?.children?.some((child: any) => filterAccountNode(value, child)))
+}
+
+// 展开命中节点所在的父级，避免结果被折叠隐藏
+const expandMatchedAncestors = (nodes: any[], keyword: string): void => {
+    nodes.forEach((node: any) => {
+        const children = node.children || []
+        if (!children.length) return
+
+        const hasMatchedChild = children.some((child: any) => filterAccountNode(keyword, child))
+        if (!hasMatchedChild && !matchesAccountKeyword(node, keyword)) return
+
+        const treeNode = accountTreeRef.value?.getNode(node.id)
+        if (treeNode) treeNode.expanded = true
+        expandMatchedAncestors(children, keyword)
+    })
+}
+
+watch(searchKeyword, (value) => {
+    accountTreeRef.value?.filter(value)
+    const keyword = value.trim().toLowerCase()
+    if (keyword) {
+        expandMatchedAncestors(accountTree.value, keyword)
+    }
+})
 
 // 级联选择器配置
 const cascaderProps: CascaderProps = {
@@ -770,6 +814,15 @@ const fetchAccountTree = async () => {
             : calculateDefaultExpandedKeys(accountTree.value)
         accountTreeRenderKey.value += 1
         await nextTick()
+
+        // 数据刷新后重新应用搜索过滤
+        if (searchKeyword.value.trim()) {
+            accountTreeRef.value?.filter(searchKeyword.value)
+            expandMatchedAncestors(
+                accountTree.value,
+                searchKeyword.value.trim().toLowerCase()
+            )
+        }
 
         // 恢复选中的账户
         if (previousSelectedId) {
@@ -1395,6 +1448,10 @@ onMounted(() => {
     border-radius: 8px;
     padding: 15px;
     background-color: var(--ep-fill-color-light);
+}
+
+.account-search {
+    margin-bottom: 12px;
 }
 
 .account-tree {
