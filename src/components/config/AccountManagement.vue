@@ -52,10 +52,15 @@
             <!-- 右侧：账户详情和货币管理 -->
             <div class="account-detail-panel">
                 <div v-if="selectedAccount" class="account-detail">
-                    <h3>{{ selectedAccount.account }}</h3>
-
-                    <el-alert v-if="selectedAccount.is_ledger_custodied" type="info" :closable="false" show-icon
-                        title="该账户由账本管理" description="改名、币种与删除需在账本中处理；改完同步后可用「账户核对」确认。" style="margin-bottom: 12px;" />
+                    <div class="account-title">
+                        <h3>{{ selectedAccount.account }}</h3>
+                        <el-tooltip v-if="selectedAccount.is_ledger_custodied" placement="top" effect="dark"
+                            content="该账户由账本管理：改名、币种与删除需在账本中处理，改完同步后可用「账户核对」确认">
+                            <el-tag size="small" type="info" effect="plain">
+                                账本管理
+                            </el-tag>
+                        </el-tooltip>
+                    </div>
 
                     <!-- 账户基本信息 -->
                     <el-card class="info-card">
@@ -225,8 +230,6 @@
 
         <!-- 新增账户对话框 -->
         <el-dialog v-model="addAccountDialog" title="新增账户" width="500px">
-            <el-alert v-if="gitEnabled" type="info" :closable="false" show-icon title="Git 用户新增账户"
-                description="账户会先建在平台区；点「提交到账本」后才会写入仓库，此后改名、币种与删除需在账本处理。" style="margin-bottom: 16px;" />
             <el-form :model="newAccount" :rules="addAccountRules" ref="accountForm" label-width="120px">
                 <el-form-item label="账户路径" prop="account">
                     <el-input v-model="newAccount.account" placeholder="Assets:Savings:Bank" />
@@ -1425,13 +1428,21 @@ onMounted(() => {
     background-color: var(--ep-bg-color);
 }
 
+.account-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--ep-color-primary);
+}
+
 .account-detail h3 {
-    margin: 0 0 20px 0;
+    margin: 0;
     color: var(--ep-text-color-primary);
     font-size: 20px;
     font-weight: 600;
-    padding-bottom: 10px;
-    border-bottom: 2px solid var(--ep-color-primary);
 }
 
 .info-card,
