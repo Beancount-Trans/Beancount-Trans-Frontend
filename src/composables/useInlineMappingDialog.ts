@@ -5,7 +5,6 @@ import axios from '../utils/request'
 export type MappingType = 'expense' | 'income' | 'asset'
 
 const MAPPING_KEY_MAX_LENGTH = 16
-const ASSET_FULL_MAX_LENGTH = 16
 
 /** 从账单原始行的对方/商品信息生成新增映射的默认关键字 */
 export function defaultMappingKeyFromOriginalRow(originalRow?: {
@@ -37,7 +36,6 @@ export function defaultAssetMappingKeyFromOriginalRow(originalRow?: {
 interface MappingListItem {
   id: number
   key: string
-  full?: string | null
   payee?: string | null
   payer?: string | null
   expend?: { id: number } | number | null
@@ -53,7 +51,6 @@ export interface OpenMappingOptions<T> {
   getCreateDefaults: (row: T) => {
     key: string
     party: string
-    full: string
     type: MappingType
   }
   onReparse: (key: string, type: MappingType) => Promise<void>
@@ -97,7 +94,6 @@ async function fetchMappingByKey(type: MappingType, key: string): Promise<Mappin
 interface OfficialTemplateItem {
   key: string
   account?: string | null
-  full?: string | null
   payee?: string | null
   payer?: string | null
 }
@@ -169,7 +165,6 @@ export function useInlineMappingDialog() {
   const mappingForm = ref({
     type: 'expense' as MappingType,
     key: '',
-    full: '',
     accountId: null as number | null,
     party: '',
     tag_ids: [] as number[]
@@ -179,18 +174,11 @@ export function useInlineMappingDialog() {
     key: [
       { required: true, message: '请输入关键字', trigger: 'blur' },
       { max: 16, message: '长度应控制在16个字符以内', trigger: 'blur' }
-    ],
-    full: [
-      { max: ASSET_FULL_MAX_LENGTH, message: '长度应控制在16个字符以内', trigger: 'blur' }
     ]
   }
 
   const mappingPartyLabel = computed(() =>
     mappingForm.value.type === 'income' ? '付款方' : '对方'
-  )
-
-  const mappingPartyProp = computed(() =>
-    mappingForm.value.type === 'asset' ? 'full' : 'party'
   )
 
   const mappingDialogTitle = computed(() => {
@@ -221,7 +209,6 @@ export function useInlineMappingDialog() {
     mappingForm.value = {
       type: defaults.type,
       key: defaults.key,
-      full: defaults.full,
       accountId: null,
       party: defaults.party,
       tag_ids: []
@@ -252,7 +239,6 @@ export function useInlineMappingDialog() {
         mappingForm.value = {
           type,
           key: mapping.key,
-          full: mapping.full ?? '',
           accountId: accountIdFromMapping(mapping, type),
           party: partyFromMapping(mapping, type),
           tag_ids: tagIdsFromMapping(mapping)
@@ -271,7 +257,6 @@ export function useInlineMappingDialog() {
           mappingForm.value = {
             type,
             key: templateItem.key,
-            full: templateItem.full ?? '',
             accountId,
             party: type === 'expense' ? (templateItem.payee ?? '') : (templateItem.payer ?? ''),
             tag_ids: []
@@ -281,7 +266,6 @@ export function useInlineMappingDialog() {
           mappingForm.value = {
             type,
             key,
-            full: '',
             accountId: null,
             party: '',
             tag_ids: []
@@ -318,7 +302,7 @@ export function useInlineMappingDialog() {
     if (!reparseAfterSave) return
 
     mappingDialog.value.loading = true
-    const { type, key, full, accountId, party, tag_ids } = mappingForm.value
+    const { type, key, accountId, party, tag_ids } = mappingForm.value
     const selectedKey = key.trim()
 
     try {
@@ -341,7 +325,6 @@ export function useInlineMappingDialog() {
         } else {
           await axios.put(`assets/${mappingDialog.value.mappingId}/`, {
             key: selectedKey,
-            full: full.trim() || selectedKey,
             assets_id: accountId,
             tag_ids
           })
@@ -366,7 +349,6 @@ export function useInlineMappingDialog() {
         } else {
           await axios.post('/assets/', {
             key: selectedKey,
-            full: full.trim() || selectedKey,
             assets_id: accountId,
             tag_ids
           })
@@ -410,7 +392,6 @@ export function useInlineMappingDialog() {
     mappingRules,
     mappingDialogTitle,
     mappingPartyLabel,
-    mappingPartyProp,
     openForCreate,
     openForEdit,
     openEditCurrentMapping,

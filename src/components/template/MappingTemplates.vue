@@ -87,8 +87,6 @@
                             </el-table-column>
 
                             <!-- 资产模板特有字段 -->
-                            <el-table-column v-if="template.type === 'assets'" label="账户全称"
-                                prop="full"></el-table-column>
                             <el-table-column v-if="template.type === 'assets'" label="资产账户">
                                 <template #default="{ row }">
                                     {{ row.account || '-' }}
@@ -183,7 +181,6 @@ interface TemplateItemDetail {
     account: string | null; // 账户路径字符串，可能为 null
     payee?: string | null;
     payer?: string | null;
-    full?: string | null;
     currency?: string | null;
     created?: string;
     modified?: string;

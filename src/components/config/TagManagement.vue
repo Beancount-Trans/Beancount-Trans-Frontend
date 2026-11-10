@@ -127,7 +127,6 @@
                                             class="mapping-item">
                                             <div class="mapping-info">
                                                 <span class="mapping-key">{{ mapping.key }}</span>
-                                                <span v-if="mapping.full" class="mapping-full">{{ mapping.full }}</span>
                                                 <span class="mapping-account">→ {{ mapping.account || '未知账户' }}</span>
                                             </div>
                                             <el-tag :type="mapping.enable ? 'success' : 'info'" size="small">

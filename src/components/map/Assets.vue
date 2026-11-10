@@ -3,7 +3,7 @@
         <!-- 搜索和操作栏 -->
         <div class="toolbar">
             <div class="search-section">
-                <el-input v-model="search" placeholder="搜索关键字、账户描述、账户、标签" clearable @input="handleSearch">
+                <el-input v-model="search" placeholder="搜索关键字、账户、标签" clearable @input="handleSearch">
                     <template #prefix>
                         <el-icon>
                             <Search />
@@ -47,13 +47,6 @@
             <el-table-column label="关键字" prop="key" sortable :sort-method="advancedSort" min-width="100" width="auto">
                 <template #default="{ row }">
                     <el-tag type="primary" size="small">{{ row.key }}</el-tag>
-                </template>
-            </el-table-column>
-
-            <el-table-column label="账户描述" prop="full" min-width="150" width="auto">
-                <template #default="{ row }">
-                    <span v-if="row.full">{{ row.full }}</span>
-                    <el-text v-else type="info" size="small">-</el-text>
                 </template>
             </el-table-column>
 
@@ -136,14 +129,9 @@
     <el-dialog v-model="dialogAdd" title="新增资产映射" width="600px">
         <el-form ref="ruleFormRef" :model="ruleForm" :rules="rules" label-width="100px" status-icon>
             <el-row :gutter="20">
-                <el-col :span="12">
+                <el-col :span="24">
                     <el-form-item label="关键字" prop="key">
                         <el-input v-model="ruleForm.key" placeholder="银行卡号" />
-                    </el-form-item>
-                </el-col>
-                <el-col :span="12">
-                    <el-form-item label="账户描述" prop="full">
-                        <el-input v-model="ruleForm.full" placeholder="中国建设银行储蓄卡" />
                     </el-form-item>
                 </el-col>
             </el-row>
@@ -169,14 +157,9 @@
     <el-dialog v-model="dialogEdit" title="编辑资产映射" width="600px">
         <el-form ref="editFormRef" :model="ruleForm" :rules="rules" label-width="100px" status-icon>
             <el-row :gutter="20">
-                <el-col :span="12">
+                <el-col :span="24">
                     <el-form-item label="关键字" prop="key">
                         <el-input v-model="ruleForm.key" />
-                    </el-form-item>
-                </el-col>
-                <el-col :span="12">
-                    <el-form-item label="账户描述" prop="full">
-                        <el-input v-model="ruleForm.full" />
                     </el-form-item>
                 </el-col>
             </el-row>
@@ -229,7 +212,6 @@
                     <div class="item-info">
                         <div class="item-main">
                             <el-tag type="primary" size="small">{{ item.key }}</el-tag>
-                            <span v-if="item.full" class="item-description">{{ item.full }}</span>
                         </div>
                         <div class="item-account">
                             {{ typeof item.assets === 'object' ? item.assets?.account : item.assets }}
@@ -285,7 +267,6 @@
                     <div class="item-info">
                         <div class="item-main">
                             <el-tag type="primary" size="small">{{ item.key }}</el-tag>
-                            <span v-if="item.full" class="item-description">{{ item.full }}</span>
                         </div>
                         <div class="item-account">
                             {{ typeof item.assets === 'object' ? item.assets?.account : item.assets }}
@@ -362,7 +343,6 @@ const dialogError = ref(false)
 interface Assets {
     id: number
     key: string
-    full: string
     assets: string | { id: number; account: string; enable: boolean; account_type?: string }
     assets_id?: number
     account_type?: string
@@ -380,10 +360,8 @@ interface Assets {
 // 页面增加优先级提示
 const showTooltip = ref(true)
 const keyTooltipVisible = ref(false)
-const fullTooltipVisible = ref(false)
 const assetsTooltipVisible = ref(false)
 const keytipContent = ref("账户相似时，详细账户的优先级应更高，例如'零钱通'应在'零钱'的前面");
-const assetstipContent = ref("固定格式： [银行]+[储蓄卡/信用卡]+([卡号])。用于支付宝还款功能映射 and 支付宝提现至储蓄卡");
 const loading = ref(false)
 
 // 页面获取数据
@@ -443,7 +421,6 @@ const filterAssetsData = computed(() =>
 
             const matchesSearch = [
                 data.key.toLowerCase(),
-                data.full?.toLowerCase() ?? '',
                 assetsAccount,
                 tagNames
             ].some(field => field.includes(searchTerm))
@@ -473,7 +450,6 @@ const handleAdd = () => {
     editKnownTags.value = []
     ruleForm.value = {
         key: '',
-        full: '',
         assets: null,
         currency_id: null,
         tag_ids: []
@@ -488,7 +464,6 @@ const ruleFormRef = ref<FormInstance>()
 const editFormRef = ref<FormInstance>()
 const ruleForm = ref({
     key: '',
-    full: '',
     assets: null as number | null | undefined,
     currency_id: null as number | null,
     tag_ids: [] as number[],
@@ -498,10 +473,6 @@ const rules = ref<FormRules>({
     key: [
         { required: true, message: '请输入关键字', trigger: 'blur' },
         { max: 16, message: '长度应控制在16个字符以内', trigger: 'blur' },
-    ],
-    full: [
-        { required: true, message: '请输入账户描述', trigger: 'blur' },
-        { max: 32, message: '长度应控制在32个字符以内', trigger: 'blur' },
     ],
     assets: [
         { required: false, message: '请选择映射账户', trigger: 'change' },
@@ -520,7 +491,6 @@ const submitForm = async (formEl: FormInstance | undefined) => {
                 // 转换字段名以匹配后端API
                 const submitData = {
                     key: ruleForm.value.key,
-                    full: ruleForm.value.full,
                     assets_id: ruleForm.value.assets, // 将 assets 转换为 assets_id
                     currency_ids: ruleForm.value.currency_id ? [ruleForm.value.currency_id] : [],
                     tag_ids: ruleForm.value.tag_ids
@@ -596,7 +566,6 @@ function normalizeCsvRowKeys(item: Record<string, unknown>): Record<string, unkn
 const handleExport = () => {
     const rows = AssetsData.value.map((row: any) => ({
         key: row.key ?? '',
-        full: row.full ?? '',
         映射账户: row.assets?.account ?? '',
         enable: row.enable !== false,
     }))
@@ -639,7 +608,6 @@ const handleImport = () => {
                         ).trim()
                         return {
                             key: row.key ?? '',
-                            full: row.full ?? '',
                             assets_account: assetsAccount,
                             enable: parseCsvEnable(row.enable),
                         }
@@ -684,7 +652,6 @@ const dialogEdit = ref(false)
 
 const handleEdit = (index: number, row: Assets) => {
     ruleForm.value.key = row.key
-    ruleForm.value.full = row.full
     ruleForm.value.assets = typeof row.assets === 'object' && row.assets ? row.assets.id : (typeof row.assets === 'number' ? row.assets : null)
     ruleForm.value.tag_ids = row.tags?.map(tag => tag.id) || []
     editKnownTags.value = row.tags || []
@@ -722,7 +689,6 @@ const editForm = async (formEl: FormInstance | undefined) => {
                 // 转换字段名以匹配后端API
                 const submitData = {
                     key: ruleForm.value.key,
-                    full: ruleForm.value.full,
                     assets_id: ruleForm.value.assets, // 将 assets 转换为 assets_id
                     currency_ids: ruleForm.value.currency_id ? [ruleForm.value.currency_id] : [],
                     tag_ids: ruleForm.value.tag_ids

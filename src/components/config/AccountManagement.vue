@@ -517,7 +517,6 @@ interface AccountMapping {
     enable: boolean
     payee?: string
     currency?: string
-    full?: string
     payer?: string
 }
 

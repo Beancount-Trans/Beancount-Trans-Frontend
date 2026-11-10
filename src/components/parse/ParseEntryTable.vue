@@ -137,9 +137,8 @@
       <el-form-item label="映射账户" prop="accountId">
         <AccountSelector v-model="mappingForm.accountId" placeholder="请选择或搜索账户" />
       </el-form-item>
-      <el-form-item :label="mappingPartyLabel" :prop="mappingPartyProp">
-        <el-input v-if="mappingForm.type === 'asset'" v-model="mappingForm.full" placeholder="选填：对方信息" />
-        <el-input v-else v-model="mappingForm.party"
+      <el-form-item v-if="mappingForm.type !== 'asset'" :label="mappingPartyLabel" prop="party">
+        <el-input v-model="mappingForm.party"
           :placeholder="mappingForm.type === 'expense' ? '如腾讯、星巴克' : '选填：付款方信息'" />
       </el-form-item>
       <el-form-item label="标签" prop="tag_ids">
@@ -322,7 +321,6 @@ const {
   mappingRules,
   mappingDialogTitle,
   mappingPartyLabel,
-  mappingPartyProp,
   openForCreate,
   openForEdit,
   openEditCurrentMapping,
@@ -342,12 +340,11 @@ const getParseReviewCreateDefaults = (row: FormattedEntry) => {
     return {
       type,
       key: defaultAssetMappingKeyFromOriginalRow(row.original_row),
-      party: '',
-      full: ''
+      party: ''
     }
   }
   const key = defaultMappingKeyFromOriginalRow(row.original_row)
-  return { type, key, party: '', full: '' }
+  return { type, key, party: '' }
 }
 
 const buildParseReviewMappingOptions = (row: FormattedEntry) => ({

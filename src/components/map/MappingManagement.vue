@@ -143,9 +143,6 @@
                 <el-form-item v-if="quickCreateForm.type === 'expense'" label="对方" prop="payee">
                     <el-input v-model="quickCreateForm.payee" placeholder="如腾讯、星巴克" />
                 </el-form-item>
-                <el-form-item v-if="quickCreateForm.type === 'assets'" label="账户描述" prop="full">
-                    <el-input v-model="quickCreateForm.full" placeholder="输入账户描述（可选）" />
-                </el-form-item>
                 <!-- <el-form-item v-if="quickCreateForm.type === 'income'" label="付款方" prop="payer">
                     <el-input v-model="quickCreateForm.payer" placeholder="输入付款方（可选）" />
                 </el-form-item> -->
@@ -203,8 +200,7 @@ const quickCreateForm = ref({
     accountId: null as number | null,
     currency: null as string | null,
     payee: '',
-    payer: '',
-    full: ''
+    payer: ''
 })
 
 const quickCreateRules: FormRules = {
@@ -244,8 +240,7 @@ const showQuickCreateDialog = () => {
         accountId: null,
         currency: null,
         payee: '',
-        payer: '',
-        full: ''
+        payer: ''
     }
     quickCreateDialog.value = true
 }
@@ -277,7 +272,6 @@ const handleQuickCreate = async () => {
                 break
             case 'assets':
                 apiUrl = '/assets/'
-                formData.full = quickCreateForm.value.full
                 formData.assets_id = quickCreateForm.value.accountId // 转换为 assets_id
                 break
         }
