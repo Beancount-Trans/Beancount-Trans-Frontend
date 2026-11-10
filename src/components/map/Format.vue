@@ -96,6 +96,26 @@
                         </div>
                     </el-form-item>
 
+                    <el-divider>资产账户自动补齐</el-divider>
+                    <el-form-item>
+                        <div class="auto-provision-container">
+                            <div class="auto-provision-row">
+                                <el-switch v-model="autoProvisionAssets" />
+                                <span class="auto-provision-label">解析成功后自动补齐资产账户与映射</span>
+                                <el-tooltip
+                                    content="付款方式能识别出银行、卡号或平台账户时自动创建账户与资产映射；识别不出时仍记为 Assets:Other"
+                                    placement="top">
+                                    <el-icon class="tip-icon">
+                                        <Warning />
+                                    </el-icon>
+                                </el-tooltip>
+                            </div>
+                            <el-alert type="info" show-icon :closable="false" class="mode-alert">
+                                关闭后，解析结果只读取已有映射，未匹配的付款方式保持记为 <strong>Assets:Other</strong>。
+                            </el-alert>
+                        </div>
+                    </el-form-item>
+
                     <el-divider>解析引擎（用于文件管理后台解析）</el-divider>
                     <el-form-item label="解析引擎" prop="aiModel">
                         <div class="ai-engine-container">
@@ -230,6 +250,7 @@ interface Config {
     assistant_model?: string
     enable_realtime?: boolean
     parsing_mode_preference?: string
+    auto_provision_assets?: boolean
 }
 
 type AssistantPreset = 'deepseek' | 'ollama' | 'custom'
@@ -268,6 +289,7 @@ const assistantApiKey = ref('')
 const assistantModel = ref('')
 const flagSymbol = ref('*')
 const parsingModePreference = ref('review') // 默认审核模式
+const autoProvisionAssets = ref(true) // 默认解析成功后自动补齐资产账户与映射
 
 const loading = ref({
     save: false,
@@ -307,6 +329,7 @@ const convertToFrontend = (config: Config) => {
         assistantApiKey: config.assistant_api_key || config.deepseek_apikey || '',
         assistantModel: config.assistant_model || '',
         parsingModePreference: config.parsing_mode_preference || 'review',
+        autoProvisionAssets: config.auto_provision_assets !== false,
 
         formatSettings: [
             ...(config.show_note ? ['showNote'] : []),
@@ -422,6 +445,7 @@ const loadConfig = async () => {
         flagSymbol.value = frontendConfig.flag
         currency.value = frontendConfig.currency
         parsingModePreference.value = frontendConfig.parsingModePreference
+        autoProvisionAssets.value = frontendConfig.autoProvisionAssets
         syncAccountIdsFromPaths()
     } catch (error: any) {
         if (error.response && error.response.status == 401) {
@@ -468,6 +492,7 @@ const currentConfig = computed(() => {
         reconciliation_fallback_account: reconciliationFallbackAccount.value,
         currency: currency.value,
         parsing_mode_preference: parsingModePreference.value,
+        auto_provision_assets: autoProvisionAssets.value,
         assistant_base_url: assistantBaseUrl.value.trim(),
         assistant_api_key: assistantApiKey.value.trim(),
         assistant_model: assistantModel.value.trim(),
@@ -567,6 +592,7 @@ const resetToDefault = async () => {
             currency: 'CNY',
             ai_model: 'BERT',
             parsing_mode_preference: 'review',
+            auto_provision_assets: true,
             assistant_base_url: '',
             assistant_api_key: '',
             assistant_model: '',
@@ -699,6 +725,23 @@ const resetToDefault = async () => {
     display: flex;
     flex-direction: column;
     gap: 10px;
+}
+
+.auto-provision-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.auto-provision-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.auto-provision-label {
+    color: var(--ep-text-color-regular, var(--el-text-color-regular));
 }
 
 .mode-alert,
