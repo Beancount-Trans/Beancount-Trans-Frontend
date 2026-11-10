@@ -603,7 +603,7 @@ $entry-preview-min-height: calc(1 * 1.6em + 10px + 2px);
 }
 
 .entry-preview-tag-link {
-  cursor: help;
+  cursor: inherit;
   color: var(--ep-color-primary, var(--el-color-primary));
 }
 
