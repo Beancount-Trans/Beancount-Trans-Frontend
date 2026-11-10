@@ -105,6 +105,16 @@
     </el-button>
   </div>
 
+  <el-alert v-if="hasEntries && !isAuthenticated" class="anonymous-result-guide" type="warning" :closable="false"
+    show-icon>
+    <span class="anonymous-result-guide-body">
+      <span class="anonymous-result-guide-tip">登录后自动匹配并补齐你的银行卡、信用卡等账户，减少记到「其它」账户。</span>
+      <el-button type="primary" size="small" @click="handleRegisterAndReparse">
+        登录 / 注册
+      </el-button>
+    </span>
+  </el-alert>
+
   <el-input v-if="!hasEntries && !uploading && !parseFailure" class="result-textarea" type="textarea" :rows="30"
     readonly :value="''" placeholder='解析结果如下：
 
@@ -155,6 +165,10 @@ import {
   loadParseDraft,
   saveParseDraft
 } from '../../composables/useParseDraft'
+import {
+  savePendingParseFile,
+  takePendingParseFile
+} from '../../composables/usePendingParseFile'
 import type { FormattedEntry, TagDetail, OriginalRow } from '../../types/parse-review'
 import type { BillSupportItem } from '../../types/translate'
 
@@ -291,6 +305,9 @@ interface ParseDiagnostics {
 
 const uploadRef = ref<any>()
 const passwordInputRef = ref<InputInstance>()
+/** 当前选中的账单文件，未登录时登录成功后会用它自动重新解析 */
+const pendingFile = ref<File | null>(null)
+const isAuthenticated = ref(hasAuthTokens())
 const uploading = ref(false)
 const uploadPercent = ref(0)
 const pendingFileName = ref('')
@@ -583,6 +600,8 @@ const handleBeforeUpload = (file: File) => {
   uploading.value = true
   uploadPercent.value = 0
   pendingFileName.value = file.name
+  pendingFile.value = file
+  isAuthenticated.value = hasAuthTokens()
   parseFailure.value = null
   // 新文件开始解析即清空旧结果，避免把上一次结果误写入账本
   formattedEntries.value = []
@@ -627,6 +646,8 @@ const handleUploadSuccess = (response: any, file: any) => {
   parseFailure.value = null
   // 新解析结果取代旧结果，清掉可能存在的登录前草稿
   clearParseDraft()
+
+  isAuthenticated.value = hasAuthTokens()
 }
 
 const handleUploadError = (err: any, _file: any) => {
@@ -678,9 +699,22 @@ const copyResponseData = async () => {
   }
 }
 
-/** 挂载时恢复解析草稿（匿名用户「写入账本」引导登录后回跳继续） */
-onMounted(() => {
+/** 挂载时：已登录且存在待重解析文件则自动重解析；否则恢复解析草稿 */
+onMounted(async () => {
   loadBillSupport()
+  isAuthenticated.value = hasAuthTokens()
+
+  if (isAuthenticated.value) {
+    const resumed = await takePendingParseFile()
+    if (resumed) {
+      ElMessage.info('正在使用你的账户配置重新解析刚才的账单')
+      uploadRef.value?.handleStart(resumed)
+      await nextTick()
+      uploadRef.value?.submit()
+      return
+    }
+  }
+
   const draft = loadParseDraft()
   if (!draft || formattedEntries.value.length > 0) return
   formattedEntries.value = draft.entries
@@ -688,6 +722,17 @@ onMounted(() => {
     '已恢复上次未写入的解析结果：该结果基于公共配置解析，可核对编辑后再写入账本'
   )
 })
+
+/** 引导注册/登录：暂存当前文件与结果，登录成功后回跳 /trans 自动重新解析 */
+const handleRegisterAndReparse = async () => {
+  if (pendingFile.value) {
+    await savePendingParseFile(pendingFile.value)
+  }
+  // 取消登录后手动回 /trans 时仍能看到匿名结果
+  saveParseDraft(formattedEntries.value)
+  setLoginRedirect('/trans')
+  router.push('/login')
+}
 
 /**
  * 写入账本：把当前结果校验后追加写入 trans/collect.bean。
@@ -1165,5 +1210,43 @@ const handleRemoveEntry = async (uuid: string) => {
 .preview-textarea textarea {
   font-family: Monaco, Consolas, 'Courier New', monospace;
   font-size: 12px;
+}
+
+.anonymous-result-guide {
+  width: calc(100% - 24px);
+  margin: 0 14px 12px;
+}
+
+.anonymous-result-guide.ep-alert.is-light .ep-alert__icon.is-big {
+  width: 20px;
+  margin-right: 10px;
+  font-size: 20px;
+}
+
+.anonymous-result-guide.ep-alert .ep-alert__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.anonymous-result-guide.ep-alert.is-light .ep-alert__description {
+  color: var(--ep-text-color-regular);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.anonymous-result-guide-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px 12px;
+}
+
+.anonymous-result-guide-tip {
+  min-width: 0;
+}
+
+.anonymous-result-guide-body .ep-button {
+  flex: 0 0 auto;
 }
 </style>
