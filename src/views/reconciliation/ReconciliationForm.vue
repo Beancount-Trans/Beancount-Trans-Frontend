@@ -301,6 +301,9 @@ async function loadReconciliationData() {
     lastReconciliationDate.value = response.data.last_reconciliation_date || null
     lastCompletedTaskId.value = response.data.last_completed_task_id ?? null
 
+    // 默认对账时间点沿用当天首条（当天没有时取上一条）已完成对账待办的选择
+    formData.value.reconciliationTiming = response.data.default_reconciliation_timing || 'end_of_day'
+
     // 确保账户树已加载（预填差额分配时需要按 account 匹配 accountId）
     if (accountTree.value.length === 0) {
       await loadAccounts()

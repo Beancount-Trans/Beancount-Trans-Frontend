@@ -165,6 +165,7 @@ export interface ReconciliationStartResponse {
   default_allocation_account: string
   last_reconciliation_date: string | null
   last_completed_task_id: number | null
+  default_reconciliation_timing: ReconciliationTiming
   last_reconciliation_transaction_items?: Array<{
     account: string
     amount?: string | null
