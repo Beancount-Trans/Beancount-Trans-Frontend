@@ -849,28 +849,41 @@ export function useParseEntryPreview(options: UseParseEntryPreviewOptions) {
     startTextEdit(row.uuid, caret)
   }
 
-  async function onEntryTextareaBlur(row: FormattedEntry) {
-    try {
-      const normalized = row.edited_formatted.replace(/\n+$/, '').trim()
-      if (!normalized) {
-        if (!options.onRemoveEntry) return
-        try {
-          await options.onRemoveEntry(row.uuid)
-          clearTabCompleteSession(row.uuid)
-          entryInputRefs.delete(row.uuid)
-        } catch (error: any) {
-          ElMessage.error(error.response?.data?.error || '移除条目失败')
-        }
-        return
-      }
+  /** 结束整段文本编辑：保存并回到预览（回车保存 / 失焦保存共用） */
+  async function finishEntryTextEdit(row: FormattedEntry) {
+    // 先退出编辑态，避免 textarea 卸载触发的 blur 再次保存
+    setEntryTextEditMode(row.uuid, false)
+
+    const normalized = row.edited_formatted.replace(/\n+$/, '').trim()
+    if (!normalized) {
+      if (!options.onRemoveEntry) return
       try {
-        await options.onPersistEdit(row.uuid, row.edited_formatted)
+        await options.onRemoveEntry(row.uuid)
+        clearTabCompleteSession(row.uuid)
+        entryInputRefs.delete(row.uuid)
       } catch (error: any) {
-        ElMessage.error(error.response?.data?.error || '更新编辑内容失败')
+        ElMessage.error(error.response?.data?.error || '移除条目失败')
       }
-    } finally {
-      setEntryTextEditMode(row.uuid, false)
+      return
     }
+    try {
+      await options.onPersistEdit(row.uuid, row.edited_formatted)
+    } catch (error: any) {
+      ElMessage.error(error.response?.data?.error || '更新编辑内容失败')
+    }
+  }
+
+  async function onEntryTextareaBlur(row: FormattedEntry) {
+    if (!isEntryTextEditMode(row.uuid)) return
+    await finishEntryTextEdit(row)
+  }
+
+  /** 回车保存并退出编辑；Shift+回车换行，中文输入法组词回车不处理 */
+  function onEntryTextareaEnter(row: FormattedEntry, e: Event | KeyboardEvent) {
+    if (!(e instanceof KeyboardEvent)) return
+    if (e.shiftKey || e.isComposing) return
+    e.preventDefault()
+    void finishEntryTextEdit(row)
   }
 
   const handleEntryPreviewTab = (row: FormattedEntry, e: KeyboardEvent) => {
@@ -994,6 +1007,7 @@ export function useParseEntryPreview(options: UseParseEntryPreviewOptions) {
     bindEntryPreviewTab,
     onEntryPreviewShellClick,
     onEntryTextareaBlur,
+    onEntryTextareaEnter,
     getEntryClasses,
     getEntryAutosize,
     buildLineSegments,

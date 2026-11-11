@@ -56,8 +56,10 @@
           <el-input v-else :ref="(el: unknown) => setEntryInputRef(scope.row.uuid, el)"
             v-model="scope.row.edited_formatted" type="textarea"
             :autosize="getEntryAutosize(scope.row.edited_formatted)" class="entry-preview"
-            placeholder="编辑 Beancount 条目；失焦后返回预览。过账行中账户在预览模式下点击可更换" @blur="onEntryTextareaBlur(scope.row)"
-            @input="clearTabCompleteSession(scope.row.uuid)" @keydown.tab="bindEntryPreviewTab(scope.row)" />
+            placeholder="编辑 Beancount 条目；回车保存，Shift+回车换行。过账行中账户在预览模式下点击可更换"
+            @blur="onEntryTextareaBlur(scope.row)" @input="clearTabCompleteSession(scope.row.uuid)"
+            @keydown.enter="onEntryTextareaEnter(scope.row, $event)"
+            @keydown.tab="bindEntryPreviewTab(scope.row)" />
           <div v-if="errorEntries[scope.row.uuid]" class="validation-message error-message">
             {{ errorEntries[scope.row.uuid] }}
           </div>
@@ -285,6 +287,7 @@ const {
   bindEntryPreviewTab,
   onEntryPreviewShellClick,
   onEntryTextareaBlur,
+  onEntryTextareaEnter,
   getEntryClasses,
   getEntryAutosize,
   buildLineSegments,
