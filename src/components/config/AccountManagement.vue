@@ -39,7 +39,8 @@
 
             <template v-if="guidePhase === 'cycle'">
                 <p v-if="guideCurrentTarget" class="guide-text">
-                    第 {{ guideTargetIndex + 1 }}/{{ CHANNEL_GUIDE_TARGETS.length }} 步：为「{{ guideCurrentTarget.label }}」设置对账周期
+                    第 {{ guideTargetIndex + 1 }}/{{ CHANNEL_GUIDE_TARGETS.length }} 步：为「{{ guideCurrentTarget.label
+                    }}」设置对账周期
                 </p>
                 <p class="guide-hint">
                     点击右侧「编辑账户」→ 在「对账周期设置」中点「每月」→ 确定。保存后会自动进入下一个账户。
@@ -78,7 +79,7 @@
                 <ul class="guide-next-list">
                     <li>之后每到周期会出现在待办里。</li>
                     <li>某类消费总被记到 Other，说明缺一条关键字映射——审核页可直接点「新增映射」。</li>
-                    <li>账户不够用就在本页「新增账户」，父子层级会自动创建。</li>
+                    <li>账户不够用就在本页「新增账户」。</li>
                 </ul>
                 <div class="guide-actions">
                     <el-button type="primary" @click="leaveChannelGuide">继续使用账本</el-button>
@@ -441,10 +442,10 @@
                                             selectedMigrationAccountInfo.mapping_count.expense }}支出</el-tag>
                                         <el-tag type="success" size="small">{{
                                             selectedMigrationAccountInfo.mapping_count.assets
-                                        }}资产</el-tag>
+                                            }}资产</el-tag>
                                         <el-tag type="primary" size="small">{{
                                             selectedMigrationAccountInfo.mapping_count.income
-                                        }}收入</el-tag>
+                                            }}收入</el-tag>
                                     </div>
                                 </div>
                             </el-card>
