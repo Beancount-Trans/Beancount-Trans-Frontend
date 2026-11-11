@@ -22,6 +22,15 @@
             </div>
         </div>
 
+        <el-collapse v-if="!showAnonymousPrompt && !guideMode" class="account-concept-collapse">
+            <el-collapse-item title="账户和映射是什么关系？" name="concept">
+                <p>账户是账本里的分类容器，路径的每一级都是一个分类。</p>
+                <p>映射是「账单关键字 → 账户」的规则；账户层级越深，匹配优先级越高。</p>
+                <p>不配置也不会记错账，只是会落到 Other，月底统计时看不出花在哪。</p>
+                <el-link :href="ACCOUNT_MAPPING_DOCS_URL" target="_blank" rel="noopener noreferrer">查看教程</el-link>
+            </el-collapse-item>
+        </el-collapse>
+
         <div v-if="!showAnonymousPrompt && guideMode" class="guide-card">
             <div class="guide-card-header">
                 <span class="guide-title">配置支付宝对账周期</span>
@@ -57,7 +66,7 @@
                     </div>
                 </div>
                 <div class="guide-actions">
-                    <el-button type="primary" :disabled="!guideCanFinish" @click="finishChannelGuide">
+                    <el-button type="primary" :disabled="!guideCanFinish" @click="enterGuideDone">
                         完成引导
                     </el-button>
                     <el-button link @click="finishChannelGuide">跳过</el-button>
@@ -65,7 +74,19 @@
             </template>
 
             <template v-else>
-                <p class="guide-text">支付宝对账已就绪，可以继续使用账本了。</p>
+                <p class="guide-text">支付宝对账已就绪</p>
+                <ul class="guide-next-list">
+                    <li>之后每到周期会出现在待办里。</li>
+                    <li>某类消费总被记到 Other，说明缺一条关键字映射——审核页可直接点「新增映射」。</li>
+                    <li>账户不够用就在本页「新增账户」，父子层级会自动创建。</li>
+                </ul>
+                <div class="guide-actions">
+                    <el-button type="primary" @click="leaveChannelGuide">继续使用账本</el-button>
+                    <el-link :href="ACCOUNT_MAPPING_DOCS_URL" target="_blank" rel="noopener noreferrer">
+                        查看教程
+                    </el-link>
+                    <el-button link @click="router.push('/config/mappings')">去关键字映射</el-button>
+                </div>
             </template>
 
             <p v-if="guideNotice" class="guide-notice">{{ guideNotice }}</p>
@@ -536,8 +557,11 @@ import { getGitRepository } from '../../api/git'
 import { getTasks } from '../../api/reconciliation'
 import { TaskStatus, type ScheduledTask } from '../../types/reconciliation'
 import {
+    ACCOUNT_MAPPING_DOCS_URL,
     clearChannelSetupPending,
     continueUserTourToStep5,
+    isAccountMappingHintSeen,
+    markAccountMappingHintSeen,
     shouldResumeTour
 } from '../../utils/userTour'
 
@@ -1368,6 +1392,10 @@ const loadGuideTasks = async () => {
 
 const applyChannelGuide = async () => {
     if (!guideMode.value || guidePhase.value === 'done') return
+    if (isAccountMappingHintSeen() && route.query.phase !== 'first') {
+        guidePhase.value = 'done'
+        return
+    }
     if (guidePhase.value === 'first') {
         await loadGuideTasks()
         return
@@ -1411,14 +1439,24 @@ const startGuideReconciliation = (taskId: number | null) => {
     router.push(`/tasks/${taskId}?from=channel-setup`)
 }
 
-const finishChannelGuide = () => {
+const enterGuideDone = () => {
     guidePhase.value = 'done'
+    guideNotice.value = ''
     clearChannelSetupPending()
+    markAccountMappingHintSeen()
+}
+
+const leaveChannelGuide = () => {
     if (shouldResumeTour()) {
         continueUserTourToStep5()
     } else {
         router.push('/tasks')
     }
+}
+
+const finishChannelGuide = () => {
+    clearChannelSetupPending()
+    leaveChannelGuide()
 }
 
 const initPage = async () => {
@@ -1726,6 +1764,28 @@ onMounted(() => {
     margin: 0 0 6px;
     font-size: 14px;
     color: var(--ep-text-color-primary);
+}
+
+.guide-next-list {
+    margin: 0 0 10px;
+    padding-left: 18px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--ep-text-color-regular);
+}
+
+.account-concept-collapse {
+    margin-bottom: 16px;
+    padding: 0 12px;
+    border: 1px solid var(--ep-border-color-lighter);
+    border-radius: 8px;
+}
+
+.account-concept-collapse p {
+    margin: 0 0 6px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--ep-text-color-regular);
 }
 
 .guide-hint {

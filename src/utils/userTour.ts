@@ -16,6 +16,9 @@ const STORAGE_KEYS = {
 /** 渠道对账引导标记：审核完成后先进入账户管理页配置周期/完成首次对账，再继续最后一步 */
 const CHANNEL_SETUP_KEY = 'tour_channel_setup_pending'
 
+/** 账户与映射交接提示标记：引导收尾的交接卡只展示一次 */
+const ACCOUNT_MAPPING_HINT_KEY = 'tour_account_mapping_hint_seen'
+
 /** 导览第三步默认引导用户解析的案例文件名，可改为 完整测试_微信.csv 以引导解析微信账单 */
 export const TOUR_FIRST_PARSE_FILE_NAME = '完整测试_支付宝.csv';
 
@@ -24,6 +27,10 @@ export const SAMPLE_BILL_FILE_NAMES = ['完整测试_微信.csv', '完整测试_
 
 export const BILLS_EXPORT_DOCS_URL =
   'https://trans.dhr2333.cn/docs/%E6%93%8D%E4%BD%9C%E6%8C%87%E5%8D%97/bills-export-methods/';
+
+/** 教程：新增支出账户 + 新增支出映射 + 重新解析 */
+export const ACCOUNT_MAPPING_DOCS_URL =
+  'https://trans.dhr2333.cn/docs/%E6%95%99%E7%A8%8B/add-expense-category/';
 
 /** 示例账单公开下载地址（与账单解析页 Trans.vue 一致） */
 export const SAMPLE_BILL_DOWNLOAD_URLS = {
@@ -247,6 +254,29 @@ export function clearChannelSetupPending() {
     localStorage.removeItem(CHANNEL_SETUP_KEY)
   } catch (error) {
     console.error('清除渠道对账引导标记失败:', error)
+  }
+}
+
+/**
+ * 标记「账户与映射」交接提示已展示
+ */
+export function markAccountMappingHintSeen() {
+  try {
+    localStorage.setItem(ACCOUNT_MAPPING_HINT_KEY, 'true')
+  } catch (error) {
+    console.error('标记账户与映射提示失败:', error)
+  }
+}
+
+/**
+ * 是否已展示过「账户与映射」交接提示
+ */
+export function isAccountMappingHintSeen(): boolean {
+  try {
+    return localStorage.getItem(ACCOUNT_MAPPING_HINT_KEY) === 'true'
+  } catch (error) {
+    console.error('读取账户与映射提示标记失败:', error)
+    return false
   }
 }
 

@@ -90,6 +90,11 @@
             </el-tag>
             <span v-else class="no-category-tip">{{ isNeutralParseReviewEntry(scope.row) ? '无分类建议' : '无分类建议' }}</span>
           </div>
+          <div v-if="otherAccountSide(scope.row.edited_formatted)" class="other-account-tip">
+            {{ otherAccountSide(scope.row.edited_formatted) === 'asset'
+              ? '付款账户未识别，已暂记为 Assets:Other'
+              : '未匹配分类，已记为 Other 兜底账户；加一条映射后下次自动归类' }}
+          </div>
           <div v-if="scope.row.expense_candidates_with_score && scope.row.expense_candidates_with_score.length > 0"
             class="candidates">
             <span class="label">候选分类：</span>
@@ -175,6 +180,11 @@
             </span>
           </li>
         </ul>
+        <div v-else-if="accountAssistQuery.trim()" class="parse-review-account-empty">
+          没找到？账户需要先在「账户管理」新增
+          <el-link type="primary" @click="goAccountManagement">去新增</el-link>
+        </div>
+        <div v-else class="parse-review-account-empty">输入账户名或描述开始筛选</div>
       </div>
     </div>
   </Teleport>
@@ -211,6 +221,7 @@
 
 <script setup lang="ts">
 import { computed, toRef } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import {
@@ -218,7 +229,7 @@ import {
   defaultMappingKeyFromOriginalRow,
   defaultAssetMappingKeyFromOriginalRow
 } from '../../composables/useInlineMappingDialog'
-import { useParseEntryPreview } from '../../composables/useParseEntryPreview'
+import { useParseEntryPreview, otherAccountSide } from '../../composables/useParseEntryPreview'
 import AccountSelector from '../common/AccountSelector.vue'
 import TagSelector from '../common/TagSelector.vue'
 import {
@@ -326,6 +337,13 @@ const {
   openEditCurrentMapping,
   handleMappingSubmit
 } = useInlineMappingDialog()
+
+const router = useRouter()
+
+const goAccountManagement = () => {
+  closeAccountAssistOverlay()
+  router.push('/config/accounts')
+}
 
 const inferParseReviewMappingType = (row: FormattedEntry) => {
   const txType = row.original_row?.transaction_type?.trim()
@@ -909,6 +927,20 @@ html.dark .parse-review-account-suggestion-item.is-active {
   font-size: 12px;
   color: var(--ep-text-color-secondary, var(--el-text-color-secondary));
   padding: 8px;
+}
+
+.parse-review-account-empty {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--ep-text-color-secondary, var(--el-text-color-secondary));
+  padding: 8px;
+}
+
+.other-account-tip {
+  margin-top: -6px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--el-color-warning);
 }
 
 .entry-preview-tag-tooltip {

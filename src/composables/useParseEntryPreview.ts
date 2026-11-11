@@ -75,6 +75,17 @@ const POSTING_ACCOUNT_IN_LINE =
 
 const HEADER_LINE_RE = /^\d{4}-\d{2}-\d{2}/
 
+/** 兜底账户所在的一侧：资产腿 / 分类腿 */
+export type OtherAccountSide = 'asset' | 'category' | null
+
+/** 判断条目是否落到 Other 兜底账户，并区分资产腿与分类腿 */
+export function otherAccountSide(editedFormatted: string): OtherAccountSide {
+  const text = editedFormatted || ''
+  if (/Assets:Other/.test(text)) return 'asset'
+  if (/(?:Expenses|Income):Other/.test(text)) return 'category'
+  return null
+}
+
 function isPostingLine(line: string) {
   return POSTING_LINE_RE.test(line)
 }
@@ -943,7 +954,7 @@ export function useParseEntryPreview(options: UseParseEntryPreviewOptions) {
     const isWarning = !!validationWarnings.value[uuid] && !isError
 
     // 检查是否包含 Other 分类
-    const isOther = /(?:Assets|Expenses|Income):Other/.test(editedFormatted || '')
+    const isOther = otherAccountSide(editedFormatted) !== null
 
     return [
       'entry-preview-wrapper',
