@@ -1592,15 +1592,19 @@ const toggleMappingDetails = () => {
 const fetchAccountMappings = async () => {
     if (!selectedAccount.value) return
 
+    // 记录本次请求对应的账户：响应可能晚于用户切换账户，
+    // 此时必须丢弃，否则会把上一个账户的对账规则写到当前账户上
+    const accountId = selectedAccount.value.id
+    const isStale = () => selectedAccount.value?.id !== accountId
+
     try {
         mappingDetailsLoading.value = true
-        const response = await axios.get<AccountMappingsResponse>(`/account/${selectedAccount.value.id}/mappings/`)
+        const response = await axios.get<AccountMappingsResponse>(`/account/${accountId}/mappings/`)
+        if (isStale()) return
         accountMappings.value = response.data
 
         // 同步对账规则到 selectedAccount
-        if (selectedAccount.value) {
-            selectedAccount.value.reconciliation_rule = response.data.reconciliation_rule
-        }
+        selectedAccount.value.reconciliation_rule = response.data.reconciliation_rule
 
         // 设置默认激活的标签页
         if (response.data.expense_mappings && response.data.expense_mappings.length > 0) {
@@ -1611,6 +1615,7 @@ const fetchAccountMappings = async () => {
             activeMappingTab.value = 'income'
         }
     } catch (error: unknown) {
+        if (isStale()) return
         console.error('获取映射详情失败:', error)
         if (error && typeof error === 'object' && 'response' in error) {
             const axiosError = error as { response?: { status?: number, data?: { message?: string } } }
@@ -1623,7 +1628,10 @@ const fetchAccountMappings = async () => {
             ElMessage.error('获取映射详情失败')
         }
     } finally {
-        mappingDetailsLoading.value = false
+        // 已切到别的账户时由新请求负责收尾；账户已清空则直接结束 loading
+        if (!selectedAccount.value || selectedAccount.value.id === accountId) {
+            mappingDetailsLoading.value = false
+        }
     }
 }
 

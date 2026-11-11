@@ -61,13 +61,11 @@ const previewLoading = ref(false)
 const previewError = ref('')
 const previewDescribe = ref('')
 
-let lastEmitted = ''
 let previewTimer: ReturnType<typeof setTimeout> | null = null
 // 请求序号：丢弃过期响应，避免慢响应覆盖较新的预览结果
 let requestSeq = 0
 
 function handleInput(value: string) {
-  lastEmitted = value
   emit('update:modelValue', value)
   schedulePreview()
 }
@@ -130,8 +128,12 @@ async function runPreview() {
 watch(
   () => props.modelValue,
   (value) => {
-    if (value !== lastEmitted) {
-      text.value = value || ''
+    // 与输入框当前内容比较，而不是与上次输入回声比较：
+    // 预设按钮、表单重置会由父组件直接改值，旧值必须能同步进来，
+    // 否则会残留上一个账户/上一次配置的规则
+    const next = value || ''
+    if (next !== text.value) {
+      text.value = next
     }
     schedulePreview()
   }
