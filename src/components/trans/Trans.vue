@@ -48,6 +48,10 @@
           </template>
         </el-input>
       </div>
+      <p v-if="isAuthenticated" class="upload-multi-bill-hint">
+        多张账单需要合并去重？
+        <router-link to="/file" class="upload-multi-bill-link">前往「文件管理」批量解析</router-link>
+      </p>
     </template>
   </el-upload>
 
@@ -108,7 +112,7 @@
   <el-alert v-if="hasEntries && !isAuthenticated" class="anonymous-result-guide" type="warning" :closable="false"
     show-icon>
     <span class="anonymous-result-guide-body">
-      <span class="anonymous-result-guide-tip">登录后自动匹配并补齐你的银行卡、信用卡等账户，减少记到「其它」账户。</span>
+      <span class="anonymous-result-guide-tip">登录后自动匹配并补齐你的银行卡、信用卡等账户，减少记到「Other 兜底账户」账户。</span>
       <el-button type="primary" size="small" @click="handleRegisterAndReparse">
         登录 / 注册
       </el-button>
@@ -1038,6 +1042,17 @@ const handleRemoveEntry = async (uuid: string) => {
   color: var(--ep-text-color-secondary);
   font-size: 0.9em;
   margin: 6px 0 0;
+}
+
+.upload-multi-bill-hint {
+  color: var(--ep-text-color-secondary);
+  font-size: 12px;
+  margin: 6px 0 0;
+}
+
+.upload-multi-bill-link {
+  color: var(--ep-color-primary);
+  text-decoration: none;
 }
 
 .bill-support-trigger {
