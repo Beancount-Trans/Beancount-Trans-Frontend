@@ -22,15 +22,6 @@
             </div>
         </div>
 
-        <el-collapse v-if="!showAnonymousPrompt && !guideMode" class="account-concept-collapse">
-            <el-collapse-item title="账户和映射是什么关系？" name="concept">
-                <p>账户是账本里的分类容器，路径的每一级都是一个分类。</p>
-                <p>映射是「账单关键字 → 账户」的规则；账户层级越深，匹配优先级越高。</p>
-                <p>不配置也不会记错账，只是会落到 Other，月底统计时看不出花在哪。</p>
-                <el-link :href="ACCOUNT_MAPPING_DOCS_URL" target="_blank" rel="noopener noreferrer">查看教程</el-link>
-            </el-collapse-item>
-        </el-collapse>
-
         <div v-if="!showAnonymousPrompt && guideMode" class="guide-card">
             <div class="guide-card-header">
                 <span class="guide-title">配置支付宝对账周期</span>
@@ -43,7 +34,7 @@
                     }}」设置对账周期
                 </p>
                 <p class="guide-hint">
-                    点击右侧「编辑账户」→ 在「对账周期设置」中点「每月」→ 确定。保存后会自动进入下一个账户。
+                    点击右侧「编辑账户」→ 在「对账周期设置」中点「每月」→ 确定。
                 </p>
                 <el-button v-if="guideCurrentTarget" link type="primary" size="small" @click="skipGuideTarget">
                     跳过当前账户
@@ -53,7 +44,7 @@
             <template v-else-if="guidePhase === 'first'">
                 <p class="guide-text">第 2 步：完成首次对账</p>
                 <p class="guide-hint">
-                    输入支付宝里看到的实际余额即可，差额会记入期初余额（Equity:Opening-Balances）。
+                    输入支付宝里看到的「实际余额」。
                 </p>
                 <div v-loading="guideTasksLoading" class="guide-task-list">
                     <div v-for="item in guideTargetStatuses" :key="item.path" class="guide-task-item">
@@ -78,8 +69,7 @@
                 <p class="guide-text">支付宝对账已就绪</p>
                 <ul class="guide-next-list">
                     <li>之后每到周期会出现在待办里。</li>
-                    <li>某类消费总被记到 Other，说明缺一条关键字映射——审核页可直接点「新增映射」。</li>
-                    <li>账户不够用就在本页「新增账户」。</li>
+                    <li>用「新增账户」把真实账户纳入平台管理。</li>
                 </ul>
                 <div class="guide-actions">
                     <el-button type="primary" @click="leaveChannelGuide">继续使用账本</el-button>
@@ -1770,20 +1760,6 @@ onMounted(() => {
 .guide-next-list {
     margin: 0 0 10px;
     padding-left: 18px;
-    font-size: 13px;
-    line-height: 1.7;
-    color: var(--ep-text-color-regular);
-}
-
-.account-concept-collapse {
-    margin-bottom: 16px;
-    padding: 0 12px;
-    border: 1px solid var(--ep-border-color-lighter);
-    border-radius: 8px;
-}
-
-.account-concept-collapse p {
-    margin: 0 0 6px;
     font-size: 13px;
     line-height: 1.7;
     color: var(--ep-text-color-regular);
