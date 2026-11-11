@@ -681,7 +681,12 @@ async function handleSubmit() {
 
     clearDraft()
     ElMessage.success('对账完成')
-    router.push('/tasks')
+    // 新用户渠道对账引导：完成后回到账户管理页继续配置/下一个账户
+    if (route.query.from === 'channel-setup') {
+      router.push('/config/accounts?guide=channel-cycle&phase=first')
+    } else {
+      router.push('/tasks')
+    }
   } catch (error: unknown) {
     if (error && typeof error === 'object' && 'response' in error) {
       const axiosError = error as {

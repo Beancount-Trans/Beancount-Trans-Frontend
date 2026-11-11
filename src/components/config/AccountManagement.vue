@@ -22,6 +22,55 @@
             </div>
         </div>
 
+        <div v-if="!showAnonymousPrompt && guideMode" class="guide-card">
+            <div class="guide-card-header">
+                <span class="guide-title">配置支付宝对账周期</span>
+                <el-button link size="small" @click="finishChannelGuide">稍后自己设置</el-button>
+            </div>
+
+            <template v-if="guidePhase === 'cycle'">
+                <p v-if="guideCurrentTarget" class="guide-text">
+                    第 {{ guideTargetIndex + 1 }}/{{ CHANNEL_GUIDE_TARGETS.length }} 步：为「{{ guideCurrentTarget.label }}」设置对账周期
+                </p>
+                <p class="guide-hint">
+                    点击右侧「编辑账户」→ 在「对账周期设置」中点「每月」→ 确定。保存后会自动进入下一个账户。
+                </p>
+                <el-button v-if="guideCurrentTarget" link type="primary" size="small" @click="skipGuideTarget">
+                    跳过当前账户
+                </el-button>
+            </template>
+
+            <template v-else-if="guidePhase === 'first'">
+                <p class="guide-text">第 2 步：完成首次对账</p>
+                <p class="guide-hint">
+                    输入支付宝里看到的实际余额即可，差额会记入期初余额（Equity:Opening-Balances）。
+                </p>
+                <div v-loading="guideTasksLoading" class="guide-task-list">
+                    <div v-for="item in guideTargetStatuses" :key="item.path" class="guide-task-item">
+                        <span>{{ item.label }}</span>
+                        <el-tag v-if="item.completed" type="success" size="small">已完成首次对账</el-tag>
+                        <el-button v-else-if="item.pendingTaskId" type="primary" size="small"
+                            @click="startGuideReconciliation(item.pendingTaskId)">
+                            开始首次对账
+                        </el-button>
+                        <el-tag v-else type="info" size="small">暂无对账待办</el-tag>
+                    </div>
+                </div>
+                <div class="guide-actions">
+                    <el-button type="primary" :disabled="!guideCanFinish" @click="finishChannelGuide">
+                        完成引导
+                    </el-button>
+                    <el-button link @click="finishChannelGuide">跳过</el-button>
+                </div>
+            </template>
+
+            <template v-else>
+                <p class="guide-text">支付宝对账已就绪，可以继续使用账本了。</p>
+            </template>
+
+            <p v-if="guideNotice" class="guide-notice">{{ guideNotice }}</p>
+        </div>
+
         <div v-if="!showAnonymousPrompt" class="management-content">
             <!-- 左侧：账户树形结构 -->
             <div class="account-tree-panel">
@@ -464,6 +513,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Edit, Delete, Refresh, Search } from '@element-plus/icons-vue'
 import axios from '../../utils/request'
@@ -483,6 +533,13 @@ import { extractApiErrorMessage } from '../../utils/errorHelper'
 import { shouldShowAnonymousPrompt } from '~/composables/useAnonymousPrompt'
 import { groupAccountsByRoot, type AccountTreeNode } from '~/utils/accountTree'
 import { getGitRepository } from '../../api/git'
+import { getTasks } from '../../api/reconciliation'
+import { TaskStatus, type ScheduledTask } from '../../types/reconciliation'
+import {
+    clearChannelSetupPending,
+    continueUserTourToStep5,
+    shouldResumeTour
+} from '../../utils/userTour'
 
 // 接口定义
 interface Account {
@@ -1044,6 +1101,19 @@ const updateAccount = async () => {
         if (cycleConfigChanged) {
             emitTaskBannerRefresh()
         }
+
+        // 新用户渠道对账引导：保存周期后自动进入下一个目标账户
+        const savedGuidePath = guideCurrentTarget.value?.path
+        if (
+            guideMode.value &&
+            guidePhase.value === 'cycle' &&
+            savedGuidePath &&
+            savedGuidePath === updateData.account &&
+            updateData.reconciliation_rule
+        ) {
+            guideTargetIndex.value += 1
+            await applyChannelGuide()
+        }
     } catch (error: any) {
         console.error('更新账户失败:', error)
         if (error.response?.status === 401) {
@@ -1194,6 +1264,196 @@ const findAccountById = (accounts: AccountOption[], id: number | string): Accoun
     }
     return null
 }
+
+// ---------- 新用户渠道对账引导（复用账户管理页） ----------
+interface ChannelGuideTarget {
+    path: string
+    label: string
+}
+
+interface ChannelGuideStatus extends ChannelGuideTarget {
+    completed: boolean
+    pendingTaskId: number | null
+}
+
+const CHANNEL_GUIDE_TARGETS: ChannelGuideTarget[] = [
+    { path: 'Assets:Savings:Web:AliPay', label: '支付宝余额' },
+    { path: 'Assets:Savings:Web:AliFund', label: '支付宝余额宝' }
+]
+
+const route = useRoute()
+const router = useRouter()
+
+const guideMode = computed(() => route.query.guide === 'channel-cycle')
+const guidePhase = ref<'cycle' | 'first' | 'done'>(
+    route.query.phase === 'first' ? 'first' : 'cycle'
+)
+const guideTargetIndex = ref(0)
+const guideTasks = ref<ScheduledTask[]>([])
+const guideTasksLoading = ref(false)
+const guideNotice = ref('')
+
+const guideCurrentTarget = computed<ChannelGuideTarget | null>(() => {
+    return guideTargetIndex.value < CHANNEL_GUIDE_TARGETS.length
+        ? CHANNEL_GUIDE_TARGETS[guideTargetIndex.value]
+        : null
+})
+
+const guideTargetStatuses = computed<ChannelGuideStatus[]>(() => {
+    return CHANNEL_GUIDE_TARGETS.map(target => {
+        const completed = guideTasks.value.some(
+            task => task.account_name === target.path && task.status === TaskStatus.COMPLETED
+        )
+        const pendingTask = guideTasks.value
+            .filter(task => task.account_name === target.path && task.status === TaskStatus.PENDING)
+            .sort((a, b) => {
+                const dateCompare = String(a.scheduled_date || '').localeCompare(String(b.scheduled_date || ''))
+                return dateCompare !== 0 ? dateCompare : a.id - b.id
+            })[0]
+        return {
+            ...target,
+            completed,
+            pendingTaskId: pendingTask ? pendingTask.id : null
+        }
+    })
+})
+
+// 两个目标都已完成，或已没有可执行的对账待办时，允许结束引导
+const guideCanFinish = computed(() =>
+    guideTargetStatuses.value.every(item => item.completed || item.pendingTaskId == null)
+)
+
+const findAccountByPath = (accounts: AccountOption[], path: string): AccountOption | null => {
+    for (const account of accounts) {
+        if (account.account === path) return account
+        if (account.children) {
+            const found = findAccountByPath(account.children, path)
+            if (found) return found
+        }
+    }
+    return null
+}
+
+const selectGuideAccount = async (account: AccountOption) => {
+    searchKeyword.value = account.account.split(':').pop() || ''
+    selectedAccount.value = account
+    currentSelectedAccountId.value = account.id
+    showMappingDetails.value = false
+    await nextTick()
+    accountTreeRef.value?.setCurrentKey(account.id)
+    await fetchAccountMappings()
+}
+
+const loadGuideTasks = async () => {
+    if (!guideMode.value) return
+    guideTasksLoading.value = true
+    try {
+        const response = await getTasks({ task_type: 'reconciliation', page_size: 200 })
+        const data = response.data
+        if (Array.isArray(data)) {
+            guideTasks.value = data
+        } else if (data && Array.isArray((data as { results?: ScheduledTask[] }).results)) {
+            guideTasks.value = (data as { results: ScheduledTask[] }).results
+        } else {
+            guideTasks.value = []
+        }
+    } catch (error) {
+        console.error('加载对账待办失败:', error)
+        guideTasks.value = []
+        ElMessage.error('加载对账待办失败，请稍后在待办页查看')
+    } finally {
+        guideTasksLoading.value = false
+    }
+}
+
+const applyChannelGuide = async () => {
+    if (!guideMode.value || guidePhase.value === 'done') return
+    if (guidePhase.value === 'first') {
+        await loadGuideTasks()
+        return
+    }
+
+    while (guideTargetIndex.value < CHANNEL_GUIDE_TARGETS.length) {
+        const target = CHANNEL_GUIDE_TARGETS[guideTargetIndex.value]
+        const account = findAccountByPath(accountTree.value, target.path)
+        if (!account) {
+            guideNotice.value = `未找到「${target.label}」账户，已跳过`
+            guideTargetIndex.value += 1
+            continue
+        }
+        if (account.reconciliation_rule) {
+            guideTargetIndex.value += 1
+            continue
+        }
+        if (!shouldShowReconciliationCycle(account)) {
+            guideNotice.value = `「${target.label}」有子账户，无法直接设置周期，已跳过`
+            guideTargetIndex.value += 1
+            continue
+        }
+        guideNotice.value = ''
+        await selectGuideAccount(account)
+        return
+    }
+
+    guidePhase.value = 'first'
+    searchKeyword.value = ''
+    await loadGuideTasks()
+}
+
+const skipGuideTarget = async () => {
+    guideTargetIndex.value += 1
+    guideNotice.value = ''
+    await applyChannelGuide()
+}
+
+const startGuideReconciliation = (taskId: number | null) => {
+    if (taskId == null) return
+    router.push(`/tasks/${taskId}?from=channel-setup`)
+}
+
+const finishChannelGuide = () => {
+    guidePhase.value = 'done'
+    clearChannelSetupPending()
+    if (shouldResumeTour()) {
+        continueUserTourToStep5()
+    } else {
+        router.push('/tasks')
+    }
+}
+
+const initPage = async () => {
+    await fetchAccountTree()
+    if (guideMode.value) {
+        await applyChannelGuide()
+    }
+}
+
+watch(
+    () => route.query.phase,
+    (phase) => {
+        if (!guideMode.value) return
+        if (phase === 'first' && guidePhase.value !== 'first') {
+            guidePhase.value = 'first'
+            void loadGuideTasks()
+        }
+    }
+)
+
+// 同一页面仅查询参数变化时组件会复用，需要主动进入/刷新引导
+watch(
+    () => route.query.guide,
+    (guide) => {
+        if (guide !== 'channel-cycle') return
+        if (!accountTree.value.length) {
+            void initPage()
+            return
+        }
+        guidePhase.value = route.query.phase === 'first' ? 'first' : 'cycle'
+        guideTargetIndex.value = 0
+        guideNotice.value = ''
+        void applyChannelGuide()
+    }
+)
 
 // 处理迁移账户选择变化
 const handleMigrationAccountChange = (value: CascaderValue | null | undefined) => {
@@ -1412,14 +1672,14 @@ onMounted(() => {
     if (isAuthenticated) {
         // 已登录用户直接加载数据
         checkGitEnabled()
-        fetchAccountTree()
+        void initPage()
     } else {
         // 未登录用户：检查是否应该显示提示（仅显示一次）
         if (shouldShowAnonymousPrompt(false)) {
             showAnonymousPrompt.value = true
         } else {
             // 如果用户已经看过提示，直接加载数据，显示admin用户的共享配置
-            fetchAccountTree()
+            void initPage()
         }
     }
 })
@@ -1432,6 +1692,63 @@ onMounted(() => {
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     animation: fadeIn 0.6s ease;
+}
+
+.guide-card {
+    margin-bottom: 16px;
+    padding: 14px 18px;
+    border: 1px solid var(--ep-color-primary-light-7);
+    border-radius: 8px;
+    background: var(--ep-color-primary-light-9);
+}
+
+.guide-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.guide-title {
+    font-weight: 600;
+    color: var(--ep-color-primary);
+}
+
+.guide-text {
+    margin: 0 0 6px;
+    font-size: 14px;
+    color: var(--ep-text-color-primary);
+}
+
+.guide-hint {
+    margin: 0 0 8px;
+    font-size: 13px;
+    color: var(--ep-text-color-regular);
+}
+
+.guide-notice {
+    margin: 8px 0 0;
+    font-size: 12px;
+    color: var(--ep-color-warning);
+}
+
+.guide-task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 10px 0;
+}
+
+.guide-task-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.guide-actions {
+    display: flex;
+    gap: 8px;
 }
 
 .management-header {

@@ -1,6 +1,6 @@
 <template>
   <transition name="banner-slide">
-    <div v-if="visible && pendingTaskCount > 0 && !isReconciliationPage" class="task-banner"
+    <div v-if="visible && pendingTaskCount > 0 && !isReconciliationPage && !isChannelGuidePage" class="task-banner"
       :class="{ 'has-overdue': overdueCount > 0 }">
       <div class="banner-content">
         <div class="banner-left">
@@ -39,7 +39,7 @@ import { Bell, Close } from '@element-plus/icons-vue'
 import { getTasks } from '../../api/reconciliation'
 import type { ScheduledTask } from '../../types/reconciliation'
 import { subscribeTaskBannerRefresh } from '../../utils/accountEvents'
-import { continueUserTour, shouldResumeTour, getTourProgress, resumeTourFromStep, continueUserTourToStep5, saveTourProgress, destroyUserTour } from '../../utils/userTour'
+import { continueUserTour, shouldResumeTour, getTourProgress, resumeTourFromStep, continueUserTourToStep5, saveTourProgress, destroyUserTour, markChannelSetupPending, isChannelSetupPending } from '../../utils/userTour'
 import { isRouteMatchForStep, ensureCorrectRoute } from '../../utils/tourRecovery'
 
 const router = useRouter()
@@ -55,6 +55,11 @@ const tourStep5Triggered = ref(false) // 标记是否已经触发过导览步骤
 // 检查是否在待办列表、对账表单或条目审核页面
 const isReconciliationPage = computed(() => {
   return route.path.startsWith('/tasks') || route.path.startsWith('/entry-review')
+})
+
+// 渠道对账引导页：不展示待办横幅，避免干扰配置流程
+const isChannelGuidePage = computed(() => {
+  return route.path.startsWith('/config/accounts') && route.query.guide === 'channel-cycle'
 })
 
 // 检查是否已关闭（存储在 localStorage）
@@ -218,23 +223,25 @@ async function loadPendingTasks() {
       }, 1000)
     }
 
-    // 检查是否在导览中，且有条目审核任务完成（触发步骤5）
+    // 检查是否在导览中，且有条目审核任务完成（进入渠道对账引导）
     if (hasCompletedEntryReviewTask) {
-      console.log('检测到条目审核任务完成，准备触发导览步骤5', {
+      console.log('检测到条目审核任务完成，准备进入渠道对账引导', {
         oldCount: oldEntryReviewCount,
         newCount: newEntryReviewCount,
         isInTour,
         currentStep
       })
 
-      // 步骤5可以在任何有 BaseHeader 的页面显示，不需要检查页面
       // 标记已触发，避免重复触发
       tourStep5Triggered.value = true
+      // 标记渠道对账引导阶段，并保持进度在步骤4（最后一步前）
+      markChannelSetupPending()
+      saveTourProgress(4)
       // 等待DOM渲染完成
       await nextTick()
       // 延迟一点时间确保页面渲染完成
       setTimeout(() => {
-        continueUserTourToStep5()
+        router.push('/config/accounts?guide=channel-cycle&phase=cycle')
       }, 1000)
     }
   } catch (error) {
@@ -303,8 +310,13 @@ onMounted(async () => {
       else if (currentStep === 4) {
         // 检查任务是否已完成（数量为0）
         await loadPendingTasks()
-        // 如果任务已完成，立即恢复步骤5
-        if (previousEntryReviewCount.value === 0) {
+        if (isChannelSetupPending()) {
+          // 渠道对账引导未结束：回到账户管理页，不提前进入最后一步
+          if (!isChannelGuidePage.value) {
+            router.push('/config/accounts?guide=channel-cycle&phase=cycle')
+          }
+        } else if (previousEntryReviewCount.value === 0) {
+          // 如果任务已完成，立即恢复步骤5
           setTimeout(() => {
             continueUserTourToStep5()
           }, 1000)

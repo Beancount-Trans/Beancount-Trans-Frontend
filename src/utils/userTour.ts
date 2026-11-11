@@ -13,6 +13,9 @@ const STORAGE_KEYS = {
   IN_PROGRESS: 'tour_in_progress' // sessionStorage
 } as const;
 
+/** 渠道对账引导标记：审核完成后先进入账户管理页配置周期/完成首次对账，再继续最后一步 */
+const CHANNEL_SETUP_KEY = 'tour_channel_setup_pending'
+
 /** 导览第三步默认引导用户解析的案例文件名，可改为 完整测试_微信.csv 以引导解析微信账单 */
 export const TOUR_FIRST_PARSE_FILE_NAME = '完整测试_支付宝.csv';
 
@@ -214,6 +217,40 @@ export function getTourProgress(): { status: TourStatus; currentStep: number; ve
 }
 
 /**
+ * 标记渠道对账引导进行中（审核完成后进入账户管理页配置周期）
+ */
+export function markChannelSetupPending() {
+  try {
+    localStorage.setItem(CHANNEL_SETUP_KEY, 'true')
+  } catch (error) {
+    console.error('标记渠道对账引导失败:', error)
+  }
+}
+
+/**
+ * 是否处于渠道对账引导阶段
+ */
+export function isChannelSetupPending(): boolean {
+  try {
+    return localStorage.getItem(CHANNEL_SETUP_KEY) === 'true'
+  } catch (error) {
+    console.error('读取渠道对账引导标记失败:', error)
+    return false
+  }
+}
+
+/**
+ * 清除渠道对账引导标记
+ */
+export function clearChannelSetupPending() {
+  try {
+    localStorage.removeItem(CHANNEL_SETUP_KEY)
+  } catch (error) {
+    console.error('清除渠道对账引导标记失败:', error)
+  }
+}
+
+/**
  * 标记导览完成
  */
 export function markTourCompleted() {
@@ -222,6 +259,7 @@ export function markTourCompleted() {
     localStorage.removeItem(STORAGE_KEYS.CURRENT_STEP);
     sessionStorage.removeItem(STORAGE_KEYS.IN_PROGRESS);
     localStorage.removeItem('start_tour');
+    clearChannelSetupPending();
     driverObj.destroy();
   } catch (error) {
     console.error('标记导览完成失败:', error);
