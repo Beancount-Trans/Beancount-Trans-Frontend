@@ -81,7 +81,7 @@
                     </el-tab-pane>
 
                     <!-- 高级：本地账本 -->
-                    <el-tab-pane label="高级：本地账本" name="git">
+                    <el-tab-pane label="本地账本" name="git">
                         <!-- @vue-ignore -->
                         <git-setup v-if="!gitRepository" @created="onGitRepositoryCreated as any" />
                         <git-repository-component v-else :repository="gitRepository" @updated="onGitRepositoryUpdated"

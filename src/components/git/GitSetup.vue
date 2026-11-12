@@ -1,6 +1,6 @@
 <template>
   <div class="git-setup">
-    <!-- Git 功能介绍 -->
+    <!-- 启用入口 -->
     <el-card v-if="step === 'intro'" shadow="never" class="intro-card">
       <template #header>
         <div class="card-header">
@@ -9,76 +9,20 @@
           </el-icon>
           <div>
             <div class="title-row">
-              <h3>启用 Git 同步功能</h3>
+              <h3>启用 Git 同步</h3>
               <el-tag size="small" type="info" effect="plain">高级 · 可选</el-tag>
             </div>
-            <el-text type="info" size="small">面向自管账本的高级选项，普通用户无需启用</el-text>
+            <el-text type="info" size="small">账本自己管、平台只读的高级选项。</el-text>
           </div>
         </div>
       </template>
 
       <div class="intro-content">
-        <div class="features-list">
-          <div class="feature-item">
-            <el-icon class="feature-icon">
-              <Edit />
-            </el-icon>
-            <div>
-              <h4>本地编辑</h4>
-              <p>使用 VS Code 等编辑器编辑账本，享受语法高亮和智能提示</p>
-            </div>
-          </div>
-
-          <div class="feature-item">
-            <el-icon class="feature-icon">
-              <Clock />
-            </el-icon>
-            <div>
-              <h4>版本控制</h4>
-              <p>通过 Git 管理账本变更历史，支持历史回溯和变更追踪</p>
-            </div>
-          </div>
-
-          <div class="feature-item">
-            <el-icon class="feature-icon">
-              <Refresh />
-            </el-icon>
-            <div>
-              <h4>多设备同步</h4>
-              <p>在不同设备间同步账本数据，随时随地访问和编辑</p>
-            </div>
-          </div>
-
-          <div class="feature-item">
-            <el-icon class="feature-icon">
-              <Cpu />
-            </el-icon>
-            <div>
-              <h4>平台解析</h4>
-              <p>继续享受平台的 AI 解析、可视化报表等强大功能</p>
-            </div>
-          </div>
-        </div>
-
-        <el-alert title="启用后产品逻辑会变化" type="warning" :closable="false" show-icon class="notice-alert">
-          <ul class="notice-list">
-            <li><strong>账户以账本为准</strong>：账户路径、币种与删除需在账本中维护，平台只做「账户核对」</li>
-            <li><strong>写入分两步</strong>：解析结果先写入平台账本，需要「提交到账本」才写回仓库</li>
-            <li>文件管理会显示仓库同步状态；解析、报表、Copilot 等其余功能不变</li>
-          </ul>
-        </el-alert>
-
-        <el-alert title="注意事项" type="info" :closable="false" show-icon class="notice-alert">
-          <ul class="notice-list">
-            <li><strong>平台创建</strong>：仅在集成的 Gitea 上新建仓库（模板或空库）</li>
-            <li><strong>关联远程</strong>：支持关联任意可公网访问的 SSH 仓库（GitHub / GitLab / Gitea / Gogs /
-              自建）；平台会生成用于<strong>拉取</strong>账本的
-              Deploy Key（公钥加到远程）并给出 Webhook 配置，本地推送仍使用您自己的 Git 凭据（如需平台「提交到账本」写回，须给该公钥写权限）</li>
-            <li>仓库体积建议控制在约 20MB 以内，适合个人账本</li>
-          </ul>
-        </el-alert>
-
-        <el-text type="info" size="small" class="exit-note">如需退出，可在仓库管理中选择删除仓库。</el-text>
+        <ul class="change-list">
+          <li><strong>账户以账本为准</strong>：路径、币种、删除都在账本里维护，平台只做核对。</li>
+          <li><strong>写入分两步</strong>：解析结果要点「提交到账本」才写回仓库。</li>
+          <li><strong>仓库自备</strong>：关联已有 SSH 仓库，或由平台在 Gitea 新建。</li>
+        </ul>
 
         <div class="action-buttons">
           <el-button type="primary" size="large" :loading="loading" @click="confirmEnable">
@@ -87,7 +31,11 @@
             </el-icon>
             启用 Git 同步
           </el-button>
+          <el-link type="primary" :href="gitSyncDocUrl" target="_blank" rel="noopener" class="doc-link">
+            查看配置文档
+          </el-link>
         </div>
+
       </div>
     </el-card>
 
@@ -97,7 +45,7 @@
         <div class="card-header">
           <div>
             <h3>关联或创建仓库</h3>
-            <el-text type="info" size="small">关联已有远程，或由平台在 Gitea 上新建仓库</el-text>
+            <el-text type="info" size="small">关联已有远程，或由平台代建仓库</el-text>
           </div>
         </div>
       </template>
@@ -114,7 +62,7 @@
                 <el-tag type="warning" size="small">已有 SSH 仓库</el-tag>
               </div>
             </div>
-            <p class="path-desc">仓库已在远程平台上：填写 SSH 克隆地址。关联成功后在本页仓库卡片中配置 Webhook，并将平台公钥以只读 Deploy Key 加入远程。</p>
+            <p class="path-desc">填入 SSH 克隆地址，再按步骤配置公钥与 Webhook。</p>
           </el-card>
 
           <el-card class="option-card path-card" :body-style="{ padding: '20px' }" shadow="hover"
@@ -128,7 +76,7 @@
                 <el-tag type="success" size="small">Gitea</el-tag>
               </div>
             </div>
-            <p class="path-desc">由平台在集成的 Gitea 上创建私有仓库，并选择基于模板或空仓库。</p>
+            <p class="path-desc">平台在 Gitea 建私有仓库，可选模板或空库。</p>
           </el-card>
         </div>
 
@@ -144,14 +92,13 @@
         <div class="card-header">
           <div>
             <h3>关联远程仓库</h3>
-            <el-text type="info" size="small">请使用 SSH 克隆地址（git@… 或 ssh://…），支持 GitHub / GitLab / Gitea / Gogs 及自建
-              Git</el-text>
+            <el-text type="info" size="small">仅支持 SSH 地址（git@… 或 ssh://…）</el-text>
           </div>
         </div>
       </template>
 
       <div class="form-wrap">
-        <el-alert type="warning" :closable="false" show-icon title="关联已有账本前，请先完成三处改造" class="ledger-adapt-alert">
+        <el-alert type="warning" :closable="false" show-icon title="关联前：账本需满足三处条件" class="ledger-adapt-alert">
           <ul class="notice-list">
             <li>仓库根目录需有入口文件 <code>main.bean</code></li>
             <li><code>main.bean</code> 中需包含 <code>include "trans/main.bean"</code></li>
@@ -177,7 +124,7 @@
               <el-option label="其他 / 自建" value="other" />
             </el-select>
             <el-text type="info" size="small" class="field-hint">
-              留空则由平台从 SSH 地址自动识别；仅在识别不准时手动指定。
+              留空自动识别；识别不准再手动指定。
             </el-text>
           </el-form-item>
           <el-collapse class="link-advanced-collapse">
@@ -223,13 +170,7 @@
               </div>
               <el-radio :model-value="radioModelValue" label="template" @click.stop />
             </div>
-            <div class="option-description">
-              <p>适合刚开始使用 Beancount 或希望遵循最佳实践的用户</p>
-              <ul class="feature-list">
-                <li>包含标准目录结构和示例文件</li>
-                <li>预配置账户体系和模板</li>
-              </ul>
-            </div>
+            <p class="path-desc">含标准目录、账户体系与示例文件，开箱即用。</p>
           </el-card>
 
           <el-card :class="['option-card', { selected: selectedOption === false }]" :body-style="{ padding: '20px' }"
@@ -244,16 +185,11 @@
               </div>
               <el-radio :model-value="radioModelValue" label="empty" @click.stop />
             </div>
-            <div class="option-description">
-              <p>适合已有 Beancount 账本需要迁移的用户</p>
-              <ul class="feature-list">
-                <li>创建空仓库，等待推送现有账本</li>
-              </ul>
-            </div>
+            <p class="path-desc">建空仓库，等您推送现有账本。</p>
           </el-card>
         </div>
 
-        <el-alert v-if="selectedOption === false" type="warning" :closable="false" show-icon title="关联已有账本前，请先完成三处改造"
+        <el-alert v-if="selectedOption === false" type="warning" :closable="false" show-icon title="关联前：账本需满足三处条件"
           class="ledger-adapt-alert">
           <ul class="notice-list">
             <li>仓库根目录需有入口文件 <code>main.bean</code></li>
@@ -270,7 +206,9 @@
           <el-button size="large" @click="backToPathFromHosted">返回</el-button>
           <el-button type="primary" size="large" :loading="loading" :disabled="selectedOption === undefined"
             @click="submitCreateHosted">
-            <el-icon><Check /></el-icon>
+            <el-icon>
+              <Check />
+            </el-icon>
             创建仓库
           </el-button>
         </div>
@@ -329,10 +267,9 @@ const radioModelValue = computed<string | undefined>(() => {
 const confirmEnable = async () => {
   try {
     await ElMessageBox.confirm(
-      '启用后：账户以账本为准（路径、币种、删除需在账本中维护）；' +
-        '解析结果需通过「提交到账本」写回仓库；文件管理会显示仓库同步状态。确定继续？',
-      '启用 Git 同步会改变账本管理方式',
-      { confirmButtonText: '我已了解，继续', cancelButtonText: '取消', type: 'warning' }
+      '启用后改为以账本为准管理账户，解析结果也需手动「提交到账本」，并要在远程配置公钥与 Webhook。确定继续？',
+      '启用 Git 同步',
+      { confirmButtonText: '继续', cancelButtonText: '取消', type: 'warning' }
     )
   } catch {
     return
@@ -484,44 +421,21 @@ const submitCreateHosted = async () => {
   padding: 0 8px;
 }
 
-.features-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  margin-bottom: 24px;
-}
-
-.feature-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
-  border-radius: 8px;
-  background-color: var(--el-fill-color-lighter);
-}
-
-.feature-icon {
-  color: var(--action);
-  font-size: 20px;
-  margin-top: 2px;
-  flex-shrink: 0;
-}
-
-.feature-item h4 {
-  margin: 0 0 4px 0;
+.change-list {
+  margin: 0 0 8px;
+  padding-left: 20px;
   font-size: 14px;
-  font-weight: 600;
-}
-
-.feature-item p {
-  margin: 0;
-  font-size: 13px;
+  line-height: 1.7;
   color: var(--el-text-color-regular);
-  line-height: 1.5;
 }
 
-.notice-alert {
-  margin-bottom: 24px;
+.change-list li {
+  margin-bottom: 6px;
+}
+
+.doc-link {
+  font-size: 14px;
+  align-self: center;
 }
 
 .exit-note {
@@ -669,31 +583,7 @@ const submitCreateHosted = async () => {
   font-weight: 600;
 }
 
-.option-description p {
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  color: var(--el-text-color-regular);
-  line-height: 1.5;
-}
-
-.feature-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.feature-list li {
-  margin-bottom: 6px;
-  font-size: 13px;
-  line-height: 1.4;
-  color: var(--el-text-color-regular);
-}
-
 @media (max-width: 768px) {
-  .features-list {
-    grid-template-columns: 1fr;
-  }
-
   .option-cards {
     grid-template-columns: 1fr;
   }
