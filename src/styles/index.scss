@@ -1,9 +1,6 @@
 // import dark theme
 @use "element-plus/theme-chalk/src/dark/css-vars.scss" as *;
-
-// :root {
-//   --ep-color-primary: red;
-// }
+@use "./tokens.scss";
 
 body {
   font-family: Inter, system-ui, Avenir, "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB",
@@ -11,19 +8,20 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   margin: 0;
-  background-color: var(--ep-bg-color);
-  color: var(--ep-text-color-primary);
+  background-color: var(--bg);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
 }
 
 a {
-  color: var(--ep-color-primary);
+  color: var(--action);
 }
 
 code {
   border-radius: 2px;
   padding: 2px 4px;
-  background-color: var(--ep-color-primary-light-9);
-  color: var(--ep-color-primary);
+  background-color: var(--action-container);
+  color: var(--on-action-container);
 }
 
 html.dark {
@@ -35,7 +33,6 @@ html.dark {
   // width: 120px;
   
   // 直接选择所有可能的类名组合，不使用 :deep
-  .ep-input__wrapper,
   .el-input__wrapper,
   [class*="input__wrapper"] {
     border: none !important;
@@ -58,7 +55,6 @@ html.dark {
     }
   }
 
-  .ep-date-editor,
   .el-date-editor,
   [class*="date-editor"] {
     border: none !important;
@@ -68,7 +64,7 @@ html.dark {
   }
 
   // 使用属性选择器匹配所有可能的变体
-  [class*="ep-input"],
+  [class*="el-input"],
   [class*="el-input"] {
     border: none !important;
     box-shadow: none !important;
@@ -87,7 +83,6 @@ html.dark {
 // 最激进的全局覆盖：直接针对所有可能的类名和属性
 .reconciliation-list {
   // 清除所有 input wrapper 的边框
-  [class*="ep-input__wrapper"],
   [class*="el-input__wrapper"],
   [class*="input__wrapper"] {
     border: none !important;
@@ -111,7 +106,7 @@ html.dark {
   
   // 清除日期选择器容器的边框
   [class*="date-editor"],
-  [class*="ep-date-editor"],
+  [class*="el-date-editor"],
   [class*="el-date-editor"] {
     border: none !important;
     box-shadow: none !important;

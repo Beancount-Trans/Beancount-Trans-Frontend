@@ -2,26 +2,15 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import ElementPlus from 'element-plus'
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
-import 'element-plus/dist/index.css'
 import route from "./routers"
 import axios from "axios"
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
-// import "~/styles/element/index.scss";
-
-// import ElementPlus from "element-plus";
-// import all element css, uncommented next line
-// import "element-plus/dist/index.css";
-
-// or use cdn, uncomment cdn link in `index.html`
+// 主题：用 SCSS 源编译，确保自定义色阶参与 Element 的派生
+import "element-plus/theme-chalk/src/index.scss";
 
 import "~/styles/index.scss";
 import "uno.css";
-
-// If you want to use ElMessage, import it.
-import "element-plus/theme-chalk/src/message.scss";
-import "element-plus/theme-chalk/src/message-box.scss";
-import "element-plus/theme-chalk/src/overlay.scss";
 
 const app = createApp(App);
 // app.config.globalProperties.$baseUrl = 'http://127.0.0.1:38001'

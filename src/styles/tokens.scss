@@ -1,0 +1,139 @@
+// 财见产品色语义令牌（亮/暗）
+// 业务代码只允许使用这一层变量，不写原始色阶与 HEX。
+// 真源：《财见产品色规范》§3 语义 Token。
+
+:root {
+  // 纸与墨
+  --bg: #f7f6f2;
+  --surface: #fcfbf8;
+  --surface-raised: #fcfbf8;
+  --surface-hover: #efeee8;
+  --border: #e2e0d8;
+  --border-strong: #8c8a80;
+  --text-primary: #14181a;
+  --text-secondary: #5a666d;
+  --text-tertiary: #7a868d;
+  --text-disabled: #a3adb3;
+  --text-inverse: #f7f6f2;
+
+  // 唯一彩色
+  --action: #1b5079;
+  --action-hover: #16456b;
+  --action-container: #dce8f2;
+  --on-action: #f7f6f2;
+  --on-action-container: #123a5a;
+
+  // 状态中性
+  --status-neutral: #efeee8;
+  --on-status-neutral: #5a666d;
+
+  // 语义
+  --success: #1b7a4b;
+  --success-container: #e3f1e9;
+  --on-success-container: #145636;
+  --warning: #8a5a12;
+  --warning-container: #f6ebd8;
+  --on-warning-container: #5e3c08;
+  --danger: #a3342b;
+  --danger-container: #f6e3e0;
+  --on-danger-container: #74231c;
+
+  // 图表
+  --chart-1: #1e5a8a;
+  --chart-2: #2b3338;
+  --chart-3: #5a666d;
+  --chart-4: #7a868d;
+
+  // 分享图固定亮色（不跟随暗色）
+  --share-bg: #fcfbf8;
+  --share-text: #14181a;
+  --share-text-secondary: #5a666d;
+  --share-text-tertiary: #7a868d;
+  --share-border: #e2e0d8;
+  --share-accent: #1b5079;
+  --share-surface: #f7f6f2;
+
+  // Element Plus 语义映射
+  --el-bg-color: var(--bg);
+  --el-bg-color-page: var(--bg);
+  --el-bg-color-overlay: var(--surface);
+  --el-fill-color: var(--surface-hover);
+  --el-fill-color-light: var(--surface-hover);
+  --el-fill-color-lighter: var(--bg);
+  --el-fill-color-extra-light: var(--surface);
+  --el-fill-color-dark: var(--border);
+  --el-fill-color-darker: #c9d0d4;
+  --el-text-color-primary: var(--text-primary);
+  --el-text-color-regular: var(--text-secondary);
+  --el-text-color-secondary: var(--text-secondary);
+  --el-text-color-placeholder: var(--text-tertiary);
+  --el-text-color-disabled: var(--text-disabled);
+  --el-border-color: var(--border);
+  --el-border-color-light: var(--border);
+  --el-border-color-lighter: var(--surface-hover);
+  --el-border-color-extra-light: var(--bg);
+  --el-border-color-dark: var(--border-strong);
+  --el-border-color-darker: var(--border-strong);
+  --el-border-color-hover: var(--action);
+  --el-color-primary: var(--action);
+  --el-color-info: var(--on-status-neutral);
+  --el-color-info-light-8: var(--status-neutral);
+  --el-color-info-light-9: var(--status-neutral);
+  --el-card-bg-color: var(--surface);
+  --el-card-border-color: var(--border);
+  --el-dialog-bg-color: var(--surface);
+  --el-menu-bg-color: var(--surface);
+  --el-menu-hover-bg-color: var(--surface-hover);
+  --el-menu-active-color: var(--action);
+  --el-input-bg-color: var(--surface);
+  --el-input-border-color: var(--border-strong);
+  --el-table-bg-color: var(--surface);
+  --el-table-tr-bg-color: var(--surface);
+  --el-table-header-bg-color: var(--surface-hover);
+  --el-table-row-hover-bg-color: var(--surface-hover);
+  --el-table-border-color: var(--border);
+  --el-table-text-color: var(--text-primary);
+  --el-table-header-text-color: var(--text-secondary);
+}
+
+html.dark {
+  --bg: #0e1215;
+  --surface: #14181a;
+  --surface-raised: #1e2428;
+  --surface-hover: #1e2428;
+  --border: #2b3338;
+  --border-strong: #5a666d;
+  --text-primary: #e6eaec;
+  --text-secondary: #c9d0d4;
+  --text-tertiary: #a3adb3;
+  --text-disabled: #7a868d;
+  --text-inverse: #0e1215;
+
+  --action: #6fa3cb;
+  --action-hover: #a9c8df;
+  --action-container: #17293a;
+  --on-action: #0e1215;
+  --on-action-container: #c7dceb;
+
+  --status-neutral: #1e2428;
+  --on-status-neutral: #c9d0d4;
+
+  --success: #62c08e;
+  --success-container: #16301f;
+  --on-success-container: #9fd9b8;
+  --warning: #e3ae5a;
+  --warning-container: #33240b;
+  --on-warning-container: #ebc98f;
+  --danger: #e58f88;
+  --danger-container: #361411;
+  --on-danger-container: #f0b7b1;
+
+  --chart-1: #6fa3cb;
+  --chart-2: #c9d0d4;
+  --chart-3: #a3adb3;
+  --chart-4: #7a868d;
+
+  --el-fill-color-darker: #2b3338;
+  --el-color-info-light-8: var(--status-neutral);
+  --el-color-info-light-9: var(--status-neutral);
+}

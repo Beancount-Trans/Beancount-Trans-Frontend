@@ -44,7 +44,8 @@ export default defineConfig({
       include: [/\.vue$/, /\.vue\?vue/, /\.md$/],
       resolvers: [
         ElementPlusResolver({
-          importStyle: 'sass',
+          // 主题已在 main.ts 一次性引入，避免组件级样式重复
+          importStyle: false,
         }),
       ],
       dts: 'src/components.d.ts',

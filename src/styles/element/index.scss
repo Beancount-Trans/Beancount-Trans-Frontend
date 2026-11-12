@@ -1,28 +1,26 @@
 $--colors: (
   "primary": (
-    "base": green,
+    "base": #1b5079,
   ),
   "success": (
-    "base": #21ba45,
+    "base": #1b7a4b,
   ),
   "warning": (
-    "base": #f2711c,
+    "base": #8a5a12,
   ),
   "danger": (
-    "base": #db2828,
+    "base": #a3342b,
   ),
   "error": (
-    "base": #db2828,
+    "base": #a3342b,
   ),
   "info": (
-    "base": #42b8dd,
+    "base": #5a666d,
   ),
 );
 
-// we can add this to custom namespace, default is 'el'
-@forward "element-plus/theme-chalk/src/mixins/config.scss" with (
-  $namespace: "ep"
-);
+// 使用 Element Plus 默认命名空间 el：命令式服务（Message/MessageBox/Loading）
+// 以脱离应用上下文的方式挂载，只有默认命名空间才能拿到对应样式。
 
 // You should use them in scss, because we calculate it by sass.
 // comment next lines to use default color
