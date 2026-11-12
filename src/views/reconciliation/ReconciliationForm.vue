@@ -665,7 +665,7 @@ async function handleSubmit() {
       currentAsOfDate.setHours(0, 0, 0, 0)
 
       if (currentAsOfDate.getTime() === lastDate.getTime()) {
-        ElMessage.error(`该账户已有 ${asOfDateStr} 的对账记录，不允许重复对账同一日期。若需重做该日对账，请点击「撤销上一次对账」后再提交。`)
+        ElMessage.error(`该账户在 ${asOfDateStr} 已完成对账，不允许重复对账同一日期。若需重做该日对账，请点击「撤销上次对账」后再提交。`)
         submitting.value = false
         return
       } else if (currentAsOfDate < lastDate) {
@@ -762,7 +762,7 @@ async function handleRevokeReconciliation() {
   if (taskId == null) return
   try {
     await ElMessageBox.confirm(
-      '撤销后将作废上次对账，仅适用于上次对账金额或条目错误的情况。确定要撤销吗？',
+      '作废上次对账，适用于上次对账金额或条目错误的情况。确定要撤销吗？',
       '撤销对账',
       { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
     )

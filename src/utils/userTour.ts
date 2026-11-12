@@ -83,7 +83,7 @@ const driverObj = driver({
     {
       popover: {
         title: '🎉 欢迎使用 Beancount-Trans',
-        description: '我们已为您准备了示例账单文件，让我们一起体验如何将账单转换为专业财务报表！',
+        description: '我们已为您准备了示例账单文件，让我们一起体验如何将账单转换为 Fava 专业报表！',
         side: 'center' as unknown as DriverStepSide,
         align: 'center'
         // 不定义 onNextClick，让 driver.js 使用默认行为
@@ -126,7 +126,7 @@ const driverObj = driver({
       element: '#tour-task-banner-button',
       popover: {
         title: '✅ 解析完成',
-        description: '解析已完成！系统已创建审核待办任务。点击"立即处理"查看并审核解析结果。',
+        description: '解析已完成！系统已创建审核待办。点击"立即处理"查看并审核解析结果。',
         side: 'bottom',
         align: 'center',
         disableButtons: ['previous', 'next'], // 禁用 Previous 和 Next 按钮，使用与步骤一 Previous 相同的效果

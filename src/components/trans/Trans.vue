@@ -27,7 +27,7 @@
                 <span v-else-if="getBillSupportText(item.billType)" class="bill-support-time">
                   {{ getBillSupportText(item.billType) }}
                 </span>
-                <span v-else class="bill-support-empty">暂无成功记录</span>
+                <span v-else class="bill-support-empty">暂未成功解析</span>
               </div>
             </div>
           </div>
@@ -524,7 +524,7 @@ function buildFailure(
         message: diagnostics
           ? `账单共 ${diagnostics.total_rows ?? 0} 条，过滤后 ${diagnostics.filtered_rows ?? 0} 条。`
           : '未能从该文件中解析出任何交易。',
-        hints: ['请确认导出的是原始账单文件，未修改表头或另存为其它格式', '可下载示例账单对照格式'],
+        hints: ['请确认导出的是原始账单文件，未修改表头或另存为其他格式', '可下载示例账单对照格式'],
         showBillGuides: true,
       }
     }
@@ -753,7 +753,7 @@ const handleWriteCollect = async () => {
 
   try {
     await ElMessageBox.confirm(
-      `将把 ${formattedEntries.value.length} 条记录追加写入 trans/collect.bean`,
+      `将把解析结果（共 ${formattedEntries.value.length} 条）追加写入 trans/collect.bean`,
       '确认写入账本',
       { confirmButtonText: '写入', cancelButtonText: '取消', type: 'warning' }
     )

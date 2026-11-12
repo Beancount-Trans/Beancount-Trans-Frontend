@@ -78,7 +78,7 @@
     <div v-else v-loading="loading" class="tasks-container">
       <!-- 空状态：引导设置 -->
       <div v-if="tasks.length === 0" class="empty-state">
-        <el-empty description="暂无待办任务">
+        <el-empty description="暂无待办">
           <template #image>
             <el-icon :size="80" color="var(--el-color-info)">
               <Check />
@@ -88,10 +88,10 @@
             <p class="empty-text" v-if="filterType === 'reconciliation'">所有账户都已对账完成</p>
             <p class="empty-text" v-else-if="filterType === 'entry_review'">暂无条目审核待办</p>
             <p class="empty-text" v-else-if="filterType === 'recurring'">暂无循环待办</p>
-            <p class="empty-text" v-else>暂无待办任务</p>
-            <p class="empty-hint" v-if="filterType === 'reconciliation'">在「账户管理」中设置对账周期，系统会自动创建待办任务</p>
+            <p class="empty-text" v-else>暂无待办</p>
+            <p class="empty-hint" v-if="filterType === 'reconciliation'">在「账户管理」中设置对账周期，系统会自动创建待办</p>
             <p class="empty-hint" v-else-if="filterType === 'entry_review'">在「文件管理」中上传并解析文件，解析完成后条目会进入统一的条目审核待办</p>
-            <p class="empty-hint" v-else-if="filterType === 'recurring'">再次点击「循环」进入管理，即可新建周期提醒</p>
+            <p class="empty-hint" v-else-if="filterType === 'recurring'">再次点击「循环」进入管理，即可新建循环待办</p>
           </template>
         </el-empty>
       </div>

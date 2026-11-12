@@ -118,7 +118,7 @@
                     <div class="account-title">
                         <h3>{{ selectedAccount.account }}</h3>
                         <el-tooltip v-if="selectedAccount.is_ledger_closed" placement="top" effect="dark"
-                            content="账本中已 close，平台记录可直接删除；无需再同步或配对">
+                            content="账本中已 close，平台账户可直接删除；无需再同步或配对">
                             <el-tag size="small" type="warning" effect="plain">
                                 账本已关闭
                             </el-tag>
@@ -494,7 +494,7 @@
                     </el-table>
                     <el-empty v-else description="没有需要配对的平台账户" :image-size="60" />
 
-                    <h4>账本已关闭（平台仍有，可直接删除平台记录）</h4>
+                    <h4>账本已关闭（平台仍有，可直接删除平台账户）</h4>
                     <div class="reconcile-ledger-only">
                         <el-tag v-for="name in reconcileData.ledger_closed" :key="name" type="info" size="small">
                             {{ name }}

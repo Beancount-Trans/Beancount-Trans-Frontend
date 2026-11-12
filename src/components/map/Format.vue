@@ -100,7 +100,7 @@
                                 <el-switch v-model="autoProvisionAssets" />
                                 <span class="auto-provision-label">解析成功后自动补齐资产账户与映射</span>
                                 <el-tooltip
-                                    content="付款方式能识别出银行、卡号或平台账户时自动创建账户与资产映射；识别不出时仍记为 Assets:Other"
+                                    content="支付方式能识别出银行、卡号或平台账户时自动创建账户与资产映射；识别不出时仍记为 Assets:Other"
                                     placement="top">
                                     <el-icon class="tip-icon">
                                         <Warning />
@@ -108,7 +108,7 @@
                                 </el-tooltip>
                             </div>
                             <el-alert type="info" show-icon :closable="false" class="mode-alert">
-                                关闭后，解析结果只读取已有映射，未匹配的付款方式保持记为 <strong>Assets:Other</strong>。
+                                关闭后，解析结果只读取已有映射，未匹配的支付方式保持记为 <strong>Assets:Other</strong>。
                             </el-alert>
                         </div>
                     </el-form-item>

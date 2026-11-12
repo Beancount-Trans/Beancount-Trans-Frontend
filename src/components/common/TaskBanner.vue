@@ -8,7 +8,7 @@
             <Bell />
           </el-icon>
           <span class="banner-text">
-            您有 <strong>{{ pendingTaskCount }}</strong> 个待办任务
+            您有 <strong>{{ pendingTaskCount }}</strong> 个待办
             <span v-if="overdueCount > 0" class="overdue-hint">
               （<span class="overdue-count">{{ overdueCount }}</span> 个逾期）
             </span>

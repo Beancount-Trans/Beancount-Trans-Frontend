@@ -265,7 +265,7 @@ export function useAssistantChat(options: {
       status.value = data
     } catch (e: unknown) {
       const err = e as { response?: { data?: { detail?: string } } }
-      error.value = err.response?.data?.detail || '获取助手状态失败'
+      error.value = err.response?.data?.detail || '获取 Copilot 状态失败'
     } finally {
       statusLoading.value = false
     }
