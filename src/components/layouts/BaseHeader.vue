@@ -10,7 +10,7 @@
       </el-menu-item>
     </router-link>
 
-    <el-sub-menu index="config">
+    <el-sub-menu index="config" popper-class="config-nav-dropdown">
       <template #title>
         <el-icon v-if="!can('config.read')" class="nav-lock">
           <Lock />
@@ -271,6 +271,16 @@ void refresh()
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+}
+
+// 「输出配置」菜单项悬浮时保持默认指针，不变成手型
+.config-nav-dropdown .no-underline[href='/format'] {
+  cursor: default;
+  text-decoration: none;
+
+  .el-menu-item {
+    cursor: default;
   }
 }
 </style>

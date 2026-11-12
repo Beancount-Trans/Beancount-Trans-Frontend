@@ -31,7 +31,7 @@
                                 <div class="label-with-tip">
                                     <span>兜底账户</span>
                                     <el-tooltip content="无法匹配资产账户时的默认账户，也用于对账差额分配" placement="top">
-                                        <el-icon class="tip-icon">
+                                        <el-icon class="tip-icon tip-icon--static">
                                             <Warning />
                                         </el-icon>
                                     </el-tooltip>
@@ -73,23 +73,30 @@
             </el-collapse-item>
 
             <!-- 解析设置 -->
-            <el-collapse-item title="解析设置" name="parsing" class="config-item">
+            <el-collapse-item title="解析设置" name="parsing" class="config-item config-item--parsing">
                 <div class="config-group">
                     <el-divider>多文件解析模式</el-divider>
                     <el-form-item>
                         <div class="parsing-mode-container">
-                            <el-radio-group v-model="parsingModePreference">
-                                <el-radio label="review">审核模式</el-radio>
-                                <el-radio label="direct_write">直接写入模式</el-radio>
-                            </el-radio-group>
-                            <el-alert type="info" show-icon :closable="false" class="mode-alert">
-                                <template v-if="parsingModePreference === 'review'">
-                                    <strong>审核模式：</strong>解析完成后需要用户审核，可以选择关键字或直接编辑条目，确认后再写入账本
-                                </template>
-                                <template v-else>
-                                    <strong>直接写入模式：</strong>解析完成后立即写入账本，适合对AI分类有较高信任度的用户
-                                </template>
-                            </el-alert>
+                            <div class="parsing-mode-row">
+                                <el-radio-group v-model="parsingModePreference">
+                                    <el-radio label="review">审核模式</el-radio>
+                                    <el-radio label="direct_write">直接写入模式</el-radio>
+                                </el-radio-group>
+                                <el-tooltip placement="top">
+                                    <template #content>
+                                        <template v-if="parsingModePreference === 'review'">
+                                            <strong>审核模式：</strong>解析完成后需要用户审核，可以选择关键字或直接编辑条目，确认后再写入账本
+                                        </template>
+                                        <template v-else>
+                                            <strong>直接写入模式：</strong>解析完成后立即写入账本，适合对AI分类有较高信任度的用户
+                                        </template>
+                                    </template>
+                                    <el-icon class="tip-icon">
+                                        <InfoFilled />
+                                    </el-icon>
+                                </el-tooltip>
+                            </div>
                         </div>
                     </el-form-item>
 
@@ -99,17 +106,16 @@
                             <div class="auto-provision-row">
                                 <el-switch v-model="autoProvisionAssets" />
                                 <span class="auto-provision-label">解析成功后自动补齐资产账户与映射</span>
-                                <el-tooltip
-                                    content="支付方式能识别出银行、卡号或平台账户时自动创建账户与资产映射；识别不出时仍记为 Assets:Other"
-                                    placement="top">
+                                <el-tooltip placement="top">
+                                    <template #content>
+                                        开启后，支付方式能识别出银行、卡号或平台账户时自动创建账户与资产映射，识别不出时仍记为
+                                        Assets:Other；关闭后，解析结果只读取已有映射。
+                                    </template>
                                     <el-icon class="tip-icon">
                                         <Warning />
                                     </el-icon>
                                 </el-tooltip>
                             </div>
-                            <el-alert type="info" show-icon :closable="false" class="mode-alert">
-                                关闭后，解析结果只读取已有映射，未匹配的支付方式保持记为 <strong>Assets:Other</strong>。
-                            </el-alert>
                         </div>
                     </el-form-item>
 
@@ -117,11 +123,11 @@
                     <el-form-item label="解析引擎" prop="aiModel">
                         <div class="ai-engine-container">
                             <el-select v-model="aiModel" placeholder="选择解析引擎" class="model-selector"
-                                :disabled="!canEdit">
+                                :disabled="!canEdit" @change="handleEngineChange">
                                 <el-option label="单规则匹配" value="None" :disabled="!canEdit" />
                                 <el-option label="BERT - 本地模型（默认，平衡模式）" value="BERT" :disabled="!canEdit" />
                                 <el-option label="DeepSeek - 自有密钥（高精度模式）" value="DeepSeek"
-                                    :disabled="!canEdit || !hasUserAssistantKey" />
+                                    :disabled="!canEdit" />
                             </el-select>
 
                             <el-alert v-if="engineDescription" type="info" :closable="false"
@@ -150,7 +156,7 @@
 
                     <el-form-item label="API 密钥">
                         <div class="api-key-row">
-                            <el-input v-model="assistantApiKey" type="password"
+                            <el-input ref="assistantApiKeyInput" v-model="assistantApiKey" type="password"
                                 placeholder="未填写时 Copilot 可走平台密钥；自有解析引擎需填写" show-password clearable />
                             <el-button @click="testApiKey" :loading="loading.test">测试</el-button>
                         </div>
@@ -181,12 +187,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Warning } from '@element-plus/icons-vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Warning, InfoFilled } from '@element-plus/icons-vue'
 import axios from '../../utils/request'
 import AccountSelector from '../common/AccountSelector.vue'
-import type { FormInstance } from 'element-plus'
+import type { FormInstance, InputInstance } from 'element-plus'
 import { useCapabilities } from '../../capabilities'
 
 const configForm = ref<FormInstance>()
@@ -204,6 +210,7 @@ const validateAndSubmit = async () => {
         await configForm.value?.validate()
         if (aiModel.value === 'DeepSeek' && !assistantApiKey.value.trim()) {
             ElMessage.error('自有 DeepSeek 解析需要先在 BYOK 填写 API 密钥')
+            void revealByok()
             return
         }
         await applyConfig()
@@ -276,6 +283,7 @@ const canEdit = computed(() => can('config.write'))
 const assistantPreset = ref<AssistantPreset>('deepseek')
 const assistantBaseUrl = ref('')
 const assistantApiKey = ref('')
+const assistantApiKeyInput = ref<InputInstance | null>(null)
 const assistantModel = ref('')
 const flagSymbol = ref('*')
 const parsingModePreference = ref('review') // 默认审核模式
@@ -287,7 +295,20 @@ const loading = ref({
     test: false,
 })
 
-const hasUserAssistantKey = computed(() => assistantApiKey.value.trim() !== '')
+// 选中 DeepSeek 时展开 BYOK 并聚焦密钥输入，避免用户找不到配置位置
+const revealByok = async () => {
+    if (!activePanels.value.includes('assistant')) {
+        activePanels.value = [...activePanels.value, 'assistant']
+    }
+    await nextTick()
+    assistantApiKeyInput.value?.focus()
+}
+
+const handleEngineChange = (value: string) => {
+    if (value === 'DeepSeek') {
+        void revealByok()
+    }
+}
 
 const engineDescription = computed(() => {
     switch (aiModel.value) {
@@ -546,6 +567,16 @@ const testApiKey = async () => {
 // 重置为默认配置
 const resetToDefault = async () => {
     try {
+        await ElMessageBox.confirm(
+            '恢复默认会覆盖当前全部输出配置，包括账户模板、解析设置与 BYOK，是否继续？',
+            '恢复默认配置',
+            { type: 'warning', confirmButtonText: '恢复默认', cancelButtonText: '取消' },
+        )
+    } catch {
+        return
+    }
+
+    try {
         loading.value.reset = true
         await axios.put('config/', {
             flag: '*',
@@ -650,6 +681,14 @@ const resetToDefault = async () => {
     cursor: help;
 }
 
+.tip-icon--static {
+    cursor: default;
+}
+
+.config-item--parsing :deep(.el-collapse-item__header) {
+    cursor: default;
+}
+
 .config-item {
     padding: 0 16px;
 }
@@ -696,6 +735,12 @@ const resetToDefault = async () => {
     gap: 10px;
 }
 
+.parsing-mode-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .auto-provision-container {
     width: 100%;
     display: flex;
@@ -713,7 +758,6 @@ const resetToDefault = async () => {
     color: var(--el-text-color-regular, var(--el-text-color-regular));
 }
 
-.mode-alert,
 .engine-description-alert {
     margin-top: 5px;
 }
