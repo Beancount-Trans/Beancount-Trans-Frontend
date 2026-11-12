@@ -98,35 +98,29 @@
   </div>
 
   <div v-if="hasEntries" class="result-toolbar">
-    <el-button type="success" :icon="DocumentCopy" @click="copyResponseData">
+    <el-button v-if="reviewMode === 'advanced'" type="success" :icon="DocumentCopy" @click="copyResponseData">
       复制结果
     </el-button>
-    <el-button @click="handlePreview">
+    <el-button v-if="reviewMode === 'advanced'" @click="handlePreview">
       预览
     </el-button>
     <el-button type="primary" :icon="DocumentChecked" @click="handleWriteCollect" :loading="writing">
       写入账本
     </el-button>
+    <ReviewModeSwitch class="toolbar-mode-switch" />
   </div>
 
   <CapabilityNotice v-if="hasEntries && !isAuthenticated" class="anonymous-result-guide" capability="ledger.write"
     description="登录后自动匹配并补齐你的银行卡、信用卡等账户，减少记到「Other 兜底账户」。" :before-action="preserveGuestParse" />
 
   <el-input v-if="!hasEntries && !uploading && !parseFailure" class="result-textarea" type="textarea" :rows="30"
-    readonly :value="''" placeholder='解析结果如下：
-
-2022-06-19 * "温州市数据管理发展集团有限公司" "HIK-停车缴费-洞头人民路停车场(人民路区域共享)"
-    time: "15:27:44"
-    uuid: "2022061922001474561419808812"
-    status: "ALiPay - 交易成功"
-    Expenses:TransPort:Private:Park +5.00 CNY
-    Liabilities:CreditCard:Bank:CITIC:C6428 -5.00 CNY
-' />
+    readonly :value="''" :placeholder="emptyResultPlaceholder" />
 
   <div v-else class="table-container">
     <ParseEntryTable :entries="formattedEntries" :error-entries="errorEntries" :validation-warnings="validationWarnings"
-      :on-reparse="handleTableReparse" :on-persist-edit="handlePersistEdit" :on-patch-tags="handlePatchTags"
-      :on-remove-entry="handleRemoveEntry" :require-auth="() => can('ledger.write')" />
+      :mode="reviewMode" :on-reparse="handleTableReparse" :on-persist-edit="handlePersistEdit"
+      :on-patch-tags="handlePatchTags" :on-remove-entry="handleRemoveEntry"
+      :require-auth="() => can('ledger.write')" />
   </div>
 
   <el-dialog v-model="showPreviewDialog" title="预览所有条目" width="80%">
@@ -150,8 +144,10 @@ import { useRouter } from 'vue-router'
 import axios from '../../utils/request'
 import { getAccessToken, setLoginRedirect } from '../../utils/auth'
 import ParseEntryTable from '../parse/ParseEntryTable.vue'
+import ReviewModeSwitch from '../parse/ReviewModeSwitch.vue'
 import CapabilityNotice from '../common/CapabilityNotice.vue'
 import { useCapabilities } from '../../capabilities'
+import { useReviewMode } from '../../composables/useReviewMode'
 import { BILLS_EXPORT_DOCS_URL } from '../../utils/userTour'
 import {
   alignPreviewBlocksToEntries,
@@ -172,6 +168,7 @@ import type { FormattedEntry, TagDetail, OriginalRow } from '../../types/parse-r
 import type { BillSupportItem } from '../../types/translate'
 
 const router = useRouter()
+const { mode: reviewMode } = useReviewMode()
 
 const input = ref()
 const wechatUrl = ref('https://dl.dhr2333.cn/%E5%AE%8C%E6%95%B4%E6%B5%8B%E8%AF%95_%E5%BE%AE%E4%BF%A1.csv')
@@ -334,6 +331,12 @@ const savingPreview = ref(false)
 const writing = ref(false)
 
 const hasEntries = computed(() => formattedEntries.value.length > 0)
+
+const emptyResultPlaceholder = computed(() =>
+  reviewMode.value === 'simple'
+    ? '上传支付宝 / 微信 / 银行账单后，这里会显示可核对的收支记录。\n\n你可以用表单修改日期、商户、金额、分类与账户，不需要了解 Beancount。'
+    : '解析结果如下：\n\n2022-06-19 * "温州市数据管理发展集团有限公司" "HIK-停车缴费-洞头人民路停车场(人民路区域共享)"\n    time: "15:27:44"\n    uuid: "2022061922001474561419808812"\n    status: "ALiPay - 交易成功"\n    Expenses:TransPort:Private:Park +5.00 CNY\n    Liabilities:CreditCard:Bank:CITIC:C6428 -5.00 CNY\n'
+)
 
 const joinedEditedText = computed(() =>
   formattedEntries.value
@@ -1204,9 +1207,14 @@ const handleRemoveEntry = async (uuid: string) => {
 .result-toolbar {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 8px;
   margin-top: 16px;
   margin-bottom: 8px;
+}
+
+.toolbar-mode-switch {
+  margin-left: auto;
 }
 
 .result-textarea textarea {

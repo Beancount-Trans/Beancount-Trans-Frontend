@@ -747,6 +747,19 @@ export function useParseEntryPreview(options: UseParseEntryPreviewOptions) {
     }
   }
 
+  async function patchRowTag(
+    row: FormattedEntry,
+    action: 'add' | 'remove',
+    tagPath: string
+  ) {
+    if (isDisabled()) return
+    const payload = await options.onPatchTags(row.uuid, {
+      action,
+      tag_path: tagPath
+    })
+    applyTagFieldsToRow(row, payload)
+  }
+
   async function removeTagFromEntry(row: FormattedEntry, tagPath: string) {
     if (isDisabled()) return
     try {
@@ -1020,6 +1033,7 @@ export function useParseEntryPreview(options: UseParseEntryPreviewOptions) {
     accountAssistQuery,
     accountAssistPanelStyle,
     accountDescriptionByName,
+    flatAccounts,
     accountOverlayQueryRef,
     accountSuggestionsListRef,
     overlayAccountMatches,
@@ -1041,6 +1055,8 @@ export function useParseEntryPreview(options: UseParseEntryPreviewOptions) {
     openTagAssist,
     applyTagAddition,
     removeTagFromEntry,
+    patchRowTag,
+    flatTagsForAssist,
     onTagOverlayQueryKeydown,
     formatTagSourceLabel,
     getTagSourcesForPath,

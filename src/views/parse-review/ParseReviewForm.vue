@@ -13,6 +13,7 @@
         </el-text> -->
       </div>
       <div class="header-right">
+        <ReviewModeSwitch />
         <el-dropdown v-if="reparseSourceFiles.length > 0" :disabled="reviewExpired" @command="handleReparseAll">
           <el-button :loading="loading.reparseAll" :disabled="reviewExpired">
             重新解析
@@ -39,14 +40,15 @@
     <div v-loading="loading.results" class="content-container" :class="{ 'is-review-expired': reviewExpired }">
       <!-- 审核结果表格 -->
       <ParseEntryTable :entries="formattedEntries" :error-entries="errorEntries"
-        :validation-warnings="validationWarnings" :disabled="reviewExpired" :show-source-file="true"
+        :validation-warnings="validationWarnings" :disabled="reviewExpired" :show-source-file="true" :mode="reviewMode"
         :on-reparse="handleTableReparse" :on-persist-edit="persistEntryEdit" :on-patch-tags="handleTablePatchTags"
         :on-remove-entry="removeEntryFromReview" />
     </div>
 
     <!-- 底部操作栏 -->
     <div class="action-bar">
-      <el-button @click="handlePreview" :disabled="formattedEntries.length === 0 || reviewExpired">
+      <el-button v-if="reviewMode === 'advanced'" @click="handlePreview"
+        :disabled="formattedEntries.length === 0 || reviewExpired">
         预览
       </el-button>
       <el-button type="primary" @click="handleConfirmWrite" :loading="loading.confirm"
@@ -88,6 +90,8 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowDown } from '@element-plus/icons-vue'
 import ParseEntryTable from '../../components/parse/ParseEntryTable.vue'
+import ReviewModeSwitch from '../../components/parse/ReviewModeSwitch.vue'
+import { useReviewMode } from '../../composables/useReviewMode'
 import {
   getEntryReviewResults,
   reparseEntry,
@@ -114,6 +118,7 @@ import type {
 import { emitTaskBannerRefresh } from '../../utils/accountEvents'
 
 const router = useRouter()
+const { mode: reviewMode } = useReviewMode()
 
 const entryCount = ref(0)
 const formattedEntries = ref<FormattedEntry[]>([])

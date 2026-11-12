@@ -8,7 +8,7 @@
         </template>
       </template>
     </el-table-column>
-    <el-table-column label="Beancount 条目预览" min-width="400">
+    <el-table-column v-if="mode === 'advanced'" label="Beancount 条目预览" min-width="400">
       <template #default="scope">
         <div :class="getEntryClasses(scope.row.uuid, scope.row.edited_formatted)">
           <template v-if="!isEntryTextEditMode(scope.row.uuid)">
@@ -69,6 +69,21 @@
         </div>
       </template>
     </el-table-column>
+    <el-table-column v-else label="条目" min-width="400">
+      <template #default="scope">
+        <div :class="getEntryClasses(scope.row.uuid, scope.row.edited_formatted)">
+          <ParseEntrySimpleSummary :entry="scope.row" :disabled="disabled"
+            :account-descriptions="accountDescriptionByName" :tag-options="flatTagsForAssist"
+            :on-patch-tag="patchTagForRow(scope.row)" @edit="openSimpleEditor(scope.row)" />
+          <div v-if="errorEntries[scope.row.uuid]" class="validation-message error-message">
+            {{ errorEntries[scope.row.uuid] }}
+          </div>
+          <div v-else-if="validationWarnings[scope.row.uuid]" class="validation-message warning-message">
+            {{ validationWarnings[scope.row.uuid] }}
+          </div>
+        </div>
+      </template>
+    </el-table-column>
     <el-table-column label="AI分类反馈" min-width="400">
       <template #default="scope">
         <div v-if="scope.row.source === 'copilot'" class="ai-classification-container">
@@ -106,7 +121,7 @@
                 :class="['candidate-tag', { 'is-selected': candidate.key === scope.row.selected_expense_key }]"
                 @click="handleKeywordSelect(scope.row.uuid, candidate.key)">
                 {{ candidate.key }}
-                <span class="score" v-if="candidate.score !== undefined">
+                <span class="score" v-if="mode === 'advanced' && candidate.score !== undefined">
                   ({{ candidate.score }})
                 </span>
               </el-tag>
@@ -232,6 +247,9 @@
       </div>
     </div>
   </Teleport>
+
+  <ParseEntrySimpleEditor v-model="simpleEditorVisible" :entry="simpleEditorEntry" :disabled="disabled"
+    :accounts="flatAccounts" :on-save="handleSimpleSave" />
 </template>
 
 <script setup lang="ts">
@@ -247,6 +265,8 @@ import {
 import { useParseEntryPreview, otherAccountSide } from '../../composables/useParseEntryPreview'
 import AccountSelector from '../common/AccountSelector.vue'
 import TagSelector from '../common/TagSelector.vue'
+import ParseEntrySimpleSummary from './ParseEntrySimpleSummary.vue'
+import ParseEntrySimpleEditor from './ParseEntrySimpleEditor.vue'
 import {
   shouldShowParseReviewCreateMapping,
   isInstallmentRepaymentEntry,
@@ -256,12 +276,14 @@ import {
   type TagSource
 } from '../../types/parse-review'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   entries: FormattedEntry[]
   errorEntries: Record<string, string>
   validationWarnings: Record<string, string>
   /** 审核过期等只读场景，禁止编辑与浮层交互 */
   disabled?: boolean
+  /** simple：表单模式；advanced：原文模式（Beancount 原文） */
+  mode?: 'simple' | 'advanced'
   /** 反馈分类关键字后重解析该条目（含映射保存后的重解析） */
   onReparse: (
     uuid: string,
@@ -287,10 +309,13 @@ const props = defineProps<{
   requireAuth?: () => boolean
   /** 是否展示「来源账单」列（统一条目审核场景） */
   showSourceFile?: boolean
-}>()
+}>(), {
+  mode: 'advanced'
+})
 
 const entries = toRef(props, 'entries')
 const disabled = computed(() => props.disabled === true)
+const mode = computed(() => props.mode)
 
 const {
   isEntryTextEditMode,
@@ -330,7 +355,10 @@ const {
   removeTagFromEntry,
   onTagOverlayQueryKeydown,
   formatTagSourceLabel,
-  getTagSourcesForPath
+  getTagSourcesForPath,
+  flatAccounts,
+  flatTagsForAssist,
+  patchRowTag
 } = useParseEntryPreview({
   entries,
   errorEntries: toRef(props, 'errorEntries'),
@@ -437,6 +465,25 @@ const handleKeywordSelect = async (uuid: string, selectedKey: string) => {
   } catch (error: any) {
     ElMessage.error(error.response?.data?.error || '重解析失败')
   }
+}
+
+const simpleEditorVisible = ref(false)
+const simpleEditorEntry = ref<FormattedEntry | null>(null)
+
+const openSimpleEditor = (row: FormattedEntry) => {
+  simpleEditorEntry.value = row
+  simpleEditorVisible.value = true
+}
+
+const patchTagForRow = (row: FormattedEntry) => (action: 'add' | 'remove', tagPath: string) =>
+  patchRowTag(row, action, tagPath)
+
+const handleSimpleSave = async (text: string) => {
+  const row = simpleEditorEntry.value
+  if (!row) return
+  const normalized = text.replace(/\n+$/, '')
+  row.edited_formatted = normalized
+  return props.onPersistEdit(row.uuid, normalized)
 }
 </script>
 
