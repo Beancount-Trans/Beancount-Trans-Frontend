@@ -130,6 +130,19 @@
         </div>
       </template>
     </el-table-column>
+    <el-table-column v-if="props.onRemoveEntry" label="操作" width="96" fixed="right">
+      <template #default="scope">
+        <el-popconfirm title="排除后该条目不会写入账本，是否继续？" confirm-button-text="排除" cancel-button-text="取消"
+          width="240" @confirm="handleRemoveRow(scope.row)">
+          <template #reference>
+            <el-button size="small" type="danger" plain :disabled="disabled"
+              :loading="removingUuid === scope.row.uuid">
+              排除
+            </el-button>
+          </template>
+        </el-popconfirm>
+      </template>
+    </el-table-column>
   </el-table>
 
   <!-- 空状态 -->
@@ -222,7 +235,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, toRef } from 'vue'
+import { computed, ref, toRef } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
@@ -291,6 +304,7 @@ const {
   getEntryClasses,
   getEntryAutosize,
   buildLineSegments,
+  forgetEntry,
   accountPopover,
   accountAssistQuery,
   accountAssistPanelStyle,
@@ -325,7 +339,6 @@ const {
   onPersistEdit: (uuid, editedFormatted, options) =>
     props.onPersistEdit(uuid, editedFormatted, options),
   onPatchTags: (uuid, payload) => props.onPatchTags(uuid, payload),
-  onRemoveEntry: props.onRemoveEntry ? (uuid: string) => props.onRemoveEntry!(uuid) : undefined
 })
 
 const {
@@ -399,6 +412,22 @@ const openEditMappingForRowByKey = (row: FormattedEntry, source: TagSource) => {
     inferType: () => mappingType,
     getSelectedKey: () => source.key
   })
+}
+
+// 显式排除条目：不再通过清空文本触发，避免误删
+const removingUuid = ref('')
+
+const handleRemoveRow = async (row: FormattedEntry) => {
+  if (!props.onRemoveEntry || disabled.value) return
+  removingUuid.value = row.uuid
+  try {
+    await props.onRemoveEntry(row.uuid)
+    forgetEntry(row.uuid)
+  } catch (error: any) {
+    ElMessage.error(error?.response?.data?.error || '排除条目失败')
+  } finally {
+    removingUuid.value = ''
+  }
 }
 
 // 处理关键字选择

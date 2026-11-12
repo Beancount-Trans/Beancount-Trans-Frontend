@@ -1011,7 +1011,7 @@ const handleRemoveEntry = async (uuid: string) => {
   formattedEntries.value = formattedEntries.value.filter((e) => e.uuid !== uuid)
   delete validationWarnings.value[uuid]
   delete errorEntries.value[uuid]
-  ElMessage.success('条目已移除')
+  ElMessage.success('已排除该条目，不会写入账本')
 }
 </script>
 

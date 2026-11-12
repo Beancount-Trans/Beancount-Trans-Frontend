@@ -529,7 +529,7 @@ async function removeEntryFromReview(uuid: string) {
   mergeSourceSyncResult(targetSource, response.data.formatted_data)
   applyValidationWarnings(response.data.validation_warnings)
   pruneErrorEntries()
-  ElMessage.success('条目已移除')
+  ElMessage.success('已排除该条目，不会写入账本')
 }
 
 // 预览所有条目

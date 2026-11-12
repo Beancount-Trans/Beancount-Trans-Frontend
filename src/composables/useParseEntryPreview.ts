@@ -63,7 +63,6 @@ export interface UseParseEntryPreviewOptions {
     tag_details?: TagDetail[]
     tag_overrides?: FormattedEntry['tag_overrides']
   }>
-  onRemoveEntry?: (uuid: string) => Promise<void>
 }
 
 /** 根为五大类，段内允许非空白（含中文等） */
@@ -276,6 +275,9 @@ export function useParseEntryPreview(options: UseParseEntryPreviewOptions) {
   const isDisabled = () => !!options.disabled?.value
 
   const entryInputRefs = new Map<string, { textarea?: HTMLTextAreaElement }>()
+
+  /** 进入整段编辑前的文本快照：清空内容时回滚，而不是删除条目 */
+  const entryEditSnapshot = new Map<string, string>()
 
   /** 某条条目是否处于整段 textarea 编辑模式（默认 false = 结构化预览） */
   const entryTextEditMode = ref<Record<string, boolean>>({})
@@ -820,6 +822,8 @@ export function useParseEntryPreview(options: UseParseEntryPreviewOptions) {
 
   function startTextEdit(uuid: string, caret?: number) {
     if (isDisabled()) return
+    const row = entries.value.find((item) => item.uuid === uuid)
+    if (row) entryEditSnapshot.set(uuid, row.edited_formatted)
     clearTabCompleteSession(uuid)
     setEntryTextEditMode(uuid, true)
     nextTick(() => {
@@ -856,16 +860,14 @@ export function useParseEntryPreview(options: UseParseEntryPreviewOptions) {
 
     const normalized = row.edited_formatted.replace(/\n+$/, '').trim()
     if (!normalized) {
-      if (!options.onRemoveEntry) return
-      try {
-        await options.onRemoveEntry(row.uuid)
-        clearTabCompleteSession(row.uuid)
-        entryInputRefs.delete(row.uuid)
-      } catch (error: any) {
-        ElMessage.error(error.response?.data?.error || '移除条目失败')
-      }
+      // 清空文本不再等同于删除条目：回滚到编辑前内容，删除改用行内「排除」按钮
+      const snapshot = entryEditSnapshot.get(row.uuid)
+      entryEditSnapshot.delete(row.uuid)
+      if (snapshot !== undefined) row.edited_formatted = snapshot
+      ElMessage.warning('条目内容不能为空')
       return
     }
+    entryEditSnapshot.delete(row.uuid)
     try {
       await options.onPersistEdit(row.uuid, row.edited_formatted)
     } catch (error: any) {
@@ -985,6 +987,7 @@ export function useParseEntryPreview(options: UseParseEntryPreviewOptions) {
   function forgetEntry(uuid: string) {
     clearTabCompleteSession(uuid)
     entryInputRefs.delete(uuid)
+    entryEditSnapshot.delete(uuid)
     setEntryTextEditMode(uuid, false)
   }
 
