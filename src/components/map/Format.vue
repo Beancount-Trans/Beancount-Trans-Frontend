@@ -1,9 +1,6 @@
 <template>
-    <!-- 匿名用户提示 -->
-    <AnonymousPrompt v-model="showAnonymousPrompt" @skip="handleSkipAnonymous" />
-
-    <!-- 格式配置面板，只在非匿名用户或已跳过提示时显示 -->
-    <el-form v-if="!showAnonymousPrompt" class="format-config" :model="formModel" :rules="formRules" ref="configForm">
+    <!-- 格式配置面板 -->
+    <el-form class="format-config" :model="formModel" :rules="formRules" ref="configForm">
         <el-collapse v-model="activePanels" class="config-panel">
             <!-- 模板配置 -->
             <el-collapse-item title="高级配置" name="template" class="config-item">
@@ -120,18 +117,14 @@
                     <el-form-item label="解析引擎" prop="aiModel">
                         <div class="ai-engine-container">
                             <el-select v-model="aiModel" placeholder="选择解析引擎" class="model-selector"
-                                :disabled="!isAuthenticated">
-                                <el-option label="单规则匹配" value="None" :disabled="!isAuthenticated" />
-                                <el-option label="BERT - 本地模型（默认，平衡模式）" value="BERT" :disabled="!isAuthenticated" />
+                                :disabled="!canEdit">
+                                <el-option label="单规则匹配" value="None" :disabled="!canEdit" />
+                                <el-option label="BERT - 本地模型（默认，平衡模式）" value="BERT" :disabled="!canEdit" />
                                 <el-option label="DeepSeek - 自有密钥（高精度模式）" value="DeepSeek"
-                                    :disabled="!isAuthenticated || !hasUserAssistantKey" />
+                                    :disabled="!canEdit || !hasUserAssistantKey" />
                             </el-select>
 
-                            <el-alert v-if="!isAuthenticated" type="info" :closable="false"
-                                class="engine-description-alert">
-                                未登录时默认使用本地 BERT；登录后可选择单规则匹配、BERT 或自有 DeepSeek 密钥。解析首页不读取这里的引擎设置。
-                            </el-alert>
-                            <el-alert v-else-if="engineDescription" type="info" :closable="false"
+                            <el-alert v-if="engineDescription" type="info" :closable="false"
                                 class="engine-description-alert">
                                 {{ engineDescription }}
                             </el-alert>
@@ -177,7 +170,7 @@
     </el-form>
 
     <!-- 操作按钮 -->
-    <div v-if="!showAnonymousPrompt" class="action-buttons">
+    <div class="action-buttons">
         <el-button type="primary" @click="validateAndSubmit" :loading="loading.save">
             应用配置
         </el-button>
@@ -192,11 +185,9 @@ import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Warning } from '@element-plus/icons-vue'
 import axios from '../../utils/request'
-import AnonymousPrompt from '../common/AnonymousPrompt.vue'
 import AccountSelector from '../common/AccountSelector.vue'
-import { hasAuthTokens } from '../../utils/auth'
-import { shouldShowAnonymousPrompt } from '~/composables/useAnonymousPrompt'
 import type { FormInstance } from 'element-plus'
+import { useCapabilities } from '../../capabilities'
 
 const configForm = ref<FormInstance>()
 const formModel = computed(() => ({
@@ -204,9 +195,7 @@ const formModel = computed(() => ({
     assistantApiKey: assistantApiKey.value,
 }))
 const formRules = computed(() => ({
-    aiModel: isAuthenticated.value
-        ? [{ required: true, message: '请选择解析引擎', trigger: 'change' }]
-        : [],
+    aiModel: [{ required: true, message: '请选择解析引擎', trigger: 'change' }],
 }))
 
 // 修改提交方法
@@ -282,7 +271,8 @@ const commissionTemplateId = ref<number | null>(null)
 const reconciliationFallbackAccountId = ref<number | null>(null)
 const currency = ref('')
 const aiModel = ref('BERT') // 默认使用本地 BERT；平台 LLM 在解析首页按次选择
-const isAuthenticated = ref(hasAuthTokens())
+const { can } = useCapabilities()
+const canEdit = computed(() => can('config.write'))
 const assistantPreset = ref<AssistantPreset>('deepseek')
 const assistantBaseUrl = ref('')
 const assistantApiKey = ref('')
@@ -296,9 +286,6 @@ const loading = ref({
     reset: false,
     test: false,
 })
-
-// 匿名用户提示
-const showAnonymousPrompt = ref(false)
 
 const hasUserAssistantKey = computed(() => assistantApiKey.value.trim() !== '')
 
@@ -454,27 +441,9 @@ const loadConfig = async () => {
     }
 }
 
-// 处理匿名用户跳过提示
-const handleSkipAnonymous = () => {
-    showAnonymousPrompt.value = false
-    // 继续加载配置，显示admin用户的共享配置
-    loadConfig()
-}
-
 // 初始化加载配置
 onMounted(() => {
-    if (isAuthenticated.value) {
-        // 已登录用户直接加载配置
-        loadConfig()
-    } else {
-        // 未登录用户：检查是否应该显示提示（仅显示一次）
-        if (shouldShowAnonymousPrompt(false)) {
-            showAnonymousPrompt.value = true
-        } else {
-            // 如果用户已经看过提示，直接加载配置，显示admin用户的共享配置
-            loadConfig()
-        }
-    }
+    loadConfig()
 })
 
 // 生成请求体
@@ -640,17 +609,17 @@ const resetToDefault = async () => {
     justify-content: center;
     min-height: 32px;
     padding: 0 20px;
-    background-color: var(--ep-fill-color-light, var(--el-fill-color-light));
-    color: var(--ep-text-color-regular, var(--el-text-color-regular));
-    border: 1px solid var(--ep-border-color, var(--el-border-color));
+    background-color: var(--el-fill-color-light, var(--el-fill-color-light));
+    color: var(--el-text-color-regular, var(--el-text-color-regular));
+    border: 1px solid var(--el-border-color, var(--el-border-color));
     border-right: none;
-    border-radius: var(--ep-border-radius-base, var(--el-border-radius-base)) 0 0 var(--ep-border-radius-base, var(--el-border-radius-base));
-    font-size: var(--ep-font-size-base, var(--el-font-size-base));
+    border-radius: var(--el-border-radius-base, var(--el-border-radius-base)) 0 0 var(--el-border-radius-base, var(--el-border-radius-base));
+    font-size: var(--el-font-size-base, var(--el-font-size-base));
     white-space: nowrap;
     box-shadow:
-        1px 0 0 0 var(--ep-border-color, var(--el-border-color)) inset,
-        0 1px 0 0 var(--ep-border-color, var(--el-border-color)) inset,
-        0 -1px 0 0 var(--ep-border-color, var(--el-border-color)) inset;
+        1px 0 0 0 var(--el-border-color, var(--el-border-color)) inset,
+        0 1px 0 0 var(--el-border-color, var(--el-border-color)) inset,
+        0 -1px 0 0 var(--el-border-color, var(--el-border-color)) inset;
 }
 
 .template-input-content {
@@ -662,22 +631,22 @@ const resetToDefault = async () => {
     width: 100%;
 }
 
-.template-input-content :deep(.ep-input__wrapper),
+.template-input-content :deep(.el-input__wrapper),
 .template-input-content :deep(.el-input__wrapper) {
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
 }
 
 .template-input-group:focus-within .template-input-prepend {
-    border-color: var(--ep-color-primary, var(--el-color-primary));
+    border-color: var(--el-color-primary, var(--el-color-primary));
     box-shadow:
-        1px 0 0 0 var(--ep-color-primary, var(--el-color-primary)) inset,
-        0 1px 0 0 var(--ep-color-primary, var(--el-color-primary)) inset,
-        0 -1px 0 0 var(--ep-color-primary, var(--el-color-primary)) inset;
+        1px 0 0 0 var(--el-color-primary, var(--el-color-primary)) inset,
+        0 1px 0 0 var(--el-color-primary, var(--el-color-primary)) inset,
+        0 -1px 0 0 var(--el-color-primary, var(--el-color-primary)) inset;
 }
 
 .tip-icon {
-    color: var(--ep-text-color-secondary, var(--el-text-color-secondary));
+    color: var(--el-text-color-secondary, var(--el-text-color-secondary));
     cursor: help;
 }
 
@@ -741,7 +710,7 @@ const resetToDefault = async () => {
 }
 
 .auto-provision-label {
-    color: var(--ep-text-color-regular, var(--el-text-color-regular));
+    color: var(--el-text-color-regular, var(--el-text-color-regular));
 }
 
 .mode-alert,
@@ -758,24 +727,24 @@ const resetToDefault = async () => {
 }
 
 html.dark .format-config .template-input-prepend {
-    background-color: var(--ep-fill-color-dark, var(--el-fill-color-dark));
-    color: var(--ep-text-color-regular, var(--el-text-color-regular));
-    border-color: var(--ep-border-color, var(--el-border-color));
+    background-color: var(--el-fill-color-dark, var(--el-fill-color-dark));
+    color: var(--el-text-color-regular, var(--el-text-color-regular));
+    border-color: var(--el-border-color, var(--el-border-color));
     box-shadow:
-        1px 0 0 0 var(--ep-border-color, var(--el-border-color)) inset,
-        0 1px 0 0 var(--ep-border-color, var(--el-border-color)) inset,
-        0 -1px 0 0 var(--ep-border-color, var(--el-border-color)) inset;
+        1px 0 0 0 var(--el-border-color, var(--el-border-color)) inset,
+        0 1px 0 0 var(--el-border-color, var(--el-border-color)) inset,
+        0 -1px 0 0 var(--el-border-color, var(--el-border-color)) inset;
 }
 
 html.dark .format-config .template-input-group:focus-within .template-input-prepend {
-    border-color: var(--ep-color-primary, var(--el-color-primary));
+    border-color: var(--el-color-primary, var(--el-color-primary));
     box-shadow:
-        1px 0 0 0 var(--ep-color-primary, var(--el-color-primary)) inset,
-        0 1px 0 0 var(--ep-color-primary, var(--el-color-primary)) inset,
-        0 -1px 0 0 var(--ep-color-primary, var(--el-color-primary)) inset;
+        1px 0 0 0 var(--el-color-primary, var(--el-color-primary)) inset,
+        0 1px 0 0 var(--el-color-primary, var(--el-color-primary)) inset,
+        0 -1px 0 0 var(--el-color-primary, var(--el-color-primary)) inset;
 }
 
 html.dark .format-config .tip-icon {
-    color: var(--ep-text-color-secondary, var(--el-text-color-secondary));
+    color: var(--el-text-color-secondary, var(--el-text-color-secondary));
 }
 </style>

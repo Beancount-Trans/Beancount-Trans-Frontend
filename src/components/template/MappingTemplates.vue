@@ -381,7 +381,7 @@ watch(activeType, () => {
     display: flex;
     align-items: center;
     margin-bottom: 10px;
-    color: #909399;
+    color: var(--text-secondary);
     font-size: 14px;
 }
 
@@ -411,7 +411,7 @@ watch(activeType, () => {
 .empty-state {
     text-align: center;
     padding: 40px 0;
-    color: #909399;
+    color: var(--text-secondary);
 }
 
 .collapse-content {

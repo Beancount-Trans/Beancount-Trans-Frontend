@@ -13,7 +13,7 @@ export async function captureElementAsPng(element: HTMLElement): Promise<Blob> {
   const dataUrl = await toPng(element, {
     cacheBust: true,
     pixelRatio: 2,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FCFBF8',
   })
   const response = await fetch(dataUrl)
   return response.blob()

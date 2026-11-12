@@ -185,7 +185,7 @@ const handleSubmit = async () => {
 
 .form-hint {
     font-size: 12px;
-    color: #909399;
+    color: var(--text-secondary);
     margin-top: 4px;
 }
 </style>

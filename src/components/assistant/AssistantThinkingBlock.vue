@@ -49,31 +49,31 @@ function onCollapseChange(names: string | string[]) {
   margin-bottom: 8px;
   border: none;
 
-  :deep(.ep-collapse-item__header) {
+  :deep(.el-collapse-item__header) {
     height: auto;
     min-height: 32px;
     padding: 4px 0;
     font-size: 13px;
-    color: var(--ep-text-color-secondary);
+    color: var(--el-text-color-secondary);
     background: transparent;
     border: none;
   }
 
-  :deep(.ep-collapse-item__wrap) {
+  :deep(.el-collapse-item__wrap) {
     border: none;
     background: transparent;
   }
 
-  :deep(.ep-collapse-item__content) {
+  :deep(.el-collapse-item__content) {
     padding: 0 0 8px 12px;
-    border-left: 2px solid var(--ep-border-color-lighter);
+    border-left: 2px solid var(--el-border-color-lighter);
   }
 }
 
 .thinking-stream {
   font-size: 13px;
   line-height: 1.55;
-  color: var(--ep-text-color-secondary);
+  color: var(--el-text-color-secondary);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -90,10 +90,10 @@ function onCollapseChange(names: string | string[]) {
 
 .thinking-markdown {
   font-size: 13px;
-  color: var(--ep-text-color-secondary);
+  color: var(--el-text-color-secondary);
 
   :deep(.markdown-body) {
-    color: var(--ep-text-color-secondary);
+    color: var(--el-text-color-secondary);
   }
 }
 </style>

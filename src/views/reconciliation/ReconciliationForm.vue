@@ -839,12 +839,12 @@ function handleBack() {
       .header-title {
         font-size: 16px;
         font-weight: 600;
-        color: var(--ep-text-color-primary);
+        color: var(--el-text-color-primary);
       }
 
       .header-account {
         font-size: 13px;
-        color: var(--ep-text-color-regular);
+        color: var(--el-text-color-regular);
         font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
         word-break: break-all;
         line-height: 1.4;
@@ -889,9 +889,9 @@ function handleBack() {
     align-items: center;
     gap: 20px;
     padding: 20px;
-    background-color: var(--ep-fill-color-extra-light);
+    background-color: var(--el-fill-color-extra-light);
     border-radius: 8px;
-    border: 1px solid var(--ep-border-color-lighter);
+    border: 1px solid var(--el-border-color-lighter);
     position: relative;
 
     .balance-item {
@@ -902,13 +902,13 @@ function handleBack() {
 
       .balance-label {
         font-size: 13px;
-        color: var(--ep-text-color-regular);
+        color: var(--el-text-color-regular);
         font-weight: 500;
       }
 
       .balance-value {
         font-size: 24px;
-        color: var(--ep-color-primary);
+        color: var(--el-color-primary);
         font-weight: 600;
         line-height: 1.4;
       }
@@ -916,7 +916,7 @@ function handleBack() {
 
     .balance-separator {
       font-size: 20px;
-      color: var(--ep-text-color-placeholder);
+      color: var(--el-text-color-placeholder);
       font-weight: 500;
       flex-shrink: 0;
       padding: 0 8px;
@@ -930,16 +930,16 @@ function handleBack() {
       border-radius: 12px;
       font-size: 13px;
       font-weight: 600;
-      background: var(--ep-bg-color);
+      background: var(--el-bg-color);
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-      border: 1px solid var(--ep-border-color-lighter);
+      border: 1px solid var(--el-border-color-lighter);
 
       &.positive {
-        color: var(--ep-color-success);
+        color: var(--el-color-success);
       }
 
       &.negative {
-        color: var(--ep-color-danger);
+        color: var(--el-color-danger);
       }
 
       .difference-main {
@@ -953,7 +953,7 @@ function handleBack() {
     .section-title {
       font-size: 15px;
       font-weight: 600;
-      color: var(--ep-text-color-primary);
+      color: var(--el-text-color-primary);
     }
 
     .first-reconciliation-alert {
@@ -995,7 +995,7 @@ function handleBack() {
         }
 
         code {
-          background-color: var(--ep-fill-color);
+          background-color: var(--el-fill-color);
           padding: 2px 4px;
           border-radius: 4px;
           font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
@@ -1035,7 +1035,7 @@ function handleBack() {
       margin-top: 12px;
 
       .error {
-        color: var(--ep-color-danger);
+        color: var(--el-color-danger);
         margin: 6px 0;
         font-size: 14px;
         line-height: 1.5;
@@ -1049,7 +1049,7 @@ function handleBack() {
     justify-content: flex-end;
     gap: 12px;
     padding-top: 16px;
-    border-top: 1px solid var(--ep-border-color-lighter);
+    border-top: 1px solid var(--el-border-color-lighter);
   }
 
   // 响应式设计
@@ -1092,14 +1092,14 @@ function handleBack() {
   }
 
   :deep(html.dark) .balance-comparison {
-    background-color: var(--ep-fill-color-darker);
-    border-color: var(--ep-border-color);
+    background-color: var(--el-fill-color-darker);
+    border-color: var(--el-border-color);
   }
 
   :deep(html.dark) .difference-badge {
-    background: var(--ep-bg-color);
+    background: var(--el-bg-color);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-    border-color: var(--ep-border-color);
+    border-color: var(--el-border-color);
   }
 }
 </style>
@@ -1109,8 +1109,7 @@ function handleBack() {
 .reconciliation-form .allocation-table .no-border-date-picker {
   width: 140px;
 
-  // 清除所有边框和阴影（同时匹配 el- 和 ep- 命名空间）
-  .ep-input__wrapper,
+  // 清除所有边框和阴影
   .el-input__wrapper,
   [class*="input__wrapper"] {
     border: none !important;
@@ -1135,7 +1134,7 @@ function handleBack() {
     }
 
     &:hover {
-      background-color: var(--ep-fill-color) !important;
+      background-color: var(--el-fill-color) !important;
       border: none !important;
       border-width: 0 !important;
       box-shadow: none !important;
@@ -1144,7 +1143,7 @@ function handleBack() {
 
     &.is-focus,
     &[class*="is-focus"] {
-      background-color: var(--ep-fill-color) !important;
+      background-color: var(--el-fill-color) !important;
       border: none !important;
       border-width: 0 !important;
       box-shadow: none !important;
@@ -1153,13 +1152,12 @@ function handleBack() {
   }
 
   // 清除输入框内部样式
-  .ep-input__inner,
   .el-input__inner,
   [class*="input__inner"] {
     font-family: 'Courier New', monospace;
     font-weight: 500;
     font-size: 13px;
-    color: var(--ep-text-color-regular);
+    color: var(--el-text-color-regular);
     text-align: center;
     border: none !important;
     outline: none !important;
@@ -1168,14 +1166,12 @@ function handleBack() {
   }
 
   // 移除日期选择器右侧的图标
-  .ep-input__suffix,
   .el-input__suffix,
   [class*="input__suffix"] {
     display: none !important;
   }
 
   // 清除整个输入框容器的边框
-  .ep-input,
   .el-input,
   [class*="input"] {
     border: none !important;
@@ -1184,7 +1180,6 @@ function handleBack() {
   }
 
   // 清除日期选择器外层容器的所有视觉效果
-  .ep-date-editor,
   .el-date-editor,
   [class*="date-editor"] {
     border: none !important;
@@ -1200,7 +1195,7 @@ function handleBack() {
   }
 
   // 使用属性选择器匹配所有可能的变体
-  [class*="ep-input"],
+  [class*="el-input"],
   [class*="el-input"] {
     border: none !important;
     box-shadow: none !important;

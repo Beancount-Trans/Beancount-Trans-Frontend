@@ -6,7 +6,7 @@
           <div class="header-left">
             <div class="title-row">
               <el-icon class="header-icon">
-                <i-ep-folder-opened />
+                <FolderOpened />
               </el-icon>
               <span class="title">Git 仓库管理</span>
             </div>
@@ -17,14 +17,14 @@
               :icon="getSyncIcon(repository.sync_paused ? 'paused' : repository.sync_status)" effect="plain">
               {{ repository.sync_paused ? SyncStatusText.paused : SyncStatusText[repository.sync_status] }}
             </el-tag>
-            <el-button type="primary" link :loading="syncing" :disabled="repository.sync_status === 'syncing'"
-              @click="triggerSync">
-              <el-icon class="el-icon--left"><i-ep-refresh /></el-icon>
+            <el-button type="primary" link :loading="syncing"
+              :disabled="repository.sync_status === 'syncing' || !can('git.sync')" @click="triggerSync">
+              <el-icon class="el-icon--left"><Refresh /></el-icon>
               {{ syncing ? '同步中...' : (repository.sync_paused ? '恢复同步' : '立即同步') }}
             </el-button>
             <el-button v-if="!repository.sync_paused" type="warning" link :loading="cancellingSync"
-              @click="handleCancelSync">
-              <el-icon class="el-icon--left"><i-ep-circle-close /></el-icon>
+              :disabled="!can('git.sync')" @click="handleCancelSync">
+              <el-icon class="el-icon--left"><CircleClose /></el-icon>
               {{ cancellingSync ? '清理中...' : '取消同步' }}
             </el-button>
           </div>
@@ -67,7 +67,7 @@
             <el-input :model-value="repository.ssh_clone_url" readonly class="ssh-url-input">
               <template #append>
                 <el-button @click="copyToClipboard(repository.ssh_clone_url)">
-                  <el-icon><i-ep-copy-document /></el-icon>
+                  <el-icon><CopyDocument /></el-icon>
                   复制
                 </el-button>
               </template>
@@ -78,7 +78,7 @@
             <el-input :model-value="repository.webhook_callback_url" readonly class="ssh-url-input">
               <template #append>
                 <el-button @click="copyToClipboard(repository.webhook_callback_url!)">
-                  <el-icon><i-ep-copy-document /></el-icon>
+                  <el-icon><CopyDocument /></el-icon>
                   复制
                 </el-button>
               </template>
@@ -91,7 +91,7 @@
             <el-input :model-value="repository.webhook_secret" readonly class="ssh-url-input mt-2" />
             <el-button class="mt-2" size="small" type="primary" plain
               @click="copyToClipboard(repository.webhook_secret!)">
-              <el-icon><i-ep-copy-document /></el-icon>
+              <el-icon><CopyDocument /></el-icon>
               复制 Secret
             </el-button>
           </el-descriptions-item>
@@ -101,7 +101,7 @@
             <el-input type="textarea" :rows="3" :model-value="repository.deploy_key_public" readonly
               class="ssh-url-input" />
             <el-button class="mt-2" size="small" @click="copyToClipboard(repository.deploy_key_public!)">
-              <el-icon><i-ep-copy-document /></el-icon>
+              <el-icon><CopyDocument /></el-icon>
               复制公钥
             </el-button>
           </el-descriptions-item>
@@ -109,7 +109,7 @@
 
         <div v-if="repository.setup_instructions?.length && !isLinkedRemote" class="setup-hints">
           <h4 class="section-title small-title">
-            <el-icon><i-ep-info-filled /></el-icon>
+            <el-icon><InfoFilled /></el-icon>
             Webhook 与远程配置提示
           </h4>
           <ul class="hint-list">
@@ -124,13 +124,14 @@
 
       <!-- 操作按钮区域 -->
       <div class="actions-section">
-        <el-button type="success" plain :loading="committingTrans" @click="handleTransCommit" class="action-btn-main">
-          <el-icon class="el-icon--left"><i-ep-upload /></el-icon>
+        <el-button type="success" plain :loading="committingTrans" :disabled="!can('git.sync')"
+          @click="handleTransCommit" class="action-btn-main">
+          <el-icon class="el-icon--left"><Upload /></el-icon>
           {{ committingTrans ? '提交中...' : '提交到账本' }}
         </el-button>
         <el-button v-if="!isLinkedRemote" type="primary" plain :loading="downloadingKey" @click="downloadDeployKey"
           class="action-btn-main">
-          <el-icon class="el-icon--left"><i-ep-key /></el-icon>
+          <el-icon class="el-icon--left"><Key /></el-icon>
           下载 Deploy Key
         </el-button>
       </div>
@@ -138,7 +139,7 @@
       <!-- 使用说明 -->
       <div class="instructions-section">
         <h4 class="section-title">
-          <el-icon><i-ep-document /></el-icon>
+          <el-icon><Document /></el-icon>
           使用说明
         </h4>
 
@@ -155,7 +156,7 @@
                   class="ssh-url-input" />
                 <el-button class="mt-2" size="small" type="primary" plain
                   @click="copyToClipboard(repository.deploy_key_public!)">
-                  <el-icon><i-ep-copy-document /></el-icon>
+                  <el-icon><CopyDocument /></el-icon>
                   复制公钥
                 </el-button>
               </template>
@@ -180,7 +181,7 @@
                 <el-input :model-value="repository.webhook_callback_url" readonly class="ssh-url-input">
                   <template #append>
                     <el-button @click="copyToClipboard(repository.webhook_callback_url!)">
-                      <el-icon><i-ep-copy-document /></el-icon>
+                      <el-icon><CopyDocument /></el-icon>
                       复制
                     </el-button>
                   </template>
@@ -193,7 +194,7 @@
                 <el-input :model-value="repository.webhook_secret" readonly class="ssh-url-input mt-2" />
                 <el-button class="mt-2" size="small" type="primary" plain
                   @click="copyToClipboard(repository.webhook_secret!)">
-                  <el-icon><i-ep-copy-document /></el-icon>
+                  <el-icon><CopyDocument /></el-icon>
                   复制 Secret
                 </el-button>
               </template>
@@ -278,7 +279,7 @@ EOF</code></pre>
                     <el-popconfirm title="确定重置密钥吗？旧密钥将立即失效。" @confirm="confirmRegenerateKey" width="260">
                       <template #reference>
                         <el-button type="warning" plain size="small" :loading="regeneratingKey">
-                          <el-icon class="el-icon--left"><i-ep-refresh /></el-icon>
+                          <el-icon class="el-icon--left"><Refresh /></el-icon>
                           重置 Key
                         </el-button>
                       </template>
@@ -319,7 +320,7 @@ EOF</code></pre>
                     @confirm="confirmDeleteRepository" width="260">
                     <template #reference>
                       <el-button type="danger" plain size="small" :loading="deletingRepository">
-                        <el-icon class="el-icon--left"><i-ep-delete /></el-icon>
+                        <el-icon class="el-icon--left"><Delete /></el-icon>
                         {{ isLinkedRemote ? '取消关联' : '删除仓库' }}
                       </el-button>
                     </template>
@@ -347,6 +348,8 @@ import {
   cancelSync as apiCancelSync,
   updateGitRepositorySettings
 } from '../../api/git'
+import { emitGitRepositoryChanged } from '../../utils/accountEvents'
+import { useCapabilities } from '../../capabilities'
 import {
   SyncStatusText,
   SyncStatusType,
@@ -370,12 +373,13 @@ const syncing = ref(false)
 const downloadingKey = ref(false)
 const regeneratingKey = ref(false)
 const committingTrans = ref(false)
+const { can, username: capabilityUsername } = useCapabilities()
 const deletingRepository = ref(false)
 const cancellingSync = ref(false)
 const savingAutoImportSettings = ref(false)
 
 // 计算属性
-const username = computed(() => localStorage.getItem('username') || 'user')
+const username = computed(() => capabilityUsername.value || 'user')
 
 const defaultBranch = computed(() => (props.repository.default_branch || 'main').trim() || 'main')
 
@@ -437,7 +441,7 @@ const instructionActivePanels = ref<string[]>([])
 const showLinkedRemoteIntro = ref(false)
 
 function linkedRemoteIntroStorageKey(repoId: number): string {
-  const u = localStorage.getItem('username') || 'anon'
+  const u = username.value || 'anon'
   return `git_linked_remote_intro_seen_${u}_${repoId}`
 }
 
@@ -615,6 +619,7 @@ const handleCancelSync = async () => {
         : result.message
     )
     emit('updated', { ...props.repository, sync_paused: true })
+    emitGitRepositoryChanged()
   } catch (error: unknown) {
     if (error && typeof error === 'object' && 'response' in error) {
       const axiosError = error as { response?: { data?: { error?: string } } }
@@ -644,7 +649,7 @@ const buildCommitPreviewHtml = (preview: LedgerCommitPreview): string => {
   return (
     `<div style="line-height:1.7">${header}` +
     `<ul style="padding-left:18px;margin:8px 0">${rows}</ul>` +
-    `<span style="color:#909399;font-size:12px">提交后 trans/ 中的条目将被清空，且会推送到远程仓库，无法撤销。</span></div>`
+    `<span style="color:var(--el-text-color-secondary);font-size:12px">提交后 trans/ 中的条目将被清空，且会推送到远程仓库，无法撤销。</span></div>`
   )
 }
 
@@ -683,6 +688,7 @@ const handleTransCommit = async () => {
 
     const result = await commitTrans()
     ElMessage.success(`${result.message}（写入 ${result.entries_appended} 条）`)
+    emitGitRepositoryChanged()
   } catch (error: unknown) {
     if (error && typeof error === 'object' && 'response' in error) {
       const axiosError = error as { response?: { data?: { error?: string } } }
@@ -739,6 +745,7 @@ const deleteRepository = async () => {
   try {
     const response = await apiDeleteGitRepository()
     ElMessage.success('仓库删除成功')
+    emitGitRepositoryChanged()
 
     // 通知父组件仓库已删除
     emit('deleted')
@@ -783,14 +790,14 @@ const deleteRepository = async () => {
       gap: 8px;
 
       .header-icon {
-        color: var(--ep-color-success);
+        color: var(--el-color-success);
         font-size: 20px;
       }
 
       .title {
         font-size: 16px;
         font-weight: 600;
-        color: var(--ep-text-color-primary);
+        color: var(--el-text-color-primary);
       }
     }
   }
@@ -814,7 +821,7 @@ const deleteRepository = async () => {
     margin: 0;
     line-height: 1.6;
     font-size: 13px;
-    color: var(--ep-text-color-regular);
+    color: var(--el-text-color-regular);
   }
 }
 
@@ -833,7 +840,7 @@ const deleteRepository = async () => {
 .repo-name {
   font-family: 'Monaco', 'Consolas', monospace;
   font-weight: 500;
-  color: var(--ep-text-color-primary);
+  color: var(--el-text-color-primary);
 }
 
 .sync-time {
@@ -845,7 +852,7 @@ const deleteRepository = async () => {
   :deep(.el-input__inner) {
     font-family: 'Monaco', 'Consolas', monospace;
     font-size: 12px;
-    color: var(--ep-text-color-regular);
+    color: var(--el-text-color-regular);
   }
 }
 
@@ -860,7 +867,7 @@ const deleteRepository = async () => {
 // Actions Section Styles
 .actions-section {
   padding-bottom: 24px;
-  border-bottom: 1px solid var(--ep-border-color-lighter);
+  border-bottom: 1px solid var(--el-border-color-lighter);
   margin-bottom: 24px;
   display: flex;
   gap: 12px;
@@ -924,16 +931,16 @@ const deleteRepository = async () => {
 .setting-label {
   font-size: 14px;
   font-weight: 500;
-  color: var(--ep-text-color-primary);
+  color: var(--el-text-color-primary);
 
   &.text-danger {
-    color: var(--ep-color-danger);
+    color: var(--el-color-danger);
   }
 }
 
 .setting-desc {
   font-size: 13px;
-  color: var(--ep-text-color-secondary);
+  color: var(--el-text-color-secondary);
 }
 
 .setting-actions {
@@ -945,7 +952,7 @@ const deleteRepository = async () => {
 
 .setting-divider {
   height: 1px;
-  background-color: var(--ep-border-color-lighter);
+  background-color: var(--el-border-color-lighter);
   margin: 12px 0;
 }
 
@@ -954,8 +961,8 @@ const deleteRepository = async () => {
   margin: 16px 0;
   padding: 12px 16px;
   border-radius: 8px;
-  background: var(--ep-fill-color-lighter);
-  border: 1px solid var(--ep-border-color-lighter);
+  background: var(--el-fill-color-lighter);
+  border: 1px solid var(--el-border-color-lighter);
 }
 
 .hint-list {
@@ -963,7 +970,7 @@ const deleteRepository = async () => {
   padding-left: 20px;
   font-size: 13px;
   line-height: 1.55;
-  color: var(--ep-text-color-regular);
+  color: var(--el-text-color-regular);
 }
 
 .mono-text {
@@ -988,7 +995,7 @@ const deleteRepository = async () => {
     margin: 0 0 16px 0;
     font-size: 15px;
     font-weight: 600;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
   }
 }
 
@@ -998,7 +1005,7 @@ const deleteRepository = async () => {
   p {
     margin: 0 0 12px 0;
     line-height: 1.6;
-    color: var(--ep-text-color-regular);
+    color: var(--el-text-color-regular);
   }
 }
 
@@ -1007,13 +1014,13 @@ const deleteRepository = async () => {
     margin: 12px 0 6px 0;
     font-size: 12px;
     font-weight: 500;
-    color: var(--ep-text-color-secondary);
+    color: var(--el-text-color-secondary);
   }
 
   .secret-missing-hint {
     margin: 8px 0 0 0;
     font-size: 13px;
-    color: var(--ep-text-color-secondary);
+    color: var(--el-text-color-secondary);
   }
 }
 
@@ -1022,15 +1029,15 @@ const deleteRepository = async () => {
   padding-left: 20px;
   line-height: 1.55;
   font-size: 13px;
-  color: var(--ep-text-color-regular);
+  color: var(--el-text-color-regular);
 }
 
 .code-block {
-  background-color: var(--ep-fill-color-light);
+  background-color: var(--el-fill-color-light);
   border-radius: 6px;
   padding: 16px;
   margin: 12px 0;
-  border: 1px solid var(--ep-border-color-lighter);
+  border: 1px solid var(--el-border-color-lighter);
 
   pre {
     margin: 0;
@@ -1041,7 +1048,7 @@ const deleteRepository = async () => {
       font-family: inherit;
       font-size: 13px;
       line-height: 1.6;
-      color: var(--ep-text-color-primary);
+      color: var(--el-text-color-primary);
       background-color: transparent;
       display: block;
       white-space: pre;

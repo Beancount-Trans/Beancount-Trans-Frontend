@@ -421,7 +421,6 @@ const handleKeywordSelect = async (uuid: string, selectedKey: string) => {
   &.has-error {
 
     :deep(.el-textarea__inner),
-    :deep(.ep-textarea__inner),
     .entry-preview-render {
       border-color: var(--el-color-danger);
       box-shadow: 0 0 0 1px var(--el-color-danger) inset;
@@ -431,7 +430,6 @@ const handleKeywordSelect = async (uuid: string, selectedKey: string) => {
   &.has-warning {
 
     :deep(.el-textarea__inner),
-    :deep(.ep-textarea__inner),
     .entry-preview-render {
       border-color: var(--el-color-warning);
       box-shadow: 0 0 0 1px var(--el-color-warning) inset;
@@ -441,11 +439,10 @@ const handleKeywordSelect = async (uuid: string, selectedKey: string) => {
   &.has-other {
 
     :deep(.el-textarea__inner),
-    :deep(.ep-textarea__inner),
     .entry-preview-render {
-      border-color: var(--ep-color-primary, var(--el-color-primary));
-      box-shadow: 0 0 0 1px var(--ep-color-primary, var(--el-color-primary)) inset;
-      background-color: var(--ep-color-primary-light-9, var(--el-color-primary-light-9));
+      border-color: var(--el-color-primary, var(--el-color-primary));
+      box-shadow: 0 0 0 1px var(--el-color-primary, var(--el-color-primary)) inset;
+      background-color: var(--el-color-primary-light-9, var(--el-color-primary-light-9));
     }
   }
 }
@@ -454,13 +451,12 @@ const handleKeywordSelect = async (uuid: string, selectedKey: string) => {
 :deep(html.dark) .entry-preview-wrapper.has-other {
 
   :deep(.el-textarea__inner),
-  :deep(.ep-textarea__inner),
   .entry-preview-render {
-    /* el-config-provider namespace=ep：暗黑语义在 --ep-*，--el-* 在 dist/index.css 中仍为亮色 */
-    color: var(--ep-text-color-primary, var(--el-text-color-primary));
+    /* el-config-provider namespace=ep：暗黑语义在 --el-*，--el-* 在 dist/index.css 中仍为亮色 */
+    color: var(--el-text-color-primary, var(--el-text-color-primary));
     background-color: color-mix(in srgb,
-        var(--ep-color-primary, var(--el-color-primary)) 18%,
-        var(--ep-bg-color, var(--el-bg-color)));
+        var(--el-color-primary, var(--el-color-primary)) 18%,
+        var(--el-bg-color, var(--el-bg-color)));
   }
 }
 
@@ -493,12 +489,12 @@ $entry-preview-min-height: calc(1 * 1.6em + 10px + 2px);
   width: 100%;
 
   :deep(.el-textarea),
-  :deep(.ep-textarea) {
+  :deep(.el-textarea) {
     display: block;
   }
 
   :deep(.el-textarea__inner),
-  :deep(.ep-textarea__inner) {
+  :deep(.el-textarea__inner) {
     box-sizing: border-box;
     font-family: Monaco, Consolas, 'Courier New', monospace;
     font-size: 12px;
@@ -511,9 +507,9 @@ $entry-preview-min-height: calc(1 * 1.6em + 10px + 2px);
     resize: none;
     outline: none;
     transition: border-color 0.2s cubic-bezier(0.645, 0.045, 0.355, 1);
-    background-color: var(--ep-input-bg-color, var(--el-input-bg-color, var(--ep-fill-color-blank, var(--el-fill-color-blank))));
-    color: var(--ep-input-text-color, var(--el-input-text-color, var(--ep-text-color-regular, var(--el-text-color-regular))));
-    border-color: var(--ep-input-border-color, var(--el-input-border-color, var(--ep-border-color, var(--el-border-color))));
+    background-color: var(--el-input-bg-color, var(--el-input-bg-color, var(--el-fill-color-blank, var(--el-fill-color-blank))));
+    color: var(--el-input-text-color, var(--el-input-text-color, var(--el-text-color-regular, var(--el-text-color-regular))));
+    border-color: var(--el-input-border-color, var(--el-input-border-color, var(--el-border-color, var(--el-border-color))));
   }
 }
 
@@ -529,11 +525,11 @@ $entry-preview-min-height: calc(1 * 1.6em + 10px + 2px);
   word-break: break-word;
   padding: $entry-preview-inner-padding;
   border-radius: $entry-preview-inner-radius;
-  border: $entry-preview-inner-border var(--ep-input-border-color, var(--el-input-border-color, var(--ep-border-color, var(--el-border-color))));
-  background-color: var(--ep-input-bg-color,
-      var(--el-input-bg-color, var(--ep-fill-color-blank, var(--el-fill-color-blank))));
-  color: var(--ep-input-text-color,
-      var(--el-input-text-color, var(--ep-text-color-regular, var(--el-text-color-regular))));
+  border: $entry-preview-inner-border var(--el-input-border-color, var(--el-input-border-color, var(--el-border-color, var(--el-border-color))));
+  background-color: var(--el-input-bg-color,
+      var(--el-input-bg-color, var(--el-fill-color-blank, var(--el-fill-color-blank))));
+  color: var(--el-input-text-color,
+      var(--el-input-text-color, var(--el-text-color-regular, var(--el-text-color-regular))));
   cursor: text;
   outline: none;
   transition: border-color 0.2s cubic-bezier(0.645, 0.045, 0.355, 1);
@@ -542,17 +538,17 @@ $entry-preview-min-height: calc(1 * 1.6em + 10px + 2px);
 // 无校验态：预览外框为默认输入框色；修改态外框为主题色（与预览区分）
 .entry-preview-wrapper.is-entry-preview-mode:not(.has-error):not(.has-warning):not(.has-other) {
   .entry-preview-render {
-    border-color: var(--ep-input-border-color, var(--el-input-border-color, var(--ep-border-color, var(--el-border-color))));
+    border-color: var(--el-input-border-color, var(--el-input-border-color, var(--el-border-color, var(--el-border-color))));
   }
 
   .entry-preview-render:hover {
-    border-color: var(--ep-input-hover-border-color,
-        var(--el-input-hover-border-color, var(--ep-border-color-hover, var(--el-border-color-hover))));
+    border-color: var(--el-input-hover-border-color,
+        var(--el-input-hover-border-color, var(--el-border-color-hover, var(--el-border-color-hover))));
   }
 
   .entry-preview-render:focus-visible {
-    border-color: var(--ep-input-hover-border-color,
-        var(--el-input-hover-border-color, var(--ep-border-color-hover, var(--el-border-color-hover))));
+    border-color: var(--el-input-hover-border-color,
+        var(--el-input-hover-border-color, var(--el-border-color-hover, var(--el-border-color-hover))));
     box-shadow: none;
   }
 }
@@ -560,19 +556,19 @@ $entry-preview-min-height: calc(1 * 1.6em + 10px + 2px);
 .entry-preview-wrapper.is-entry-edit-mode:not(.has-error):not(.has-warning):not(.has-other) {
 
   :deep(.el-textarea__inner),
-  :deep(.ep-textarea__inner) {
-    border-color: var(--ep-color-primary, var(--el-color-primary));
+  :deep(.el-textarea__inner) {
+    border-color: var(--el-color-primary, var(--el-color-primary));
     box-shadow: none;
   }
 
   :deep(.el-textarea__inner:hover),
-  :deep(.ep-textarea__inner:hover) {
-    border-color: var(--ep-color-primary, var(--el-color-primary));
+  :deep(.el-textarea__inner:hover) {
+    border-color: var(--el-color-primary, var(--el-color-primary));
   }
 
   :deep(.el-textarea__inner:focus),
-  :deep(.ep-textarea__inner:focus) {
-    border-color: var(--ep-color-primary, var(--el-color-primary));
+  :deep(.el-textarea__inner:focus) {
+    border-color: var(--el-color-primary, var(--el-color-primary));
     box-shadow: none;
   }
 }
@@ -588,8 +584,8 @@ $entry-preview-min-height: calc(1 * 1.6em + 10px + 2px);
 }
 
 .entry-preview-wrapper.has-other .entry-preview-render:focus-visible {
-  border-color: var(--ep-color-primary, var(--el-color-primary));
-  box-shadow: 0 0 0 1px var(--ep-color-primary, var(--el-color-primary)) inset;
+  border-color: var(--el-color-primary, var(--el-color-primary));
+  box-shadow: 0 0 0 1px var(--el-color-primary, var(--el-color-primary)) inset;
 }
 
 .entry-preview-line {
@@ -609,7 +605,7 @@ $entry-preview-min-height: calc(1 * 1.6em + 10px + 2px);
 }
 
 .entry-preview-account-link:hover {
-  color: var(--ep-color-primary, var(--el-color-primary));
+  color: var(--el-color-primary, var(--el-color-primary));
 }
 
 .entry-preview-tag-chip {
@@ -619,13 +615,13 @@ $entry-preview-min-height: calc(1 * 1.6em + 10px + 2px);
   margin: 0 2px;
   padding: 0 2px 0 4px;
   border-radius: 4px;
-  background: var(--ep-fill-color-light, var(--el-fill-color-light));
+  background: var(--el-fill-color-light, var(--el-fill-color-light));
   vertical-align: baseline;
 }
 
 .entry-preview-tag-link {
   cursor: inherit;
-  color: var(--ep-color-primary, var(--el-color-primary));
+  color: var(--el-color-primary, var(--el-color-primary));
 }
 
 .entry-preview-tag-remove {
@@ -636,11 +632,11 @@ $entry-preview-min-height: calc(1 * 1.6em + 10px + 2px);
   margin: 0;
   border: none;
   background: none;
-  color: var(--ep-text-color-secondary, var(--el-text-color-secondary));
+  color: var(--el-text-color-secondary, var(--el-text-color-secondary));
 }
 
 .entry-preview-tag-remove:hover {
-  color: var(--ep-color-danger, var(--el-color-danger));
+  color: var(--el-color-danger, var(--el-color-danger));
 }
 
 .entry-preview-tag-add {
@@ -649,16 +645,16 @@ $entry-preview-min-height: calc(1 * 1.6em + 10px + 2px);
   cursor: pointer;
   padding: 0 4px;
   margin-left: 4px;
-  border: 1px dashed var(--ep-border-color, var(--el-border-color));
+  border: 1px dashed var(--el-border-color, var(--el-border-color));
   border-radius: 4px;
   background: none;
-  color: var(--ep-text-color-secondary, var(--el-text-color-secondary));
+  color: var(--el-text-color-secondary, var(--el-text-color-secondary));
   vertical-align: baseline;
 }
 
 .entry-preview-tag-add:hover {
-  color: var(--ep-color-primary, var(--el-color-primary));
-  border-color: var(--ep-color-primary, var(--el-color-primary));
+  color: var(--el-color-primary, var(--el-color-primary));
+  border-color: var(--el-color-primary, var(--el-color-primary));
 }
 
 .entry-preview-plain {
@@ -731,20 +727,20 @@ $entry-preview-min-height: calc(1 * 1.6em + 10px + 2px);
 }
 
 .no-category-tip {
-  color: var(--ep-text-color-placeholder, var(--el-text-color-placeholder));
+  color: var(--el-text-color-placeholder, var(--el-text-color-placeholder));
   font-size: 12px;
   display: inline-block;
   line-height: 22px;
   padding: 0 9px;
   border-radius: 4px;
-  background: var(--ep-fill-color-light, var(--el-fill-color-light));
+  background: var(--el-fill-color-light, var(--el-fill-color-light));
   vertical-align: middle;
 }
 
 // 暗黑模式下：无分类建议提示更柔和、对比度更稳定
 html.dark .no-category-tip {
-  background: var(--ep-fill-color-dark, var(--el-fill-color-dark));
-  color: var(--ep-text-color-placeholder, var(--el-text-color-placeholder));
+  background: var(--el-fill-color-dark, var(--el-fill-color-dark));
+  color: var(--el-text-color-placeholder, var(--el-text-color-placeholder));
 }
 
 .add-mapping-btn {
@@ -758,16 +754,16 @@ html.dark .no-category-tip {
   inset: 0;
   z-index: 3000;
   background-color: color-mix(in srgb,
-      var(--ep-overlay-color-lighter, var(--el-overlay-color-lighter, #000)) 12%,
+      var(--el-overlay-color-lighter, var(--el-overlay-color-lighter, #000)) 12%,
       transparent);
 }
 
 .parse-review-account-panel {
-  background-color: var(--ep-bg-color-overlay, var(--ep-bg-color, var(--el-bg-color)));
-  border: 1px solid var(--ep-border-color, var(--el-border-color));
-  border-radius: var(--ep-border-radius-base, var(--el-border-radius-base));
+  background-color: var(--el-bg-color-overlay, var(--el-bg-color, var(--el-bg-color)));
+  border: 1px solid var(--el-border-color, var(--el-border-color));
+  border-radius: var(--el-border-radius-base, var(--el-border-radius-base));
   padding: 8px;
-  box-shadow: var(--ep-box-shadow, var(--el-box-shadow));
+  box-shadow: var(--el-box-shadow, var(--el-box-shadow));
 }
 
 .parse-review-account-original {
@@ -776,9 +772,9 @@ html.dark .no-category-tip {
   line-height: 1.6;
   padding: 6px 8px;
   margin-bottom: 4px;
-  border-radius: var(--ep-border-radius-small, var(--el-border-radius-small));
-  background-color: var(--ep-fill-color-light, var(--el-fill-color-light));
-  color: var(--ep-text-color-primary, var(--el-text-color-primary));
+  border-radius: var(--el-border-radius-small, var(--el-border-radius-small));
+  background-color: var(--el-fill-color-light, var(--el-fill-color-light));
+  color: var(--el-text-color-primary, var(--el-text-color-primary));
   word-break: break-all;
 }
 
@@ -786,21 +782,21 @@ html.dark .no-category-tip {
   font-size: 12px;
   line-height: 1.5;
   padding: 0 8px 8px;
-  color: var(--ep-text-color-secondary, var(--el-text-color-secondary));
+  color: var(--el-text-color-secondary, var(--el-text-color-secondary));
 }
 
 .parse-review-account-query {
   width: 100%;
 
-  .ep-input__wrapper,
+  .el-input__wrapper,
   .el-input__wrapper {
-    background-color: var(--ep-fill-color-blank, var(--el-fill-color-blank));
-    box-shadow: 0 0 0 1px var(--ep-input-border-color, var(--el-input-border-color)) inset;
+    background-color: var(--el-fill-color-blank, var(--el-fill-color-blank));
+    box-shadow: 0 0 0 1px var(--el-input-border-color, var(--el-input-border-color)) inset;
   }
 
-  .ep-input__inner,
+  .el-input__inner,
   .el-input__inner {
-    color: var(--ep-text-color-regular, var(--el-text-color-regular));
+    color: var(--el-text-color-regular, var(--el-text-color-regular));
   }
 }
 
@@ -810,9 +806,9 @@ html.dark .no-category-tip {
   padding: 0;
   max-height: 220px;
   overflow-y: auto;
-  border: 1px solid var(--ep-border-color-lighter, var(--el-border-color-lighter));
-  border-radius: var(--ep-border-radius-small, var(--el-border-radius-small));
-  background-color: var(--ep-fill-color-blank, var(--el-fill-color-blank));
+  border: 1px solid var(--el-border-color-lighter, var(--el-border-color-lighter));
+  border-radius: var(--el-border-radius-small, var(--el-border-radius-small));
+  background-color: var(--el-fill-color-blank, var(--el-fill-color-blank));
 }
 
 .parse-review-account-suggestion-item {
@@ -822,7 +818,7 @@ html.dark .no-category-tip {
   padding: 6px 10px;
   font-size: 12px;
   cursor: pointer;
-  color: var(--ep-text-color-regular, var(--el-text-color-regular));
+  color: var(--el-text-color-regular, var(--el-text-color-regular));
 }
 
 .parse-review-account-suggestion-name {
@@ -840,17 +836,17 @@ html.dark .no-category-tip {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--ep-text-color-secondary, var(--el-text-color-secondary));
+  color: var(--el-text-color-secondary, var(--el-text-color-secondary));
 }
 
 .parse-review-account-suggestion-item:hover,
 .parse-review-account-suggestion-item.is-active {
-  background-color: var(--ep-fill-color-light, var(--el-fill-color-light));
-  color: var(--ep-text-color-primary, var(--el-text-color-primary));
+  background-color: var(--el-fill-color-light, var(--el-fill-color-light));
+  color: var(--el-text-color-primary, var(--el-text-color-primary));
 }
 
 html.dark .parse-review-account-suggestion-item.is-active {
-  background-color: var(--ep-fill-color-dark, var(--el-fill-color-dark));
+  background-color: var(--el-fill-color-dark, var(--el-fill-color-dark));
 }
 
 .parse-review-tag-overlay {
@@ -858,23 +854,23 @@ html.dark .parse-review-account-suggestion-item.is-active {
   inset: 0;
   z-index: 3000;
   background-color: color-mix(in srgb,
-      var(--ep-overlay-color-lighter, var(--el-overlay-color-lighter, #000)) 12%,
+      var(--el-overlay-color-lighter, var(--el-overlay-color-lighter, #000)) 12%,
       transparent);
 }
 
 .parse-review-tag-panel {
-  background-color: var(--ep-bg-color-overlay, var(--ep-bg-color, var(--el-bg-color)));
-  border: 1px solid var(--ep-border-color, var(--el-border-color));
-  border-radius: var(--ep-border-radius-base, var(--el-border-radius-base));
+  background-color: var(--el-bg-color-overlay, var(--el-bg-color, var(--el-bg-color)));
+  border: 1px solid var(--el-border-color, var(--el-border-color));
+  border-radius: var(--el-border-radius-base, var(--el-border-radius-base));
   padding: 8px;
-  box-shadow: var(--ep-box-shadow, var(--el-box-shadow));
+  box-shadow: var(--el-box-shadow, var(--el-box-shadow));
 }
 
 .parse-review-tag-panel-title {
   font-size: 12px;
   font-weight: 600;
   padding: 4px 8px 8px;
-  color: var(--ep-text-color-primary, var(--el-text-color-primary));
+  color: var(--el-text-color-primary, var(--el-text-color-primary));
 }
 
 .parse-review-tag-query {
@@ -887,9 +883,9 @@ html.dark .parse-review-account-suggestion-item.is-active {
   padding: 0;
   max-height: 220px;
   overflow-y: auto;
-  border: 1px solid var(--ep-border-color-lighter, var(--el-border-color-lighter));
-  border-radius: var(--ep-border-radius-small, var(--el-border-radius-small));
-  background-color: var(--ep-fill-color-blank, var(--el-fill-color-blank));
+  border: 1px solid var(--el-border-color-lighter, var(--el-border-color-lighter));
+  border-radius: var(--el-border-radius-small, var(--el-border-radius-small));
+  background-color: var(--el-fill-color-blank, var(--el-fill-color-blank));
 }
 
 .parse-review-tag-suggestion-item {
@@ -899,7 +895,7 @@ html.dark .parse-review-account-suggestion-item.is-active {
   padding: 6px 10px;
   font-size: 12px;
   cursor: pointer;
-  color: var(--ep-text-color-regular, var(--el-text-color-regular));
+  color: var(--el-text-color-regular, var(--el-text-color-regular));
 }
 
 .parse-review-tag-suggestion-name {
@@ -917,25 +913,25 @@ html.dark .parse-review-account-suggestion-item.is-active {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--ep-text-color-secondary, var(--el-text-color-secondary));
+  color: var(--el-text-color-secondary, var(--el-text-color-secondary));
 }
 
 .parse-review-tag-suggestion-item:hover,
 .parse-review-tag-suggestion-item.is-active {
-  background-color: var(--ep-fill-color-light, var(--el-fill-color-light));
+  background-color: var(--el-fill-color-light, var(--el-fill-color-light));
 }
 
 .parse-review-tag-empty {
   margin-top: 8px;
   font-size: 12px;
-  color: var(--ep-text-color-secondary, var(--el-text-color-secondary));
+  color: var(--el-text-color-secondary, var(--el-text-color-secondary));
   padding: 8px;
 }
 
 .parse-review-account-empty {
   margin-top: 8px;
   font-size: 12px;
-  color: var(--ep-text-color-secondary, var(--el-text-color-secondary));
+  color: var(--el-text-color-secondary, var(--el-text-color-secondary));
   padding: 8px;
 }
 

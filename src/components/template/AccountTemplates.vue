@@ -332,7 +332,7 @@ onMounted(() => {
     padding: 20px;
     max-width: 1200px;
     margin: 0 auto;
-    background-color: var(--ep-bg-color);
+    background-color: var(--el-bg-color);
     border-radius: 12px;
 }
 
@@ -346,14 +346,14 @@ onMounted(() => {
 .template-header h1 {
     margin: 0;
     font-size: 24px;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
 }
 
 .template-card {
     margin-bottom: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-    background-color: var(--ep-fill-color-light);
+    background-color: var(--el-fill-color-light);
 }
 
 .template-card__header {
@@ -372,7 +372,7 @@ onMounted(() => {
     flex-wrap: wrap;
     align-items: center;
     margin-bottom: 10px;
-    color: var(--ep-text-color-regular);
+    color: var(--el-text-color-regular);
     font-size: 14px;
     gap: 15px;
 }
@@ -385,7 +385,7 @@ onMounted(() => {
 
 .template-description {
     margin: 10px 0;
-    color: var(--ep-text-color-regular);
+    color: var(--el-text-color-regular);
 }
 
 .template-collapse {
@@ -407,11 +407,11 @@ onMounted(() => {
     gap: 8px;
     margin: 0 0 10px 0;
     font-size: 14px;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
 }
 
 .account-count {
-    color: var(--ep-text-color-secondary);
+    color: var(--el-text-color-secondary);
     font-weight: normal;
 }
 
@@ -427,9 +427,9 @@ onMounted(() => {
     align-items: center;
     gap: 12px;
     padding: 8px 12px;
-    background-color: var(--ep-fill-color-light);
+    background-color: var(--el-fill-color-light);
     border-radius: 4px;
-    border-left: 3px solid var(--ep-color-primary);
+    border-left: 3px solid var(--el-color-primary);
 }
 
 .account-item-left {
@@ -450,7 +450,7 @@ onMounted(() => {
 .account-path {
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
     font-size: 13px;
-    color: var(--ep-text-color-regular);
+    color: var(--el-text-color-regular);
 }
 
 .reconciliation-cycle {
@@ -458,13 +458,13 @@ onMounted(() => {
     align-items: center;
     gap: 4px;
     font-size: 12px;
-    color: var(--ep-text-color-secondary);
+    color: var(--el-text-color-secondary);
 }
 
 .template-actions {
     margin-top: 15px;
     padding-top: 15px;
-    border-top: 1px solid var(--ep-border-color);
+    border-top: 1px solid var(--el-border-color);
     display: flex;
     justify-content: flex-end;
 }
@@ -476,7 +476,7 @@ onMounted(() => {
 .empty-state {
     text-align: center;
     padding: 40px 0;
-    color: var(--ep-text-color-secondary);
+    color: var(--el-text-color-secondary);
 }
 
 .empty-state .el-icon {

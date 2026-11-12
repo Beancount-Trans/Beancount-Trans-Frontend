@@ -582,8 +582,8 @@ const loginWithGitHub = () => {
   width: 100%;
   max-width: 480px;
   border-radius: 12px;
-  background: var(--ep-bg-color);
-  border: 1px solid var(--ep-border-color);
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color);
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.08);
   backdrop-filter: blur(16px);
 }
@@ -598,7 +598,7 @@ const loginWithGitHub = () => {
 
 .card-header h2 {
   margin: 0 0 8px 0;
-  color: var(--ep-text-color-primary);
+  color: var(--el-text-color-primary);
   font-size: 24px;
 }
 
@@ -644,15 +644,15 @@ const loginWithGitHub = () => {
 }
 
 :deep(.el-input__wrapper) {
-  box-shadow: 0 0 0 1px var(--ep-border-color) inset;
-  background-color: var(--ep-color-white, var(--ep-bg-color));
+  box-shadow: 0 0 0 1px var(--el-border-color) inset;
+  background-color: var(--el-color-white, var(--el-bg-color));
 }
 
 :deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px var(--ep-color-primary-light-5) inset;
+  box-shadow: 0 0 0 1px var(--el-color-primary-light-5) inset;
 }
 
 :deep(.el-input.is-focus .el-input__wrapper) {
-  box-shadow: 0 0 0 1px var(--ep-color-primary) inset;
+  box-shadow: 0 0 0 1px var(--el-color-primary) inset;
 }
 </style>

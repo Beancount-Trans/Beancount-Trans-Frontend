@@ -1,13 +1,9 @@
 <template>
     <div class="account-management">
-        <!-- 匿名用户提示 -->
-        <AnonymousPrompt v-model="showAnonymousPrompt" @skip="handleSkipAnonymous" />
-
-        <!-- 页面内容，只在非匿名用户或已跳过提示时显示 -->
-        <div v-if="!showAnonymousPrompt" class="management-header">
+        <div class="management-header">
             <h2>账户管理</h2>
             <div class="header-actions">
-                <el-button v-if="gitEnabled" @click="openReconcileDialog">
+                <el-button v-if="hasGit" @click="openReconcileDialog">
                     <el-icon>
                         <Refresh />
                     </el-icon>
@@ -22,7 +18,7 @@
             </div>
         </div>
 
-        <div v-if="!showAnonymousPrompt && guideMode" class="guide-card">
+        <div v-if="guideMode" class="guide-card">
             <div class="guide-card-header">
                 <span class="guide-title">配置支付宝对账周期</span>
                 <el-button link size="small" @click="finishChannelGuide">稍后自己设置</el-button>
@@ -83,7 +79,7 @@
             <p v-if="guideNotice" class="guide-notice">{{ guideNotice }}</p>
         </div>
 
-        <div v-if="!showAnonymousPrompt" class="management-content">
+        <div class="management-content">
             <!-- 左侧：账户树形结构 -->
             <div class="account-tree-panel">
                 <el-input v-model="searchKeyword" class="account-search" placeholder="搜索账户路径或描述" :prefix-icon="Search"
@@ -96,16 +92,20 @@
                     <template #default="{ node, data }">
                         <div class="tree-node">
                             <span class="node-label">{{ data.account }}</span>
-                            <div v-if="!data.is_virtual" class="node-actions">
-                                <el-tag size="small" :type="getAccountTypeColor(data.account_type)">
-                                    {{ data.account_type }}
+                            <div class="node-actions">
+                                <!-- 账户类型属于分组属性，只在分组账户上展示 -->
+                                <el-tag v-if="data.is_virtual && data.account_type" size="small"
+                                    :type="getAccountTypeColor(data.account_type)">
+                                    {{ formatAccountTypeLabel(data.account_type) }}
                                 </el-tag>
-                                <el-tag v-if="data.mapping_count && data.mapping_count.total > 0" size="small"
-                                    type="info">
-                                    {{ data.mapping_count.total }}映射
-                                </el-tag>
-                                <el-switch v-model="data.enable" size="small" @change="updateAccountStatus(data)"
-                                    style="margin-left: 8px;" />
+                                <template v-else-if="!data.is_virtual">
+                                    <el-tag v-if="data.mapping_count && data.mapping_count.total > 0" size="small"
+                                        type="info">
+                                        {{ data.mapping_count.total }}映射
+                                    </el-tag>
+                                    <el-switch v-model="data.enable" size="small" @change="updateAccountStatus(data)"
+                                        style="margin-left: 8px;" />
+                                </template>
                             </div>
                         </div>
                     </template>
@@ -139,7 +139,7 @@
                         <el-descriptions :column="2" border>
                             <el-descriptions-item label="账户类型">
                                 <el-tag :type="getAccountTypeColor(selectedAccount.account_type)">
-                                    {{ selectedAccount.account_type }}
+                                    {{ formatAccountTypeLabel(selectedAccount.account_type) }}
                                 </el-tag>
                             </el-descriptions-item>
                             <el-descriptions-item label="启用状态">
@@ -184,7 +184,7 @@
                                 <span v-else-if="selectedAccount.reconciliation_rule" class="reconciliation-rule-text">
                                     {{ selectedAccount.reconciliation_rule }}
                                 </span>
-                                <span v-else style="color: var(--ep-text-color-secondary);">未设置</span>
+                                <span v-else style="color: var(--el-text-color-secondary);">未设置</span>
                             </el-descriptions-item>
                             <el-descriptions-item label="币种" v-if="shouldShowCurrency(selectedAccount)">
                                 {{ selectedAccount.currency || '不限制' }}
@@ -404,13 +404,13 @@
                             <template #default="{ node, data }">
                                 <div class="cascader-node">
                                     <span class="node-label">{{ data.account }}</span>
-                                    <el-tag v-if="data.account_type" :type="getAccountTypeColor(data.account_type)"
-                                        size="small" class="node-tag">
-                                        {{ data.account_type }}
-                                    </el-tag>
                                     <el-tag v-if="data.mapping_count && data.mapping_count.total > 0" type="info"
                                         size="small" class="mapping-tag">
                                         {{ data.mapping_count.total }}映射
+                                    </el-tag>
+                                    <el-tag v-if="data.account_type" :type="getAccountTypeColor(data.account_type)"
+                                        size="small" class="node-tag">
+                                        {{ formatAccountTypeLabel(data.account_type) }}
                                     </el-tag>
                                 </div>
                             </template>
@@ -423,7 +423,7 @@
                                     <div class="account-info">
                                         <h4>{{ selectedMigrationAccountInfo.account }}</h4>
                                         <el-tag :type="getAccountTypeColor(selectedMigrationAccountInfo.account_type)">
-                                            {{ selectedMigrationAccountInfo.account_type }}
+                                            {{ formatAccountTypeLabel(selectedMigrationAccountInfo.account_type) }}
                                         </el-tag>
                                     </div>
                                     <div v-if="selectedMigrationAccountInfo.mapping_count" class="mapping-stats">
@@ -537,14 +537,11 @@ import type {
     FormInstance,
     FormRules
 } from 'element-plus'
-import AnonymousPrompt from '../common/AnonymousPrompt.vue'
 import RecurrenceRuleInput from '../recurrence/RecurrenceRuleInput.vue'
-import { hasAuthTokens } from '../../utils/auth'
 import { getAccountTypeColor } from '~/utils/accountTypeColor'
 import { extractApiErrorMessage } from '../../utils/errorHelper'
-import { shouldShowAnonymousPrompt } from '~/composables/useAnonymousPrompt'
 import { groupAccountsByRoot, type AccountTreeNode } from '~/utils/accountTree'
-import { getGitRepository } from '../../api/git'
+import { useCapabilities } from '../../capabilities'
 import { getTasks } from '../../api/reconciliation'
 import { TaskStatus, type ScheduledTask } from '../../types/reconciliation'
 import {
@@ -628,19 +625,8 @@ const addAccountDialog = ref(false)
 const editAccountDialog = ref(false)
 const deleteAccountDialog = ref(false)
 
-// 匿名用户提示
-const showAnonymousPrompt = ref(false)
-
-// 是否启用 Git 同步（仅 Git 用户展示账户核对）
-const gitEnabled = ref(false)
-const checkGitEnabled = async () => {
-    try {
-        await getGitRepository()
-        gitEnabled.value = true
-    } catch {
-        gitEnabled.value = false
-    }
-}
+// 是否已启用本地账本（仅 Git 用户展示账户核对）
+const { hasGit } = useCapabilities()
 
 // 映射详情相关
 const showMappingDetails = ref(false)
@@ -1684,6 +1670,9 @@ const getAssetsMappingTooltip = () => {
         .join('\n')
 }
 
+// 账户类型标签精简展示：资产账户 → 资产（接口仍返回全称，仅展示层去后缀）
+const formatAccountTypeLabel = (accountType?: string) => (accountType || '').replace(/账户$/, '')
+
 // 获取收入映射悬浮提示内容
 const getIncomeMappingTooltip = () => {
     if (!accountMappings.value.income_mappings || accountMappings.value.income_mappings.length === 0) {
@@ -1694,38 +1683,16 @@ const getIncomeMappingTooltip = () => {
         .join('\n')
 }
 
-// 处理匿名用户跳过提示
-const handleSkipAnonymous = () => {
-    showAnonymousPrompt.value = false
-    // 继续加载数据，显示admin用户的共享配置
-    fetchAccountTree()
-}
-
 // 组件挂载时初始化数据
 onMounted(() => {
-    // 检查用户是否已登录
-    const isAuthenticated = hasAuthTokens()
-
-    if (isAuthenticated) {
-        // 已登录用户直接加载数据
-        checkGitEnabled()
-        void initPage()
-    } else {
-        // 未登录用户：检查是否应该显示提示（仅显示一次）
-        if (shouldShowAnonymousPrompt(false)) {
-            showAnonymousPrompt.value = true
-        } else {
-            // 如果用户已经看过提示，直接加载数据，显示admin用户的共享配置
-            void initPage()
-        }
-    }
+    void initPage()
 })
 </script>
 
 <style scoped>
 .account-management {
     padding: 20px;
-    background-color: var(--ep-bg-color);
+    background-color: var(--el-bg-color);
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     animation: fadeIn 0.6s ease;
@@ -1734,9 +1701,9 @@ onMounted(() => {
 .guide-card {
     margin-bottom: 16px;
     padding: 14px 18px;
-    border: 1px solid var(--ep-color-primary-light-7);
+    border: 1px solid var(--el-color-primary-light-7);
     border-radius: 8px;
-    background: var(--ep-color-primary-light-9);
+    background: var(--el-color-primary-light-9);
 }
 
 .guide-card-header {
@@ -1748,13 +1715,13 @@ onMounted(() => {
 
 .guide-title {
     font-weight: 600;
-    color: var(--ep-color-primary);
+    color: var(--el-color-primary);
 }
 
 .guide-text {
     margin: 0 0 6px;
     font-size: 14px;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
 }
 
 .guide-next-list {
@@ -1762,19 +1729,19 @@ onMounted(() => {
     padding-left: 18px;
     font-size: 13px;
     line-height: 1.7;
-    color: var(--ep-text-color-regular);
+    color: var(--el-text-color-regular);
 }
 
 .guide-hint {
     margin: 0 0 8px;
     font-size: 13px;
-    color: var(--ep-text-color-regular);
+    color: var(--el-text-color-regular);
 }
 
 .guide-notice {
     margin: 8px 0 0;
     font-size: 12px;
-    color: var(--ep-color-warning);
+    color: var(--el-color-warning);
 }
 
 .guide-task-list {
@@ -1802,12 +1769,12 @@ onMounted(() => {
     align-items: center;
     margin-bottom: 20px;
     padding-bottom: 15px;
-    border-bottom: 1px solid var(--ep-border-color);
+    border-bottom: 1px solid var(--el-border-color);
 }
 
 .management-header h2 {
     margin: 0;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
     font-size: 24px;
     font-weight: 600;
 }
@@ -1825,10 +1792,10 @@ onMounted(() => {
 
 .account-tree-panel {
     flex: 0 0 400px;
-    border: 1px solid var(--ep-border-color);
+    border: 1px solid var(--el-border-color);
     border-radius: 8px;
     padding: 15px;
-    background-color: var(--ep-fill-color-light);
+    background-color: var(--el-fill-color-light);
 }
 
 .account-search {
@@ -1849,7 +1816,7 @@ onMounted(() => {
 
 .node-label {
     font-weight: 500;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
 }
 
 .node-actions {
@@ -1860,10 +1827,10 @@ onMounted(() => {
 
 .account-detail-panel {
     flex: 1;
-    border: 1px solid var(--ep-border-color);
+    border: 1px solid var(--el-border-color);
     border-radius: 8px;
     padding: 20px;
-    background-color: var(--ep-bg-color);
+    background-color: var(--el-bg-color);
 }
 
 .account-title {
@@ -1873,12 +1840,12 @@ onMounted(() => {
     gap: 8px;
     margin-bottom: 20px;
     padding-bottom: 10px;
-    border-bottom: 2px solid var(--ep-color-primary);
+    border-bottom: 2px solid var(--el-color-primary);
 }
 
 .account-detail h3 {
     margin: 0;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
     font-size: 20px;
     font-weight: 600;
 }
@@ -1923,7 +1890,7 @@ onMounted(() => {
     gap: 10px;
     margin-top: 20px;
     padding-top: 20px;
-    border-top: 1px solid var(--ep-border-color);
+    border-top: 1px solid var(--el-border-color);
 }
 
 /* 对账周期极简预设 */
@@ -1944,7 +1911,7 @@ onMounted(() => {
 
 .available-currencies h4 {
     margin: 0 0 15px 0;
-    color: var(--ep-text-color-regular);
+    color: var(--el-text-color-regular);
     font-size: 16px;
 }
 
@@ -1982,15 +1949,15 @@ onMounted(() => {
     align-items: center;
     padding: 12px 16px;
     margin-bottom: 8px;
-    background-color: var(--ep-fill-color-light);
+    background-color: var(--el-fill-color-light);
     border-radius: 6px;
-    border: 1px solid var(--ep-border-color);
+    border: 1px solid var(--el-border-color);
     transition: all 0.2s ease;
 }
 
 .mapping-item:hover {
-    background-color: var(--ep-fill-color);
-    border-color: var(--ep-border-color);
+    background-color: var(--el-fill-color);
+    border-color: var(--el-border-color);
 }
 
 .mapping-info {
@@ -2002,9 +1969,9 @@ onMounted(() => {
 
 .mapping-key {
     font-weight: 500;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    background-color: var(--ep-fill-color-lighter);
+    background-color: var(--el-fill-color-lighter);
     padding: 2px 6px;
     border-radius: 4px;
     font-size: 12px;
@@ -2014,21 +1981,21 @@ onMounted(() => {
 .mapping-full,
 .mapping-payer,
 .mapping-account {
-    color: var(--ep-text-color-regular);
+    color: var(--el-text-color-regular);
     font-size: 14px;
 }
 
 .mapping-account {
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    background-color: var(--ep-color-primary-light-9);
+    background-color: var(--el-color-primary-light-9);
     padding: 2px 6px;
     border-radius: 4px;
     font-size: 12px;
-    color: var(--ep-color-primary);
+    color: var(--el-color-primary);
 }
 
 .mapping-currency {
-    color: var(--ep-text-color-secondary);
+    color: var(--el-text-color-secondary);
     font-size: 12px;
     font-style: italic;
 }
@@ -2075,21 +2042,21 @@ onMounted(() => {
 .migration-section {
     margin-top: 20px;
     padding: 20px;
-    background-color: var(--ep-fill-color-light);
+    background-color: var(--el-fill-color-light);
     border-radius: 8px;
-    border: 1px solid var(--ep-border-color);
+    border: 1px solid var(--el-border-color);
 }
 
 .migration-section h4 {
     margin: 0 0 10px 0;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
     font-size: 16px;
     font-weight: 600;
 }
 
 .migration-tip {
     margin: 0 0 15px 0;
-    color: var(--ep-text-color-regular);
+    color: var(--el-text-color-regular);
     font-size: 14px;
 }
 
@@ -2100,9 +2067,9 @@ onMounted(() => {
 .no-mappings-section {
     margin-top: 20px;
     padding: 20px;
-    background-color: var(--ep-color-primary-light-9);
+    background-color: var(--el-color-primary-light-9);
     border-radius: 8px;
-    border: 1px solid var(--ep-color-primary-light-7);
+    border: 1px solid var(--el-color-primary-light-7);
 }
 
 /* AccountSelector 样式 */
@@ -2151,7 +2118,7 @@ onMounted(() => {
     margin: 0;
     font-size: 14px;
     font-weight: 600;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
 }
 
 .currencies,
@@ -2164,7 +2131,7 @@ onMounted(() => {
 
 .label {
     font-size: 12px;
-    color: var(--ep-text-color-secondary);
+    color: var(--el-text-color-secondary);
     min-width: 60px;
 }
 
@@ -2175,7 +2142,7 @@ onMounted(() => {
 /* 账户核对 */
 .reconcile-content h4 {
     margin: 18px 0 10px;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
     font-size: 14px;
     font-weight: 600;
 }
@@ -2188,7 +2155,7 @@ onMounted(() => {
 }
 
 .reconcile-ledger-only .empty-hint {
-    color: var(--ep-text-color-secondary);
+    color: var(--el-text-color-secondary);
     font-size: 13px;
 }
 

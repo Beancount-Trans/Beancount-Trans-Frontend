@@ -172,17 +172,17 @@ onUnmounted(() => {
 
 .preview-hint {
   font-size: 12px;
-  color: var(--ep-text-color-secondary);
+  color: var(--el-text-color-secondary);
 }
 
 .preview-error {
   font-size: 12px;
-  color: var(--ep-color-danger);
+  color: var(--el-color-danger);
 }
 
 .preview-result {
   font-size: 12px;
   font-weight: 600;
-  color: var(--ep-text-color-regular);
+  color: var(--el-text-color-regular);
 }
 </style>

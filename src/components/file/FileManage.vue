@@ -12,12 +12,7 @@
         <!-- 工具栏 -->
         <div class="toolbar">
             <div class="toolbar-primary-actions">
-                <el-button
-                    id="tour-upload-button"
-                    type="primary"
-                    :disabled="isTourStep2"
-                    @click="triggerUpload"
-                >
+                <el-button id="tour-upload-button" type="primary" :disabled="isTourStep2" @click="triggerUpload">
                     <el-icon>
                         <UploadFilled />
                     </el-icon>
@@ -79,19 +74,14 @@
                     <template v-else>
                         当前目录尚无账单文件。上传前请先从各渠道导出账单（
                     </template>
-                    <el-link
-                        :href="BILLS_EXPORT_DOCS_URL"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        type="primary"
-                        class="upload-hint-banner__inline-link"
-                    >
+                    <el-link :href="BILLS_EXPORT_DOCS_URL" target="_blank" rel="noopener noreferrer" type="primary"
+                        class="upload-hint-banner__inline-link">
                         查看导出方法
                     </el-link>
                     ）。
                 </p>
                 <p class="upload-hint-banner__tip">
-                    建议只导出一个完整自然月的账单，避免跨月数据导致重复或错乱。
+                    建议单次导出跨度不超过一个月，且各渠道取同一段时间。
                 </p>
             </div>
         </div>
@@ -108,47 +98,27 @@
                     需要时可
                     <router-link to="/trans" class="sample-cleanup-banner__route-link">前往账单解析页</router-link>
                     下载示例，或从
-                    <el-link
-                        :href="SAMPLE_BILL_DOWNLOAD_URLS.wechat"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        type="primary"
-                        class="sample-cleanup-banner__inline-link"
-                    >微信</el-link>
+                    <el-link :href="SAMPLE_BILL_DOWNLOAD_URLS.wechat" target="_blank" rel="noopener noreferrer"
+                        type="primary" class="sample-cleanup-banner__inline-link">微信</el-link>
                     /
-                    <el-link
-                        :href="SAMPLE_BILL_DOWNLOAD_URLS.alipay"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        type="primary"
-                        class="sample-cleanup-banner__inline-link"
-                    >支付宝</el-link>
+                    <el-link :href="SAMPLE_BILL_DOWNLOAD_URLS.alipay" target="_blank" rel="noopener noreferrer"
+                        type="primary" class="sample-cleanup-banner__inline-link">支付宝</el-link>
                     示例链接重新获取。
                 </p>
             </div>
-            <el-button
-                type="warning"
-                plain
-                :loading="isCleaningSampleBills"
-                :disabled="shouldDisableDownloadAndDelete"
-                @click="cleanupSampleBills"
-            >
+            <el-button type="warning" plain :loading="isCleaningSampleBills" :disabled="shouldDisableDownloadAndDelete"
+                @click="cleanupSampleBills">
                 删除示例账单
             </el-button>
         </div>
 
         <!-- 任务状态对话框  -->
-        <el-dialog
-            v-model="parseDialogVisible"
-            title="解析任务进度"
-            width="600px"
-            :show-close="false"
-            :close-on-click-modal="false"
-            :close-on-press-escape="false"
-        >
+        <el-dialog v-model="parseDialogVisible" title="解析任务进度" width="600px" :show-close="false"
+            :close-on-click-modal="false" :close-on-press-escape="false">
             <el-progress :percentage="parseProgressPercentage" :status="parseStatus" />
             <div class="task-info">
-                <p>任务组ID: {{ activeTaskGroupIds.length > 0 ? activeTaskGroupIds[activeTaskGroupIds.length - 1] : '' }}</p>
+                <p>任务组ID: {{ activeTaskGroupIds.length > 0 ? activeTaskGroupIds[activeTaskGroupIds.length - 1] : '' }}
+                </p>
                 <p>状态: {{ parseStatusText }}</p>
                 <p>进度: {{ completedTasks }}/{{ totalTasks }}</p>
             </div>
@@ -177,9 +147,8 @@
                             size="small" type="warning" @click="cancelParse([row.file_id])">
                             取消
                         </el-button>
-                        <el-button
-                            v-else-if="row.status === 'needs_password'"
-                            size="small" type="primary" @click="handleNeedsPassword(row)">
+                        <el-button v-else-if="row.status === 'needs_password'" size="small" type="primary"
+                            @click="handleNeedsPassword(row)">
                             输入密码
                         </el-button>
                     </template>
@@ -201,115 +170,108 @@
         </div>
 
         <!-- 文件列表 (带拖拽区域) -->
-        <div 
-            class="file-table-dropzone"
-            @dragenter="onDragEnter"
-            @dragleave="onDragLeave"
-            @dragover="onDragOver"
-            @drop="onDrop"
-        >
+        <div class="file-table-dropzone" @dragenter="onDragEnter" @dragleave="onDragLeave" @dragover="onDragOver"
+            @drop="onDrop">
             <div v-show="isDragActive" class="drop-overlay">
                 <div class="drop-overlay-content">
-                    <el-icon class="drop-icon" :size="48"><UploadFilled /></el-icon>
+                    <el-icon class="drop-icon" :size="48">
+                        <UploadFilled />
+                    </el-icon>
                     <p class="drop-text">拖拽文件到此处上传</p>
                     <p class="drop-sub-text">支持多文件，最大 20MB/个</p>
                 </div>
             </div>
 
-            <el-table ref="fileTableRef" :data="filteredItems" style="width: 100%" @selection-change="handleSelectionChange"
-                highlight-current-row class="file-table" id="tour-file-table">
-            <el-table-column type="selection" width="55" />
+            <el-table ref="fileTableRef" :data="filteredItems" style="width: 100%"
+                @selection-change="handleSelectionChange" highlight-current-row class="file-table" id="tour-file-table">
+                <el-table-column type="selection" width="55" />
 
-            <el-table-column v-if="isGlobalSearch" prop="path" label="路径">
-                <template #default="{ row }">
-                    <el-text type="info">{{ row.path || '根目录' }}</el-text>
-                </template>
-            </el-table-column>
+                <el-table-column v-if="isGlobalSearch" prop="path" label="路径">
+                    <template #default="{ row }">
+                        <el-text type="info">{{ row.path || '根目录' }}</el-text>
+                    </template>
+                </el-table-column>
 
-            <el-table-column prop="name" label="名称">
-                <template #default="{ row }">
-                    <div class="flex items-center cursor-pointer" @click="handleNodeClick(row)">
-                        <el-icon
-                            :color="row.node_type === 'directory' ? 'var(--ep-color-warning)' : 'var(--ep-color-primary)'">
-                            <component :is="row.node_type === 'directory' ? Folder : Document" />
-                        </el-icon>
-                        <span class="ml-2">{{ row.name }}</span>
-                        <el-tag
-                            v-if="row.node_type === 'file' && isSampleBillFile(row.name)"
-                            type="info"
-                            size="small"
-                            class="sample-file-tag"
-                        >
-                            示例
-                        </el-tag>
-                    </div>
-                </template>
-            </el-table-column>
+                <el-table-column prop="name" label="名称">
+                    <template #default="{ row }">
+                        <div class="flex items-center cursor-pointer" @click="handleNodeClick(row)">
+                            <el-icon
+                                :color="row.node_type === 'directory' ? 'var(--el-color-warning)' : 'var(--el-color-primary)'">
+                                <component :is="row.node_type === 'directory' ? Folder : Document" />
+                            </el-icon>
+                            <span class="ml-2">{{ row.name }}</span>
+                            <el-tag v-if="row.node_type === 'file' && isSampleBillFile(row.name)" type="info"
+                                size="small" class="sample-file-tag">
+                                示例
+                            </el-tag>
+                        </div>
+                    </template>
+                </el-table-column>
 
-            <el-table-column prop="date" label="创建时间">
-                <template #default="{ row }">
-                    {{ formatDateTime(row.node_type === 'directory' ? row.created_at : row.uploaded_at) }}
-                </template>
-            </el-table-column>
+                <el-table-column prop="date" label="创建时间">
+                    <template #default="{ row }">
+                        {{ formatDateTime(row.node_type === 'directory' ? row.created_at : row.uploaded_at) }}
+                    </template>
+                </el-table-column>
 
-            <el-table-column prop="size" label="大小">
-                <template #default="{ row }">
-                    {{ row.node_type === 'file' ? row.size_display : '-' }}
-                </template>
-            </el-table-column>
+                <el-table-column prop="size" label="大小">
+                    <template #default="{ row }">
+                        {{ row.node_type === 'file' ? row.size_display : '-' }}
+                    </template>
+                </el-table-column>
 
-            <el-table-column prop="status" label="状态">
-                <template #default="{ row }">
-                    <el-tooltip
-                        v-if="row.node_type === 'file' && (row.parse_status === 'failed' || row.parse_status === 'needs_password') && (row.error_message || row.parse_status === 'needs_password')"
-                        :content="row.error_message || (row.parse_status === 'needs_password' ? '该文件已加密，请点击解析后输入密码重试' : '')"
-                        placement="top"
-                    >
-                        <el-tag :type="getStatusColor(row.parse_status || row.status)">
+                <el-table-column prop="status" label="状态">
+                    <template #default="{ row }">
+                        <el-tooltip
+                            v-if="row.node_type === 'file' && (row.parse_status === 'failed' || row.parse_status === 'needs_password') && (row.error_message || row.parse_status === 'needs_password')"
+                            :content="row.error_message || (row.parse_status === 'needs_password' ? '该文件已加密，请点击解析后输入密码重试' : '')"
+                            placement="top">
+                            <el-tag :type="getStatusColor(row.parse_status || row.status)">
+                                {{ translateStatus(row.parse_status || row.status) }}
+                            </el-tag>
+                        </el-tooltip>
+                        <el-tag v-else :type="getStatusColor(row.parse_status || row.status)">
                             {{ translateStatus(row.parse_status || row.status) }}
                         </el-tag>
-                    </el-tooltip>
-                    <el-tag v-else :type="getStatusColor(row.parse_status || row.status)">
-                        {{ translateStatus(row.parse_status || row.status) }}
-                    </el-tag>
-                </template>
-            </el-table-column>
+                    </template>
+                </el-table-column>
 
-            <el-table-column label="操作" width="120">
-                <template #default="{ row, $index }">
-                    <!-- 解析/取消按钮（根据状态切换，parsed状态也可以取消以清除.bean文件内容） -->
-                    <el-tooltip
-                        v-if="row.node_type === 'file' && (row.parse_status === 'pending' || row.parse_status === 'processing' || row.parse_status === 'parsed')"
-                        :content="row.parse_status === 'parsed' ? '清除解析结果' : '取消解析'" placement="top">
-                        <el-button icon="Tickets" circle size="small" :disabled="isTourStep2"
-                            @click="cancelSingleFile(row)">
-                        </el-button>
-                    </el-tooltip>
-                    <el-tooltip v-else-if="row.node_type === 'file'" content="解析" placement="top">
-                        <el-button icon="Tickets" circle size="small" :class="{ 'tour-parse-first-file': row.node_type === 'file' && row.name === tourParseTargetFileName }"
-                            :disabled="isTourStep2" @click="parseSingleFile(row)">
-                        </el-button>
-                    </el-tooltip>
+                <el-table-column label="操作" width="120">
+                    <template #default="{ row, $index }">
+                        <!-- 解析/取消按钮（根据状态切换，parsed状态也可以取消以清除.bean文件内容） -->
+                        <el-tooltip
+                            v-if="row.node_type === 'file' && (row.parse_status === 'pending' || row.parse_status === 'processing' || row.parse_status === 'parsed')"
+                            :content="row.parse_status === 'parsed' ? '清除解析结果' : '取消解析'" placement="top">
+                            <el-button icon="Tickets" circle size="small" :disabled="isTourStep2"
+                                @click="cancelSingleFile(row)">
+                            </el-button>
+                        </el-tooltip>
+                        <el-tooltip v-else-if="row.node_type === 'file'" content="解析" placement="top">
+                            <el-button icon="Tickets" circle size="small"
+                                :class="{ 'tour-parse-first-file': row.node_type === 'file' && row.name === tourParseTargetFileName }"
+                                :disabled="isTourStep2" @click="parseSingleFile(row)">
+                            </el-button>
+                        </el-tooltip>
 
-                    <el-button v-if="row.node_type === 'file'" icon="Download" circle size="small"
-                        :disabled="shouldDisableDownloadAndDelete" @click="downloadFile(row.id)" />
+                        <el-button v-if="row.node_type === 'file'" icon="Download" circle size="small"
+                            :disabled="shouldDisableDownloadAndDelete" @click="downloadFile(row.id)" />
 
-                    <!-- <el-tooltip content="移动" placement="top">
+                        <!-- <el-tooltip content="移动" placement="top">
                         <el-button icon="FolderOpened" circle size="small"
                             :disabled="shouldDisableDownloadAndDelete" @click="openMoveDialog(row)" />
                     </el-tooltip> -->
 
-                    <el-tooltip content="删除" placement="top">
-                        <el-popconfirm title="将同时清除此文件的解析结果，是否继续？" @confirm="deleteItem(row)">
-                            <template #reference>
-                                <el-button icon="Delete" circle size="small"
-                                    :disabled="shouldDisableDownloadAndDelete" />
-                            </template>
-                        </el-popconfirm>
-                    </el-tooltip>
+                        <el-tooltip content="删除" placement="top">
+                            <el-popconfirm title="将同时清除此文件的解析结果，是否继续？" @confirm="deleteItem(row)">
+                                <template #reference>
+                                    <el-button icon="Delete" circle size="small"
+                                        :disabled="shouldDisableDownloadAndDelete" />
+                                </template>
+                            </el-popconfirm>
+                        </el-tooltip>
 
-                </template>
-            </el-table-column>
+                    </template>
+                </el-table-column>
             </el-table>
         </div>
 
@@ -326,16 +288,10 @@
         </el-dialog>
 
         <!-- 移动到指定目录对话框 -->
-        <el-dialog v-model="moveDialog" title="移动到..." width="400px" @open="onMoveDialogOpen" @close="onMoveDialogClose">
-            <el-tree
-                ref="moveTreeRef"
-                :data="moveTreeData"
-                :props="{ label: 'name' }"
-                node-key="id"
-                highlight-current
-                default-expand-all
-                @node-click="onMoveTreeSelect"
-            />
+        <el-dialog v-model="moveDialog" title="移动到..." width="400px" @open="onMoveDialogOpen"
+            @close="onMoveDialogClose">
+            <el-tree ref="moveTreeRef" :data="moveTreeData" :props="{ label: 'name' }" node-key="id" highlight-current
+                default-expand-all @node-click="onMoveTreeSelect" />
             <template #footer>
                 <el-button @click="moveDialog = false">取消</el-button>
                 <el-button type="primary" :disabled="targetDirectoryId === null" @click="executeMoveAction">
@@ -353,7 +309,9 @@
                     <el-form-item v-for="(file, index) in passwordForm" :key="file.id" :label="file.name">
                         <el-input v-model="file.password" type="password" placeholder="密码（选填）" show-password>
                             <template #prefix>
-                                <el-icon><Lock /></el-icon>
+                                <el-icon>
+                                    <Lock />
+                                </el-icon>
                             </template>
                         </el-input>
                     </el-form-item>
@@ -370,7 +328,7 @@
 <script setup lang="ts">
 import { Folder, Document, Lock, UploadFilled, FolderOpened, InfoFilled } from '@element-plus/icons-vue'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import axios from '../../utils/request'
+import axios, { fetchWithAuth } from '../../utils/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { TagProps } from 'element-plus'
 import { parse } from 'path'
@@ -390,6 +348,7 @@ import {
 import { emitTaskBannerRefresh } from '../../utils/accountEvents'
 import { useRouter, useRoute } from 'vue-router'
 import { checkAndResumeTour, isRouteMatchForStep } from '../../utils/tourRecovery'
+import { useCapabilities } from '../../capabilities'
 
 
 interface FileItem {
@@ -438,6 +397,7 @@ const passwordForm = ref<{ id: string; name: string; password: string }[]>([])
 // 拖拽上传相关状态
 const isDragActive = ref(false)
 const dragCounter = ref(0)
+const { can } = useCapabilities()
 let progressTimeoutId: ReturnType<typeof setTimeout> | null = null
 
 // 状态筛选选项配置
@@ -453,6 +413,7 @@ const statusFilterOptions = [
 ]
 
 function triggerUpload() {
+    if (!can('file.write')) return;
     if (isTourStep2.value) {
         ElMessage.warning('导览进行中，请先完成当前步骤');
         return;
@@ -461,6 +422,7 @@ function triggerUpload() {
 }
 
 async function customUpload(options: any) {
+    if (!can('file.write')) return;
     const { file, onProgress, onSuccess, onError, skipRefresh } = options;
     const uploadedFileName = file.name;
 
@@ -578,6 +540,8 @@ async function onDrop(e: DragEvent) {
     dragCounter.value = 0;
     isDragActive.value = false;
 
+    if (!can('file.write')) return;
+
     if (isTourStep2.value) {
         ElMessage.warning('导览进行中，请先完成当前步骤');
         return;
@@ -626,7 +590,7 @@ async function processUploadQueue(files: File[]) {
         await new Promise<void>((resolve) => {
             customUpload({
                 file,
-                onProgress: () => {},
+                onProgress: () => { },
                 onSuccess: () => {
                     hasUploaded = true;
                     resolve();
@@ -738,9 +702,8 @@ const shouldDisableDownloadAndDelete = computed(() => {
     return isTourStep2.value || isTourStep3.value;
 });
 
-const headers = computed(() => ({
-    Authorization: `Bearer ${localStorage.getItem('access')}`
-}))
+// Authorization 由 utils/request 拦截器统一附加
+const headers = computed(() => ({}))
 
 watch(searchQuery, async (newQuery) => {
     if (newQuery) {
@@ -784,9 +747,9 @@ const filteredItems = computed(() => {
 
 // 导览第三步要高亮的解析按钮对应的文件名（优先 TOUR_FIRST_PARSE_FILE_NAME，否则第一个文件）
 const tourParseTargetFileName = computed(() => {
-  const fileRows = filteredItems.value.filter((item) => item.node_type === 'file');
-  const preferred = fileRows.find((f) => f.name === TOUR_FIRST_PARSE_FILE_NAME);
-  return (preferred && preferred.name) || (fileRows[0] && fileRows[0].name) || '';
+    const fileRows = filteredItems.value.filter((item) => item.node_type === 'file');
+    const preferred = fileRows.find((f) => f.name === TOUR_FIRST_PARSE_FILE_NAME);
+    return (preferred && preferred.name) || (fileRows[0] && fileRows[0].name) || '';
 });
 
 const sampleBillFileNameSet = new Set<string>(SAMPLE_BILL_FILE_NAMES);
@@ -1079,6 +1042,7 @@ function handleNodeClick(node: FileItem) {
 
 // 显示创建文件夹对话框
 function showCreateFolderDialog() {
+    if (!can('file.write')) return
     createFolderDialog.value = true
     newFolderName.value = ''
 }
@@ -1206,17 +1170,18 @@ async function downloadFile(fileId: string) {
     }
 
     try {
-        const response = await axios.get(`/files/${fileId}/download/`, {
-            headers: headers.value,
-            responseType: 'blob'
-        });
+        const response = await fetchWithAuth(`/files/${fileId}/download/`);
+        if (!response.ok) {
+            throw new Error(`下载失败（${response.status}）`);
+        }
 
-        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
 
         // 从Content-Disposition头获取文件名
-        const contentDisposition = response.headers['content-disposition'] || '';
+        const contentDisposition = response.headers.get('content-disposition') || '';
         let fileName = 'file'; // 默认文件名
 
         // 优先解析 RFC 5987 格式 (filename*=)
@@ -1274,6 +1239,7 @@ function handleSelectionChange(selection: FileItem[]) {
 
 // 执行批量操作
 function executeBatchAction(action: string) {
+    if (!can('file.write')) return;
     if (action === 'parse') {
         batchParse();
     } else if (action === 'cancel') {
@@ -1457,7 +1423,7 @@ function handleNeedsPassword(row: any) {
 // 确认解析（带密码）
 async function confirmParseWithPassword() {
     passwordDialogVisible.value = false;
-    
+
     const fileIds = passwordForm.value.map(item => item.id);
     const passwords: Record<string, string> = {};
     passwordForm.value.forEach(item => {
@@ -1632,7 +1598,7 @@ function startPollingTaskStatus() {
             if (activeTaskGroupIds.value.length === 0) return;
 
             // 并发请求所有 active 组的状态
-            const promises = activeTaskGroupIds.value.map(groupId => 
+            const promises = activeTaskGroupIds.value.map(groupId =>
                 axios.get('/translate/task_group_status', {
                     params: { task_group_id: groupId },
                     headers: headers.value
@@ -1669,7 +1635,7 @@ function startPollingTaskStatus() {
                     }
                     return { ...task, status: newStatus, error: taskStatus.error ?? task.error };
                 }
-                
+
                 if (['parsed', 'failed', 'cancelled', 'pending_review'].includes(task.status)) {
                     completedTasks.value++;
                 }
@@ -1780,7 +1746,7 @@ function getStatusColor(status: string | undefined): TagProps['type'] {
 
 .file-management {
     padding: 20px;
-    background-color: var(--ep-bg-color);
+    background-color: var(--el-bg-color);
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     animation: fadeIn 0.6s ease;
@@ -1789,9 +1755,9 @@ function getStatusColor(status: string | undefined): TagProps['type'] {
 .path-display {
     margin-bottom: 15px;
     font-size: 14px;
-    color: var(--ep-text-color-regular);
+    color: var(--el-text-color-regular);
     padding: 10px;
-    background: var(--ep-fill-color-light);
+    background: var(--el-fill-color-light);
     border-radius: 4px;
 }
 
@@ -1868,9 +1834,9 @@ function getStatusColor(status: string | undefined): TagProps['type'] {
 .upload-hint-banner {
     margin-bottom: 16px;
     padding: 12px 16px;
-    border: 1px solid var(--ep-color-warning-light-5);
+    border: 1px solid var(--el-color-warning-light-5);
     border-radius: 8px;
-    background: var(--ep-color-warning-light-9);
+    background: var(--el-color-warning-light-9);
     display: flex;
     align-items: flex-start;
     gap: 12px;
@@ -1879,7 +1845,7 @@ function getStatusColor(status: string | undefined): TagProps['type'] {
 .upload-hint-banner__icon {
     flex-shrink: 0;
     margin-top: 2px;
-    color: var(--ep-color-warning);
+    color: var(--el-color-warning);
 }
 
 .upload-hint-banner__content {
@@ -1891,14 +1857,14 @@ function getStatusColor(status: string | undefined): TagProps['type'] {
     margin: 0;
     font-size: 14px;
     line-height: 1.5;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
 }
 
 .upload-hint-banner__tip {
     margin: 6px 0 0;
     font-size: 13px;
     line-height: 1.5;
-    color: var(--ep-color-warning-dark-2);
+    color: var(--el-color-warning-dark-2);
 }
 
 .upload-hint-banner__inline-link {
@@ -1909,9 +1875,9 @@ function getStatusColor(status: string | undefined): TagProps['type'] {
 .sample-cleanup-banner {
     margin-bottom: 16px;
     padding: 12px 16px;
-    border: 1px solid var(--ep-color-info-light-5);
+    border: 1px solid var(--el-color-info-light-5);
     border-radius: 8px;
-    background: var(--ep-color-info-light-9);
+    background: var(--el-color-info-light-9);
     display: flex;
     align-items: flex-start;
     gap: 12px;
@@ -1920,7 +1886,7 @@ function getStatusColor(status: string | undefined): TagProps['type'] {
 .sample-cleanup-banner__icon {
     flex-shrink: 0;
     margin-top: 2px;
-    color: var(--ep-color-info);
+    color: var(--el-color-info);
 }
 
 .sample-cleanup-banner__content {
@@ -1932,18 +1898,18 @@ function getStatusColor(status: string | undefined): TagProps['type'] {
     margin: 0;
     font-size: 14px;
     line-height: 1.5;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
 }
 
 .sample-cleanup-banner__meta {
     margin: 6px 0 0;
     font-size: 13px;
     line-height: 1.5;
-    color: var(--ep-text-color-regular);
+    color: var(--el-text-color-regular);
 }
 
 .sample-cleanup-banner__route-link {
-    color: var(--ep-color-primary);
+    color: var(--el-color-primary);
     text-decoration: none;
 }
 
@@ -1964,9 +1930,9 @@ function getStatusColor(status: string | undefined): TagProps['type'] {
 .parse-progress-entry {
     margin-bottom: 20px;
     padding: 14px 16px;
-    border: 1px solid var(--ep-color-primary-light-5);
+    border: 1px solid var(--el-color-primary-light-5);
     border-radius: 8px;
-    background: var(--ep-color-primary-light-9);
+    background: var(--el-color-primary-light-9);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1980,18 +1946,18 @@ function getStatusColor(status: string | undefined): TagProps['type'] {
 .parse-progress-entry__title {
     font-size: 14px;
     font-weight: 600;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
 }
 
 .parse-progress-entry__meta {
     margin-top: 4px;
     font-size: 13px;
-    color: var(--ep-text-color-regular);
+    color: var(--el-text-color-regular);
 }
 
 .parse-failed-hint {
     font-size: 12px;
-    color: var(--ep-text-color-secondary);
+    color: var(--el-text-color-secondary);
     cursor: default;
 }
 
@@ -2003,19 +1969,19 @@ function getStatusColor(status: string | undefined): TagProps['type'] {
 .drop-overlay {
     position: absolute;
     inset: 0;
-    background-color: var(--ep-fill-color-extra-light);
+    background-color: var(--el-fill-color-extra-light);
     backdrop-filter: blur(4px);
     z-index: 10;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px dashed var(--ep-color-primary);
+    border: 2px dashed var(--el-color-primary);
     border-radius: 8px;
 }
 
 .drop-overlay-content {
     text-align: center;
-    color: var(--ep-color-primary);
+    color: var(--el-color-primary);
 }
 
 .drop-icon {
@@ -2030,7 +1996,7 @@ function getStatusColor(status: string | undefined): TagProps['type'] {
 
 .drop-sub-text {
     font-size: 14px;
-    color: var(--ep-text-color-secondary);
+    color: var(--el-text-color-secondary);
     margin: 0;
 }
 </style>

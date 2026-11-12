@@ -279,7 +279,7 @@ async function handleSubmit() {
     margin: 0 0 10px;
     font-size: 14px;
     font-weight: 600;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
   }
 
   .presets {
@@ -308,7 +308,7 @@ async function handleSubmit() {
   .block-hint {
     margin: 8px 0 0;
     font-size: 12px;
-    color: var(--ep-text-color-secondary);
+    color: var(--el-text-color-secondary);
   }
 
   .date-row {
@@ -319,7 +319,7 @@ async function handleSubmit() {
 
     .date-label {
       font-size: 14px;
-      color: var(--ep-text-color-regular);
+      color: var(--el-text-color-regular);
     }
   }
 
@@ -327,41 +327,41 @@ async function handleSubmit() {
     margin-top: 4px;
     padding: 12px 14px;
     border-radius: 6px;
-    background: var(--ep-fill-color-light);
-    border-left: 3px solid var(--ep-border-color);
+    background: var(--el-fill-color-light);
+    border-left: 3px solid var(--el-border-color);
 
     &.is-warn {
-      background: var(--ep-color-warning-light-9);
-      border-left-color: var(--ep-color-warning);
+      background: var(--el-color-warning-light-9);
+      border-left-color: var(--el-color-warning);
     }
 
     .consequence-title {
       margin: 0 0 6px;
       font-size: 13px;
       font-weight: 600;
-      color: var(--ep-text-color-primary);
+      color: var(--el-text-color-primary);
     }
 
     .consequence-item {
       margin: 2px 0;
       font-size: 13px;
       line-height: 1.6;
-      color: var(--ep-text-color-regular);
+      color: var(--el-text-color-regular);
 
       strong {
-        color: var(--ep-text-color-primary);
+        color: var(--el-text-color-primary);
       }
 
       &.muted {
-        color: var(--ep-text-color-secondary);
+        color: var(--el-text-color-secondary);
       }
 
       &.warn {
-        color: var(--ep-color-warning-dark-2);
+        color: var(--el-color-warning-dark-2);
       }
 
       &.danger {
-        color: var(--ep-color-danger);
+        color: var(--el-color-danger);
       }
     }
   }
@@ -374,7 +374,7 @@ async function handleSubmit() {
 
     .submit-hint {
       font-size: 12px;
-      color: var(--ep-text-color-secondary);
+      color: var(--el-text-color-secondary);
       text-align: left;
     }
 

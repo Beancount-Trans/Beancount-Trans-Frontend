@@ -5,11 +5,14 @@
       <template #header>
         <div class="card-header">
           <el-icon class="header-icon">
-            <i-ep-connection />
+            <Connection />
           </el-icon>
           <div>
-            <h3>启用 Git 同步功能</h3>
-            <el-text type="info" size="small">版本控制 · 本地编辑 · 多设备同步</el-text>
+            <div class="title-row">
+              <h3>启用 Git 同步功能</h3>
+              <el-tag size="small" type="info" effect="plain">高级 · 可选</el-tag>
+            </div>
+            <el-text type="info" size="small">面向自管账本的高级选项，普通用户无需启用</el-text>
           </div>
         </div>
       </template>
@@ -18,7 +21,7 @@
         <div class="features-list">
           <div class="feature-item">
             <el-icon class="feature-icon">
-              <i-ep-edit />
+              <Edit />
             </el-icon>
             <div>
               <h4>本地编辑</h4>
@@ -28,7 +31,7 @@
 
           <div class="feature-item">
             <el-icon class="feature-icon">
-              <i-ep-clock />
+              <Clock />
             </el-icon>
             <div>
               <h4>版本控制</h4>
@@ -38,7 +41,7 @@
 
           <div class="feature-item">
             <el-icon class="feature-icon">
-              <i-ep-refresh />
+              <Refresh />
             </el-icon>
             <div>
               <h4>多设备同步</h4>
@@ -48,7 +51,7 @@
 
           <div class="feature-item">
             <el-icon class="feature-icon">
-              <i-ep-cpu />
+              <Cpu />
             </el-icon>
             <div>
               <h4>平台解析</h4>
@@ -56,6 +59,14 @@
             </div>
           </div>
         </div>
+
+        <el-alert title="启用后产品逻辑会变化" type="warning" :closable="false" show-icon class="notice-alert">
+          <ul class="notice-list">
+            <li><strong>账户以账本为准</strong>：账户路径、币种与删除需在账本中维护，平台只做「账户核对」</li>
+            <li><strong>写入分两步</strong>：解析结果先写入平台账本，需要「提交到账本」才写回仓库</li>
+            <li>文件管理会显示仓库同步状态；解析、报表、Copilot 等其余功能不变</li>
+          </ul>
+        </el-alert>
 
         <el-alert title="注意事项" type="info" :closable="false" show-icon class="notice-alert">
           <ul class="notice-list">
@@ -67,10 +78,12 @@
           </ul>
         </el-alert>
 
+        <el-text type="info" size="small" class="exit-note">如需退出，可在仓库管理中选择删除仓库。</el-text>
+
         <div class="action-buttons">
-          <el-button type="primary" size="large" :loading="loading" @click="goPath">
+          <el-button type="primary" size="large" :loading="loading" @click="confirmEnable">
             <el-icon>
-              <i-ep-plus />
+              <Plus />
             </el-icon>
             启用 Git 同步
           </el-button>
@@ -94,7 +107,7 @@
           <el-card class="option-card path-card" :body-style="{ padding: '20px' }" shadow="hover" @click="goLinkForm">
             <div class="option-header">
               <el-icon class="option-icon template-icon">
-                <i-ep-link />
+                <Link />
               </el-icon>
               <div class="option-titles">
                 <h4>关联已有远程</h4>
@@ -108,7 +121,7 @@
             @click="goHostedTemplates">
             <div class="option-header">
               <el-icon class="option-icon template-icon">
-                <i-ep-folder-add />
+                <FolderAdd />
               </el-icon>
               <div class="option-titles">
                 <h4>使用平台创建仓库</h4>
@@ -202,7 +215,7 @@
             @click="selectOption(true)">
             <div class="option-header">
               <el-icon class="option-icon template-icon">
-                <i-ep-document-add />
+                <DocumentAdd />
               </el-icon>
               <div class="option-titles">
                 <h4>基于模板创建</h4>
@@ -223,7 +236,7 @@
             @click="selectOption(false)">
             <div class="option-header">
               <el-icon class="option-icon empty-icon">
-                <i-ep-folder />
+                <Folder />
               </el-icon>
               <div class="option-titles">
                 <h4>空仓库创建</h4>
@@ -257,7 +270,7 @@
           <el-button size="large" @click="backToPathFromHosted">返回</el-button>
           <el-button type="primary" size="large" :loading="loading" :disabled="selectedOption === undefined"
             @click="submitCreateHosted">
-            <el-icon><i-ep-check /></el-icon>
+            <el-icon><Check /></el-icon>
             创建仓库
           </el-button>
         </div>
@@ -268,9 +281,10 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { createGitRepository, linkGitRepository } from '../../api/git'
 import type { GitProvider, GitRepository } from '../../types/git'
+import { emitGitRepositoryChanged } from '../../utils/accountEvents'
 
 defineProps<{}>()
 
@@ -310,6 +324,21 @@ const radioModelValue = computed<string | undefined>(() => {
   if (selectedOption.value === false) return 'empty'
   return undefined
 })
+
+/** 启用前二次确认：明确告知启用后账本管理方式的变化 */
+const confirmEnable = async () => {
+  try {
+    await ElMessageBox.confirm(
+      '启用后：账户以账本为准（路径、币种、删除需在账本中维护）；' +
+        '解析结果需通过「提交到账本」写回仓库；文件管理会显示仓库同步状态。确定继续？',
+      '启用 Git 同步会改变账本管理方式',
+      { confirmButtonText: '我已了解，继续', cancelButtonText: '取消', type: 'warning' }
+    )
+  } catch {
+    return
+  }
+  goPath()
+}
 
 const goPath = () => {
   step.value = 'path'
@@ -389,6 +418,7 @@ const submitLink = async () => {
     ElMessage.success(
       '关联成功。请在下方「Git 仓库管理」中复制 Webhook 与公钥，并完成远程仓库配置；Webhook Secret 仅首次展示，请立即保存。'
     )
+    emitGitRepositoryChanged()
     emit('created', repository)
   } catch (error: unknown) {
     ElMessage.error(pickErrorMessage(error, '关联失败，请稍后重试'))
@@ -406,6 +436,7 @@ const submitCreateHosted = async () => {
   try {
     const repository = await createGitRepository({ template: selectedOption.value })
     ElMessage.success('Git 仓库创建成功！')
+    emitGitRepositoryChanged()
     emit('created', repository)
   } catch (error: unknown) {
     ElMessage.error(pickErrorMessage(error, '创建失败，请稍后重试'))
@@ -433,7 +464,7 @@ const submitCreateHosted = async () => {
 }
 
 .header-icon {
-  color: #409EFF;
+  color: var(--action);
   font-size: 24px;
 }
 
@@ -441,6 +472,12 @@ const submitCreateHosted = async () => {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .intro-content {
@@ -460,11 +497,11 @@ const submitCreateHosted = async () => {
   gap: 12px;
   padding: 16px;
   border-radius: 8px;
-  background-color: var(--ep-fill-color-lighter);
+  background-color: var(--el-fill-color-lighter);
 }
 
 .feature-icon {
-  color: #409EFF;
+  color: var(--action);
   font-size: 20px;
   margin-top: 2px;
   flex-shrink: 0;
@@ -479,12 +516,17 @@ const submitCreateHosted = async () => {
 .feature-item p {
   margin: 0;
   font-size: 13px;
-  color: var(--ep-text-color-regular);
+  color: var(--el-text-color-regular);
   line-height: 1.5;
 }
 
 .notice-alert {
   margin-bottom: 24px;
+}
+
+.exit-note {
+  display: block;
+  margin-bottom: 16px;
 }
 
 .ledger-adapt-alert {
@@ -528,13 +570,13 @@ const submitCreateHosted = async () => {
   margin-top: 8px;
   border: none;
 
-  :deep(.ep-collapse-item__header),
+  :deep(.el-collapse-item__header),
   :deep(.el-collapse-item__header) {
     font-size: 13px;
-    color: var(--ep-text-color-secondary);
+    color: var(--el-text-color-secondary);
   }
 
-  :deep(.ep-collapse-item__wrap),
+  :deep(.el-collapse-item__wrap),
   :deep(.el-collapse-item__wrap) {
     border-bottom: none;
   }
@@ -553,7 +595,7 @@ const submitCreateHosted = async () => {
 .path-desc {
   margin: 0;
   font-size: 13px;
-  color: var(--ep-text-color-regular);
+  color: var(--el-text-color-regular);
   line-height: 1.5;
 }
 
@@ -568,7 +610,7 @@ const submitCreateHosted = async () => {
 }
 
 .path-card:hover {
-  border-color: var(--ep-border-color-hover);
+  border-color: var(--el-border-color-hover);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
@@ -587,14 +629,14 @@ const submitCreateHosted = async () => {
 }
 
 .option-card:hover {
-  border-color: var(--ep-border-color-hover);
+  border-color: var(--el-border-color-hover);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .option-card.selected {
-  border-color: #409EFF;
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.2);
+  border-color: var(--action);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--action) 20%, transparent);
 }
 
 .option-header {
@@ -610,11 +652,11 @@ const submitCreateHosted = async () => {
 }
 
 .template-icon {
-  color: #67C23A;
+  color: var(--action);
 }
 
 .empty-icon {
-  color: #909399;
+  color: var(--text-secondary);
 }
 
 .option-titles {
@@ -630,7 +672,7 @@ const submitCreateHosted = async () => {
 .option-description p {
   margin: 0 0 12px 0;
   font-size: 14px;
-  color: var(--ep-text-color-regular);
+  color: var(--el-text-color-regular);
   line-height: 1.5;
 }
 
@@ -644,7 +686,7 @@ const submitCreateHosted = async () => {
   margin-bottom: 6px;
   font-size: 13px;
   line-height: 1.4;
-  color: var(--ep-text-color-regular);
+  color: var(--el-text-color-regular);
 }
 
 @media (max-width: 768px) {

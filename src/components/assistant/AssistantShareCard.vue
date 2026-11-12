@@ -56,8 +56,8 @@ const showTurnNumber = computed(() => props.turns.length > 1)
 .assistant-share-card {
   width: 640px;
   padding: 24px;
-  background: #ffffff;
-  color: #303133;
+  background: var(--share-bg);
+  color: var(--share-text);
   color-scheme: light;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   box-sizing: border-box;
@@ -66,23 +66,23 @@ const showTurnNumber = computed(() => props.turns.length > 1)
 .share-card__header {
   font-size: 18px;
   font-weight: 700;
-  color: #303133;
+  color: var(--share-text);
   margin-bottom: 20px;
   padding-bottom: 12px;
   padding-left: 12px;
-  border-bottom: 1px solid #ebeef5;
-  border-left: 4px solid #409eff;
+  border-bottom: 1px solid var(--share-border);
+  border-left: 4px solid var(--share-accent);
 }
 
 .share-card__divider {
   margin: 20px 0;
-  border-top: 1px dashed #dcdfe6;
+  border-top: 1px dashed var(--share-border);
 }
 
 .share-card__turn-title {
   font-size: 13px;
   font-weight: 600;
-  color: #606266;
+  color: var(--share-text-secondary);
   margin-bottom: 12px;
 }
 
@@ -93,7 +93,7 @@ const showTurnNumber = computed(() => props.turns.length > 1)
 .share-card__label {
   font-size: 12px;
   font-weight: 600;
-  color: #909399;
+  color: var(--share-text-tertiary);
   margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.02em;
@@ -104,15 +104,15 @@ const showTurnNumber = computed(() => props.turns.length > 1)
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
-  color: #303133;
+  color: var(--share-text);
 }
 
 .share-card__markdown {
   font-size: 14px;
-  color: #303133;
+  color: var(--share-text);
 
   :deep(.markdown-body) {
-    color: #303133;
+    color: var(--share-text);
   }
 
   :deep(h1),
@@ -121,78 +121,78 @@ const showTurnNumber = computed(() => props.turns.length > 1)
   :deep(h4),
   :deep(h5),
   :deep(h6) {
-    color: #303133;
+    color: var(--share-text);
   }
 
   :deep(p),
   :deep(li) {
-    color: #303133;
+    color: var(--share-text);
   }
 
   :deep(strong) {
-    color: #303133;
+    color: var(--share-text);
   }
 
   :deep(blockquote) {
-    color: #606266;
-    border-left-color: #dcdfe6;
+    color: var(--share-text-secondary);
+    border-left-color: var(--share-border);
   }
 
   :deep(hr) {
-    border-top-color: #ebeef5;
+    border-top-color: var(--share-border);
   }
 
   :deep(code) {
-    background: #f5f7fa;
-    color: #409eff;
+    background: var(--share-surface);
+    color: var(--share-accent);
   }
 
   :deep(pre) {
-    background: #f5f7fa;
+    background: var(--share-surface);
     overflow-x: auto;
 
     code {
-      color: #606266;
+      color: var(--share-text-secondary);
     }
   }
 
   :deep(th) {
-    background: #f5f7fa;
-    color: #303133;
+    background: var(--share-surface);
+    color: var(--share-text);
   }
 
   :deep(td),
   :deep(th) {
-    border-color: #ebeef5;
-    color: #303133;
+    border-color: var(--share-border);
+    color: var(--share-text);
   }
 
   :deep(tr:nth-child(even) td) {
-    background: #fafafa;
+    background: var(--share-surface);
   }
 
   :deep(a) {
-    color: #409eff;
+    color: var(--share-accent);
   }
 }
 
 .share-card__footer {
   margin-top: 20px;
   padding-top: 12px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--share-border);
 }
 
 .share-card__notice {
   margin: 0 0 6px;
   font-size: 12px;
   line-height: 1.5;
-  color: #909399;
+  color: var(--share-text-tertiary);
 }
 
 .share-card__date {
   margin: 8px 0 0;
   font-size: 12px;
-  color: #c0c4cc;
+  color: var(--share-text-tertiary);
   text-align: right;
 }
 </style>

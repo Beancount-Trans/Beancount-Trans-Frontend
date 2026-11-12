@@ -80,7 +80,7 @@
       <div v-if="tasks.length === 0" class="empty-state">
         <el-empty description="暂无待办任务">
           <template #image>
-            <el-icon :size="80" color="var(--ep-color-info)">
+            <el-icon :size="80" color="var(--el-color-info)">
               <Check />
             </el-icon>
           </template>
@@ -253,9 +253,8 @@ function injectDatePickerStyles() {
   const style = document.createElement('style')
   style.id = styleId
   style.textContent = `
-    .reconciliation-list .date-info .date-picker .ep-input__wrapper,
     .reconciliation-list .date-info .date-picker .el-input__wrapper,
-    .reconciliation-list [class*="ep-input__wrapper"],
+    .reconciliation-list [class*="el-input__wrapper"],
     .reconciliation-list [class*="el-input__wrapper"] {
       border: none !important;
       border-width: 0 !important;
@@ -266,8 +265,8 @@ function injectDatePickerStyles() {
       outline-width: 0 !important;
       background-color: transparent !important;
     }
-    .reconciliation-list .date-info .date-picker .ep-input__wrapper::before,
-    .reconciliation-list .date-info .date-picker .ep-input__wrapper::after,
+    .reconciliation-list .date-info .date-picker .el-input__wrapper::before,
+    .reconciliation-list .date-info .date-picker .el-input__wrapper::after,
     .reconciliation-list .date-info .date-picker .el-input__wrapper::before,
     .reconciliation-list .date-info .date-picker .el-input__wrapper::after {
       display: none !important;
@@ -275,7 +274,7 @@ function injectDatePickerStyles() {
       border: none !important;
       box-shadow: none !important;
     }
-    .reconciliation-list .date-info .date-picker .ep-date-editor,
+    .reconciliation-list .date-info .date-picker .el-date-editor,
     .reconciliation-list .date-info .date-picker .el-date-editor {
       border: none !important;
       box-shadow: none !important;
@@ -798,7 +797,7 @@ async function handleDelete(defn: RecurringTask) {
       .header-title {
         font-size: 24px;
         font-weight: 600;
-        color: var(--ep-text-color-primary);
+        color: var(--el-text-color-primary);
         margin: 0;
       }
 
@@ -843,7 +842,7 @@ async function handleDelete(defn: RecurringTask) {
             min-width: 20px;
             border-radius: 10px;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-            border: 2px solid var(--ep-bg-color);
+            border: 2px solid var(--el-bg-color);
             letter-spacing: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
           }
@@ -896,13 +895,13 @@ async function handleDelete(defn: RecurringTask) {
       flex-direction: column;
       gap: 10px;
       padding: 12px 16px;
-      background: var(--ep-bg-color);
-      border: 2px solid var(--ep-border-color);
+      background: var(--el-bg-color);
+      border: 2px solid var(--el-border-color);
       border-radius: 12px;
       transition: border-color 0.2s;
 
       &:hover {
-        border-color: var(--ep-color-primary);
+        border-color: var(--el-color-primary);
       }
 
       .recurring-row-main {
@@ -935,20 +934,16 @@ async function handleDelete(defn: RecurringTask) {
         // 可修改态（下一次待办生成日期）：去掉边框与日历图标，
         // 外观与只读态保持一致，仅日期颜色不同
         // 注意：直接命中 EP 自带类名（不依赖 .date-picker 是否落在触发元素上）
-        :deep(.ep-date-editor),
         :deep(.el-date-editor) {
           width: 130px;
         }
 
-        :deep(.ep-input__prefix),
         :deep(.el-input__prefix),
-        :deep(.ep-input__prefix-inner),
         :deep(.el-input__prefix-inner),
         :deep([class*="input__prefix"]) {
           display: none !important;
         }
 
-        :deep(.ep-input__wrapper),
         :deep(.el-input__wrapper) {
           padding: 0 !important;
           border: none !important;
@@ -956,13 +951,12 @@ async function handleDelete(defn: RecurringTask) {
           background: transparent !important;
         }
 
-        :deep(.ep-input__inner),
         :deep(.el-input__inner) {
           padding: 0 !important;
           font-size: 14px;
           font-family: inherit;
           text-align: left;
-          color: var(--ep-color-primary);
+          color: var(--el-color-primary);
         }
 
         // 只读态（本次待办完成后的下一次待办生成日期）：
@@ -972,7 +966,7 @@ async function handleDelete(defn: RecurringTask) {
           font-family: inherit;
           line-height: 1.5;
           white-space: nowrap;
-          color: var(--ep-text-color-secondary);
+          color: var(--el-text-color-secondary);
         }
       }
 
@@ -987,7 +981,7 @@ async function handleDelete(defn: RecurringTask) {
         .row-template-input {
           width: 100%;
 
-          :deep(.ep-textarea__inner),
+          :deep(.el-textarea__inner),
           :deep(.el-textarea__inner) {
             font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
             font-size: 13px;
@@ -1014,7 +1008,7 @@ async function handleDelete(defn: RecurringTask) {
     transition: background-color 0.15s;
 
     &:hover {
-      background-color: var(--ep-fill-color);
+      background-color: var(--el-fill-color);
     }
 
     // 正方形复选框：点击即完成（无二次确认）
@@ -1023,15 +1017,15 @@ async function handleDelete(defn: RecurringTask) {
       width: 16px;
       height: 16px;
       padding: 0;
-      border: 1.5px solid var(--ep-text-color-secondary);
+      border: 1.5px solid var(--el-text-color-secondary);
       border-radius: 3px;
       background: transparent;
       cursor: pointer;
       transition: border-color 0.15s, background-color 0.15s;
 
       &:hover:not(:disabled) {
-        border-color: var(--ep-color-primary);
-        background-color: var(--ep-color-primary-light-9);
+        border-color: var(--el-color-primary);
+        background-color: var(--el-color-primary-light-9);
       }
 
       &:disabled {
@@ -1043,7 +1037,7 @@ async function handleDelete(defn: RecurringTask) {
     .row-title {
       min-width: 0;
       font-size: 14px;
-      color: var(--ep-text-color-primary);
+      color: var(--el-text-color-primary);
       word-break: break-word;
       transition: color 0.2s;
     }
@@ -1058,7 +1052,7 @@ async function handleDelete(defn: RecurringTask) {
       width: auto;
 
       :deep(.el-input__inner),
-      :deep(.ep-input__inner) {
+      :deep(.el-input__inner) {
         font-size: 14px;
       }
     }
@@ -1069,7 +1063,7 @@ async function handleDelete(defn: RecurringTask) {
       align-items: center;
       gap: 4px;
       font-size: 14px;
-      color: var(--ep-text-color-secondary);
+      color: var(--el-text-color-secondary);
       white-space: nowrap;
     }
   }
@@ -1080,13 +1074,13 @@ async function handleDelete(defn: RecurringTask) {
 
     .empty-text {
       font-size: 16px;
-      color: var(--ep-text-color-primary);
+      color: var(--el-text-color-primary);
       margin: 16px 0 8px;
     }
 
     .empty-hint {
       font-size: 14px;
-      color: var(--ep-text-color-secondary);
+      color: var(--el-text-color-secondary);
       margin: 0;
     }
   }
@@ -1105,7 +1099,7 @@ async function handleDelete(defn: RecurringTask) {
 
     .completed-date {
       font-size: 14px;
-      color: var(--ep-text-color-secondary);
+      color: var(--el-text-color-secondary);
     }
 
     .revoke-btn {
@@ -1115,8 +1109,8 @@ async function handleDelete(defn: RecurringTask) {
 
   .task-card {
     position: relative;
-    background: var(--ep-bg-color);
-    border: 2px solid var(--ep-border-color);
+    background: var(--el-bg-color);
+    border: 2px solid var(--el-border-color);
     border-radius: 12px;
     padding: 20px;
     cursor: pointer;
@@ -1131,20 +1125,20 @@ async function handleDelete(defn: RecurringTask) {
     }
 
     &:hover {
-      border-color: var(--ep-color-primary);
+      border-color: var(--el-color-primary);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       transform: translateY(-2px);
     }
 
     &.task-overdue {
-      border-color: var(--ep-color-danger);
+      border-color: var(--el-color-danger);
       background: linear-gradient(135deg,
-          var(--ep-bg-color) 0%,
+          var(--el-bg-color) 0%,
           rgba(245, 108, 108, 0.05) 100%);
 
       .account-name,
       .file-name {
-        color: var(--ep-color-danger);
+        color: var(--el-color-danger);
       }
     }
 
@@ -1157,7 +1151,7 @@ async function handleDelete(defn: RecurringTask) {
     .file-name {
       font-size: 18px;
       font-weight: 600;
-      color: var(--ep-text-color-primary);
+      color: var(--el-text-color-primary);
       margin-bottom: 12px;
       word-break: break-word;
       transition: color 0.2s;
@@ -1165,13 +1159,13 @@ async function handleDelete(defn: RecurringTask) {
 
     .remaining-time {
       font-size: 14px;
-      color: var(--ep-text-color-regular);
+      color: var(--el-text-color-regular);
       margin-top: 4px;
     }
 
     .entry-count {
       font-size: 14px;
-      color: var(--ep-text-color-secondary);
+      color: var(--el-text-color-secondary);
       margin-top: 4px;
     }
 
@@ -1206,7 +1200,7 @@ async function handleDelete(defn: RecurringTask) {
       align-items: center;
       gap: 8px;
       font-size: 14px;
-      color: var(--ep-text-color-regular);
+      color: var(--el-text-color-regular);
       margin-top: 4px;
       max-width: 240px;
       width: fit-content;
@@ -1215,9 +1209,9 @@ async function handleDelete(defn: RecurringTask) {
         width: 120px;
         flex-shrink: 0;
 
-        // 清除所有边框和阴影（同时匹配 el- 和 ep- 命名空间）
+        // 清除所有边框和阴影
         :deep(.el-input__wrapper),
-        :deep(.ep-input__wrapper) {
+        :deep([class*="input__wrapper"]) {
           padding: 4px 8px !important;
           box-shadow: none !important;
           border: none !important;
@@ -1240,7 +1234,7 @@ async function handleDelete(defn: RecurringTask) {
           }
 
           &:hover {
-            background-color: var(--ep-fill-color) !important;
+            background-color: var(--el-fill-color) !important;
             border: none !important;
             border-width: 0 !important;
             box-shadow: none !important;
@@ -1249,7 +1243,7 @@ async function handleDelete(defn: RecurringTask) {
 
           &.is-focus,
           &[class*="is-focus"] {
-            background-color: var(--ep-fill-color) !important;
+            background-color: var(--el-fill-color) !important;
             border: none !important;
             border-width: 0 !important;
             box-shadow: none !important;
@@ -1259,11 +1253,11 @@ async function handleDelete(defn: RecurringTask) {
 
         // 清除输入框内部边框
         :deep(.el-input__inner),
-        :deep(.ep-input__inner) {
+        :deep(.el-input__inner) {
           font-family: 'Courier New', monospace;
           font-weight: 500;
           font-size: 14px;
-          color: var(--ep-text-color-regular);
+          color: var(--el-text-color-regular);
           text-align: left;
           border: none !important;
           outline: none !important;
@@ -1272,13 +1266,13 @@ async function handleDelete(defn: RecurringTask) {
 
         // 移除日期选择器右侧的图标
         :deep(.el-input__suffix),
-        :deep(.ep-input__suffix) {
+        :deep(.el-input__suffix) {
           display: none !important;
         }
 
         // 清除整个输入框容器的边框
         :deep(.el-input),
-        :deep(.ep-input) {
+        :deep(.el-input) {
           border: none !important;
           outline: none !important;
           box-shadow: none !important;
@@ -1286,7 +1280,7 @@ async function handleDelete(defn: RecurringTask) {
         }
 
         // 清除日期选择器外层容器的所有视觉效果
-        :deep(.ep-date-editor),
+        :deep(.el-date-editor),
         :deep(.el-date-editor) {
           border: none !important;
           box-shadow: none !important;
@@ -1371,7 +1365,6 @@ async function handleDelete(defn: RecurringTask) {
   width: 120px;
 
   // 直接选择所有可能的类名组合，不使用 :deep
-  .ep-input__wrapper,
   .el-input__wrapper,
   [class*="input__wrapper"] {
     border: none !important;
@@ -1394,7 +1387,6 @@ async function handleDelete(defn: RecurringTask) {
     }
   }
 
-  .ep-date-editor,
   .el-date-editor,
   [class*="date-editor"] {
     border: none !important;
@@ -1410,7 +1402,7 @@ async function handleDelete(defn: RecurringTask) {
   }
 
   // 使用属性选择器匹配所有可能的变体
-  [class*="ep-input"],
+  [class*="el-input"],
   [class*="el-input"] {
     border: none !important;
     box-shadow: none !important;
@@ -1429,7 +1421,7 @@ async function handleDelete(defn: RecurringTask) {
 // 更激进的全局覆盖：直接针对所有可能的类名
 .reconciliation-list {
 
-  [class*="ep-input__wrapper"],
+  [class*="el-input__wrapper"],
   [class*="el-input__wrapper"] {
     border: none !important;
     box-shadow: none !important;
@@ -1446,7 +1438,7 @@ html.dark {
 
           .el-badge__content,
           [class*="badge__content"] {
-            border-color: var(--ep-bg-color-page) !important;
+            border-color: var(--el-bg-color-page) !important;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
           }
         }
@@ -1456,7 +1448,7 @@ html.dark {
 
             .el-badge__content,
             [class*="badge__content"] {
-              border-color: var(--ep-color-primary-dark-2) !important;
+              border-color: var(--el-color-primary-dark-2) !important;
             }
           }
         }

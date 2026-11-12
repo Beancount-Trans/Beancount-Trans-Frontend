@@ -1,15 +1,15 @@
 import type { TagProps } from 'element-plus'
 
 const accountTypeMap: Record<string, TagProps['type']> = {
-    Assets: 'success',
-    Expenses: 'warning',
-    Income: 'primary',
-    Liabilities: 'danger',
+    Assets: 'info',
+    Expenses: 'info',
+    Income: 'info',
+    Liabilities: 'info',
     Equity: 'info',
-    资产账户: 'success',
-    支出账户: 'warning',
-    收入账户: 'primary',
-    负债账户: 'danger',
+    资产账户: 'info',
+    支出账户: 'info',
+    收入账户: 'info',
+    负债账户: 'info',
     权益账户: 'info'
 }
 

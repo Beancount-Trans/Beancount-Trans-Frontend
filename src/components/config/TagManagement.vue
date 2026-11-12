@@ -1,10 +1,6 @@
 <template>
     <div class="tag-management">
-        <!-- 匿名用户提示 -->
-        <AnonymousPrompt v-model="showAnonymousPrompt" @skip="handleSkipAnonymous" />
-
-        <!-- 页面内容，只在非匿名用户或已跳过提示时显示 -->
-        <div v-if="!showAnonymousPrompt" class="management-header">
+        <div class="management-header">
             <h2>标签管理</h2>
             <div class="header-actions">
                 <el-button type="primary" @click="showAddDialog">
@@ -16,7 +12,7 @@
             </div>
         </div>
 
-        <div v-if="!showAnonymousPrompt" class="management-content">
+        <div class="management-content">
             <!-- 左侧：标签树 -->
             <div class="tag-tree-panel">
                 <el-tree :data="filteredTagTree" :props="treeProps" node-key="id" :expand-on-click-node="false"
@@ -213,10 +209,7 @@ import {
     fetchTagMappings
 } from '../../api/tags'
 import type { Tag, TagForm } from '../../types/tag'
-import AnonymousPrompt from '../common/AnonymousPrompt.vue'
-import { hasAuthTokens } from '../../utils/auth'
 import { extractApiErrorMessage } from '../../utils/errorHelper'
-import { shouldShowAnonymousPrompt } from '~/composables/useAnonymousPrompt'
 
 // 响应式数据
 const tagTree = ref<Tag[]>([])
@@ -238,9 +231,6 @@ const tagMappings = ref<any>({
     income_mappings: []
 })
 const activeMappingTab = ref('expense')
-
-// 匿名用户提示
-const showAnonymousPrompt = ref(false)
 
 // 树形配置
 const treeProps = {
@@ -554,37 +544,16 @@ const getIncomeMappingTooltip = () => {
         .join('\n')
 }
 
-// 处理匿名用户跳过提示
-const handleSkipAnonymous = () => {
-    showAnonymousPrompt.value = false
-    // 继续加载数据，显示admin用户的共享配置
-    loadTagTree()
-}
-
 // 组件挂载
 onMounted(() => {
-    // 检查用户是否已登录
-    const isAuthenticated = hasAuthTokens()
-
-    if (isAuthenticated) {
-        // 已登录用户直接加载数据
-        loadTagTree()
-    } else {
-        // 未登录用户：检查是否应该显示提示（仅显示一次）
-        if (shouldShowAnonymousPrompt(false)) {
-            showAnonymousPrompt.value = true
-        } else {
-            // 如果用户已经看过提示，直接加载数据，显示admin用户的共享配置
-            loadTagTree()
-        }
-    }
+    loadTagTree()
 })
 </script>
 
 <style scoped>
 .tag-management {
     padding: 20px;
-    background-color: var(--ep-bg-color);
+    background-color: var(--el-bg-color);
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     animation: fadeIn 0.6s ease;
@@ -596,12 +565,12 @@ onMounted(() => {
     align-items: center;
     margin-bottom: 20px;
     padding-bottom: 15px;
-    border-bottom: 1px solid var(--ep-border-color);
+    border-bottom: 1px solid var(--el-border-color);
 }
 
 .management-header h2 {
     margin: 0;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
     font-size: 24px;
     font-weight: 600;
 }
@@ -619,18 +588,18 @@ onMounted(() => {
 
 .tag-tree-panel {
     flex: 0 0 400px;
-    border: 1px solid var(--ep-border-color);
+    border: 1px solid var(--el-border-color);
     border-radius: 8px;
     padding: 15px;
-    background-color: var(--ep-fill-color-light);
+    background-color: var(--el-fill-color-light);
 }
 
 .tag-detail-panel {
     flex: 1;
-    border: 1px solid var(--ep-border-color);
+    border: 1px solid var(--el-border-color);
     border-radius: 8px;
     padding: 20px;
-    background-color: var(--ep-bg-color);
+    background-color: var(--el-bg-color);
 }
 
 .tag-tree {
@@ -652,7 +621,7 @@ onMounted(() => {
 
 .node-label {
     font-weight: 500;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
 }
 
 .node-actions {
@@ -663,11 +632,11 @@ onMounted(() => {
 
 .tag-detail h3 {
     margin: 0 0 20px 0;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
     font-size: 20px;
     font-weight: 600;
     padding-bottom: 10px;
-    border-bottom: 2px solid var(--ep-color-primary);
+    border-bottom: 2px solid var(--el-color-primary);
 }
 
 .info-card {
@@ -687,7 +656,7 @@ onMounted(() => {
 }
 
 .info-card code {
-    background: var(--ep-fill-color-light);
+    background: var(--el-fill-color-light);
     padding: 2px 8px;
     border-radius: 4px;
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
@@ -701,12 +670,12 @@ onMounted(() => {
     gap: 10px;
     margin-top: 20px;
     padding-top: 20px;
-    border-top: 1px solid var(--ep-border-color);
+    border-top: 1px solid var(--el-border-color);
 }
 
 .form-help-text {
     font-size: 12px;
-    color: var(--ep-text-color-secondary);
+    color: var(--el-text-color-secondary);
     margin-top: 4px;
 }
 
@@ -737,15 +706,15 @@ onMounted(() => {
     align-items: center;
     padding: 12px 16px;
     margin-bottom: 8px;
-    background-color: var(--ep-fill-color-light);
+    background-color: var(--el-fill-color-light);
     border-radius: 6px;
-    border: 1px solid var(--ep-border-color);
+    border: 1px solid var(--el-border-color);
     transition: all 0.2s ease;
 }
 
 .mapping-item:hover {
-    background-color: var(--ep-fill-color);
-    border-color: var(--ep-border-color);
+    background-color: var(--el-fill-color);
+    border-color: var(--el-border-color);
 }
 
 .mapping-info {
@@ -757,9 +726,9 @@ onMounted(() => {
 
 .mapping-key {
     font-weight: 500;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    background-color: var(--ep-fill-color-lighter);
+    background-color: var(--el-fill-color-lighter);
     padding: 2px 6px;
     border-radius: 4px;
     font-size: 12px;
@@ -768,21 +737,21 @@ onMounted(() => {
 .mapping-payee,
 .mapping-full,
 .mapping-payer {
-    color: var(--ep-text-color-regular);
+    color: var(--el-text-color-regular);
     font-size: 14px;
 }
 
 .mapping-account {
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    background-color: var(--ep-color-primary-light-9);
+    background-color: var(--el-color-primary-light-9);
     padding: 2px 6px;
     border-radius: 4px;
     font-size: 12px;
-    color: var(--ep-color-primary);
+    color: var(--el-color-primary);
 }
 
 .mapping-currency {
-    color: var(--ep-text-color-secondary);
+    color: var(--el-text-color-secondary);
     font-size: 12px;
     font-style: italic;
 }

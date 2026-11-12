@@ -160,23 +160,23 @@ const setTestValues = () => {
 .test-section {
     margin-bottom: 30px;
     padding: 20px;
-    border: 1px solid #e4e7ed;
+    border: 1px solid var(--border);
     border-radius: 8px;
-    background-color: #fff;
+    background-color: var(--surface);
 }
 
 .test-section h3 {
     margin-top: 0;
     margin-bottom: 15px;
-    color: #303133;
-    border-bottom: 2px solid #409eff;
+    color: var(--text-primary);
+    border-bottom: 2px solid var(--action);
     padding-bottom: 10px;
 }
 
 .test-item {
     margin-bottom: 20px;
     padding: 15px;
-    background-color: #f5f7fa;
+    background-color: var(--surface-hover);
     border-radius: 4px;
 }
 
@@ -186,17 +186,17 @@ const setTestValues = () => {
 
 .test-item h4 {
     margin: 0 0 10px 0;
-    color: #409eff;
+    color: var(--action);
     font-size: 14px;
 }
 
 .test-item p {
     margin: 10px 0 0 0;
     padding: 8px;
-    background-color: #fff;
+    background-color: var(--surface);
     border-radius: 4px;
     font-size: 13px;
-    color: #606266;
+    color: var(--text-secondary);
 }
 
 .debug-info {
@@ -205,7 +205,7 @@ const setTestValues = () => {
 
 .debug-info h4 {
     margin: 15px 0 5px 0;
-    color: #606266;
+    color: var(--text-secondary);
     font-size: 14px;
 }
 
@@ -214,11 +214,11 @@ const setTestValues = () => {
     overflow-y: auto;
     font-size: 12px;
     line-height: 1.4;
-    background-color: #f5f7fa;
+    background-color: var(--surface-hover);
     padding: 10px;
     border-radius: 4px;
     margin: 5px 0;
-    border: 1px solid #e4e7ed;
+    border: 1px solid var(--border);
 }
 
 .test-section .el-button {

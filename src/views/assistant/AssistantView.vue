@@ -36,7 +36,7 @@
       <div class="chat-container" ref="chatContainerRef" :class="{ 'chat-container--welcome': messages.length === 0 }"
         v-loading="sessionLoading" @scroll.passive="handleChatScroll">
         <div v-if="messages.length === 0" class="welcome-panel">
-          <el-icon :size="48" color="var(--ep-color-primary)">
+          <el-icon :size="48" color="var(--el-color-primary)">
             <ChatDotRound />
           </el-icon>
           <p class="welcome-text">欢迎回来</p>
@@ -730,17 +730,17 @@ onUnmounted(() => {
 
 .welcome-text {
   margin: 16px 0 8px;
-  color: var(--ep-text-color-regular);
+  color: var(--el-text-color-regular);
 }
 
 .welcome-readonly {
   margin: 0 0 24px;
   font-size: 13px;
-  color: var(--ep-text-color-secondary);
+  color: var(--el-text-color-secondary);
 }
 
 .alert-link {
-  color: var(--ep-color-primary);
+  color: var(--el-color-primary);
   text-decoration: none;
   font-weight: 500;
 
@@ -753,7 +753,7 @@ onUnmounted(() => {
   flex: 1;
   overflow-y: auto;
   padding: 16px 24px;
-  background: var(--ep-fill-color-blank);
+  background: var(--el-fill-color-blank);
   min-height: 0;
 
   &--welcome {
@@ -800,8 +800,8 @@ onUnmounted(() => {
     justify-content: flex-end;
 
     .message-bubble {
-      background: var(--ep-color-primary-light-9);
-      border-color: var(--ep-color-primary-light-7);
+      background: var(--el-color-primary-light-9);
+      border-color: var(--el-color-primary-light-7);
     }
   }
 
@@ -809,8 +809,8 @@ onUnmounted(() => {
     justify-content: flex-start;
 
     .message-bubble {
-      background: var(--ep-fill-color-light);
-      border-color: var(--ep-border-color);
+      background: var(--el-fill-color-light);
+      border-color: var(--el-border-color);
     }
   }
 
@@ -820,8 +820,8 @@ onUnmounted(() => {
     cursor: pointer;
 
     &.is-selected .message-bubble {
-      border-color: var(--ep-color-primary);
-      box-shadow: 0 0 0 1px var(--ep-color-primary-light-7);
+      border-color: var(--el-color-primary);
+      box-shadow: 0 0 0 1px var(--el-color-primary-light-7);
     }
   }
 }
@@ -840,14 +840,14 @@ onUnmounted(() => {
 
 .message-role {
   font-size: 0.75rem;
-  color: var(--ep-text-color-secondary);
+  color: var(--el-text-color-secondary);
   margin-bottom: 4px;
 }
 
 .message-content {
   word-break: break-word;
   line-height: 1.6;
-  color: var(--ep-text-color-primary);
+  color: var(--el-text-color-primary);
 
   &--user {
     white-space: pre-wrap;
@@ -879,11 +879,11 @@ onUnmounted(() => {
 .interrupted-bar {
   margin-top: 8px;
   font-size: 13px;
-  color: var(--ep-text-color-secondary);
+  color: var(--el-text-color-secondary);
 }
 
 .status-hint {
-  color: var(--ep-text-color-secondary);
+  color: var(--el-text-color-secondary);
 }
 
 .streaming-text {
@@ -892,7 +892,7 @@ onUnmounted(() => {
 
 .streaming-cursor {
   animation: blink 1s step-end infinite;
-  color: var(--ep-color-primary);
+  color: var(--el-color-primary);
 }
 
 @keyframes blink {
@@ -908,14 +908,14 @@ onUnmounted(() => {
   gap: 4px;
   margin-top: 8px;
   padding-top: 4px;
-  border-top: 1px solid var(--ep-border-color-lighter);
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 
 .feedback-divider {
   width: 1px;
   height: 16px;
   margin: 0 4px;
-  background: var(--ep-border-color-lighter);
+  background: var(--el-border-color-lighter);
 }
 
 .share-select-bar {
@@ -928,15 +928,15 @@ onUnmounted(() => {
   align-items: center;
   gap: 12px;
   padding: 12px 20px;
-  background: var(--ep-bg-color);
-  border: 1px solid var(--ep-border-color-light);
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color-light);
   border-radius: 12px;
-  box-shadow: var(--ep-box-shadow-light);
+  box-shadow: var(--el-box-shadow-light);
 }
 
 .share-select-count {
   font-size: 14px;
-  color: var(--ep-text-color-regular);
+  color: var(--el-text-color-regular);
   margin-right: 4px;
   white-space: nowrap;
 }
@@ -953,14 +953,14 @@ onUnmounted(() => {
   margin-top: 8px;
   border: none;
 
-  :deep(.ep-collapse-item__header) {
+  :deep(.el-collapse-item__header) {
     font-size: 0.8rem;
     height: 32px;
     background: transparent;
     border: none;
   }
 
-  :deep(.ep-collapse-item__wrap) {
+  :deep(.el-collapse-item__wrap) {
     border: none;
     background: transparent;
   }
@@ -969,12 +969,12 @@ onUnmounted(() => {
 .query-sources {
   margin-top: 10px;
   padding-top: 8px;
-  border-top: 1px dashed var(--ep-border-color-lighter);
+  border-top: 1px dashed var(--el-border-color-lighter);
 }
 
 .query-sources-title {
   font-size: 0.75rem;
-  color: var(--ep-text-color-secondary);
+  color: var(--el-text-color-secondary);
   margin-bottom: 4px;
 }
 
@@ -988,7 +988,7 @@ onUnmounted(() => {
 
 .query-source-ledger {
   font-size: 0.75rem;
-  color: var(--ep-text-color-secondary);
+  color: var(--el-text-color-secondary);
 }
 
 .query-block {
@@ -1007,32 +1007,32 @@ onUnmounted(() => {
 }
 
 .query-bql {
-  background: var(--ep-fill-color-darker);
-  color: var(--ep-color-primary);
+  background: var(--el-fill-color-darker);
+  color: var(--el-color-primary);
 }
 
 .query-result {
-  background: var(--ep-fill-color);
-  color: var(--ep-text-color-regular);
+  background: var(--el-fill-color);
+  color: var(--el-text-color-regular);
 }
 
 .input-area {
   flex-shrink: 0;
   padding: 12px 24px 20px;
-  border-top: 1px solid var(--ep-border-color-lighter);
-  background: var(--ep-bg-color);
+  border-top: 1px solid var(--el-border-color-lighter);
+  background: var(--el-bg-color);
 }
 
 .composer {
   max-width: 840px;
   margin: 0 auto;
   width: 100%;
-  border: 1px solid var(--ep-border-color);
+  border: 1px solid var(--el-border-color);
   border-radius: 16px;
   padding: 8px 12px 10px;
-  background: var(--ep-fill-color-blank);
+  background: var(--el-fill-color-blank);
 
-  :deep(.ep-textarea__inner) {
+  :deep(.el-textarea__inner) {
     box-shadow: none;
     padding: 8px 4px;
     overflow-y: hidden;
@@ -1050,7 +1050,7 @@ onUnmounted(() => {
 .composer-meta {
   min-width: 0;
   font-size: 12px;
-  color: var(--ep-text-color-secondary);
+  color: var(--el-text-color-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

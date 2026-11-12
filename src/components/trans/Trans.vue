@@ -109,15 +109,8 @@
     </el-button>
   </div>
 
-  <el-alert v-if="hasEntries && !isAuthenticated" class="anonymous-result-guide" type="warning" :closable="false"
-    show-icon>
-    <span class="anonymous-result-guide-body">
-      <span class="anonymous-result-guide-tip">登录后自动匹配并补齐你的银行卡、信用卡等账户，减少记到「Other 兜底账户」账户。</span>
-      <el-button type="primary" size="small" @click="handleRegisterAndReparse">
-        登录 / 注册
-      </el-button>
-    </span>
-  </el-alert>
+  <CapabilityNotice v-if="hasEntries && !isAuthenticated" class="anonymous-result-guide" capability="ledger.write"
+    description="登录后自动匹配并补齐你的银行卡、信用卡等账户，减少记到「Other 兜底账户」。" :before-action="preserveGuestParse" />
 
   <el-input v-if="!hasEntries && !uploading && !parseFailure" class="result-textarea" type="textarea" :rows="30"
     readonly :value="''" placeholder='解析结果如下：
@@ -133,7 +126,7 @@
   <div v-else class="table-container">
     <ParseEntryTable :entries="formattedEntries" :error-entries="errorEntries" :validation-warnings="validationWarnings"
       :on-reparse="handleTableReparse" :on-persist-edit="handlePersistEdit" :on-patch-tags="handlePatchTags"
-      :on-remove-entry="handleRemoveEntry" :require-auth="hasAuthTokens" />
+      :on-remove-entry="handleRemoveEntry" :require-auth="() => can('ledger.write')" />
   </div>
 
   <el-dialog v-model="showPreviewDialog" title="预览所有条目" width="80%">
@@ -155,8 +148,10 @@ import { UploadFilled, DocumentCopy, DocumentChecked, Lock, Loading, WarningFill
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from '../../utils/request'
-import { hasAuthTokens, setLoginRedirect } from '../../utils/auth'
+import { getAccessToken, setLoginRedirect } from '../../utils/auth'
 import ParseEntryTable from '../parse/ParseEntryTable.vue'
+import CapabilityNotice from '../common/CapabilityNotice.vue'
+import { useCapabilities } from '../../capabilities'
 import { BILLS_EXPORT_DOCS_URL } from '../../utils/userTour'
 import {
   alignPreviewBlocksToEntries,
@@ -311,7 +306,8 @@ const uploadRef = ref<any>()
 const passwordInputRef = ref<InputInstance>()
 /** 当前选中的账单文件，未登录时登录成功后会用它自动重新解析 */
 const pendingFile = ref<File | null>(null)
-const isAuthenticated = ref(hasAuthTokens())
+const { can } = useCapabilities()
+const isAuthenticated = computed(() => can('ledger.write'))
 const uploading = ref(false)
 const uploadPercent = ref(0)
 const pendingFileName = ref('')
@@ -369,12 +365,13 @@ watch(value4, (newValue) => {
 
 axios.defaults.withCredentials = true
 
-const token = localStorage.getItem('access')
-
-const headers = computed(() => ({
-  'X-CSRFToken': csrfToken.value,
-  Authorization: `Bearer ${token}`,
-}))
+const headers = computed(() => {
+  const token = getAccessToken()
+  return {
+    'X-CSRFToken': csrfToken.value,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+})
 
 function normalizeOriginalRow(item: Record<string, any>): OriginalRow {
   const fromApi = (item.original_row && typeof item.original_row === 'object')
@@ -567,7 +564,7 @@ function focusPasswordInput() {
 /** 打开文件选择器，让用户重新选择文件（不保留上一次文件） */
 function openFilePicker() {
   const root = uploadRef.value?.$el as HTMLElement | undefined
-  const trigger = root?.querySelector<HTMLElement>('.ep-upload')
+  const trigger = root?.querySelector<HTMLElement>('.el-upload')
   if (trigger) {
     trigger.click()
   } else {
@@ -605,7 +602,6 @@ const handleBeforeUpload = (file: File) => {
   uploadPercent.value = 0
   pendingFileName.value = file.name
   pendingFile.value = file
-  isAuthenticated.value = hasAuthTokens()
   parseFailure.value = null
   // 新文件开始解析即清空旧结果，避免把上一次结果误写入账本
   formattedEntries.value = []
@@ -650,8 +646,6 @@ const handleUploadSuccess = (response: any, file: any) => {
   parseFailure.value = null
   // 新解析结果取代旧结果，清掉可能存在的登录前草稿
   clearParseDraft()
-
-  isAuthenticated.value = hasAuthTokens()
 }
 
 const handleUploadError = (err: any, _file: any) => {
@@ -706,7 +700,6 @@ const copyResponseData = async () => {
 /** 挂载时：已登录且存在待重解析文件则自动重解析；否则恢复解析草稿 */
 onMounted(async () => {
   loadBillSupport()
-  isAuthenticated.value = hasAuthTokens()
 
   if (isAuthenticated.value) {
     const resumed = await takePendingParseFile()
@@ -723,19 +716,16 @@ onMounted(async () => {
   if (!draft || formattedEntries.value.length > 0) return
   formattedEntries.value = draft.entries
   ElMessage.info(
-    '已恢复上次未写入的解析结果：该结果基于公共配置解析，可核对编辑后再写入账本'
+    '已恢复上次未写入的解析结果'
   )
 })
 
-/** 引导注册/登录：暂存当前文件与结果，登录成功后回跳 /trans 自动重新解析 */
-const handleRegisterAndReparse = async () => {
+/** 登录前暂存当前文件与结果，登录成功后回跳 /trans 自动重新解析 */
+const preserveGuestParse = async () => {
   if (pendingFile.value) {
     await savePendingParseFile(pendingFile.value)
   }
-  // 取消登录后手动回 /trans 时仍能看到匿名结果
   saveParseDraft(formattedEntries.value)
-  setLoginRedirect('/trans')
-  router.push('/login')
 }
 
 /**
@@ -745,7 +735,7 @@ const handleRegisterAndReparse = async () => {
 const handleWriteCollect = async () => {
   if (!hasEntries.value || writing.value) return
 
-  if (!hasAuthTokens()) {
+  if (!can('ledger.write')) {
     saveParseDraft(formattedEntries.value)
     try {
       await ElMessageBox.confirm(
@@ -763,8 +753,7 @@ const handleWriteCollect = async () => {
 
   try {
     await ElMessageBox.confirm(
-      `将把 ${formattedEntries.value.length} 条条目追加写入你的 trans/collect.bean` +
-      '（追加写入，不可自动撤销）。',
+      `将把 ${formattedEntries.value.length} 条记录追加写入 trans/collect.bean`,
       '确认写入账本',
       { confirmButtonText: '写入', cancelButtonText: '取消', type: 'warning' }
     )
@@ -1038,26 +1027,36 @@ const handleRemoveEntry = async (uuid: string) => {
   margin-left: 14px;
 }
 
+/* .el-textarea 自带 width:100%，与上面的 calc 同权重时会覆盖它，右侧溢出并撑出整页横向滚动 */
+.result-textarea.el-textarea {
+  width: calc(100% - 24px);
+}
+
+/* 示例框高度跟随视口，避免空间足够时仍需纵向滚动 */
+.result-textarea .el-textarea__inner {
+  height: clamp(220px, calc(100vh - 350px), 550px);
+}
+
 .upload-privacy-hint {
-  color: var(--ep-text-color-secondary);
+  color: var(--el-text-color-secondary);
   font-size: 0.9em;
   margin: 6px 0 0;
 }
 
 .upload-multi-bill-hint {
-  color: var(--ep-text-color-secondary);
+  color: var(--el-text-color-secondary);
   font-size: 12px;
   margin: 6px 0 0;
 }
 
 .upload-multi-bill-link {
-  color: var(--ep-color-primary);
+  color: var(--el-color-primary);
   text-decoration: none;
 }
 
 .bill-support-trigger {
   margin-right: 12px;
-  border-bottom: 1px dashed var(--ep-border-color);
+  border-bottom: 1px dashed var(--el-border-color);
 }
 
 .bill-support-panel {
@@ -1071,7 +1070,7 @@ const handleRemoveEntry = async (uuid: string) => {
 .bill-support-group-title {
   margin-bottom: 2px;
   font-weight: 600;
-  color: var(--ep-text-color-primary);
+  color: var(--el-text-color-primary);
 }
 
 .bill-support-row {
@@ -1086,23 +1085,23 @@ const handleRemoveEntry = async (uuid: string) => {
 .bill-support-name {
   flex: 0 0 auto;
   white-space: nowrap;
-  color: var(--ep-text-color-regular);
+  color: var(--el-text-color-regular);
 }
 
 .bill-support-link {
-  color: var(--ep-color-primary);
+  color: var(--el-color-primary);
   text-decoration: none;
 }
 
 .bill-support-time {
   white-space: nowrap;
-  color: var(--ep-text-color-secondary);
+  color: var(--el-text-color-secondary);
   text-align: right;
 }
 
 .bill-support-empty {
   white-space: nowrap;
-  color: var(--ep-text-color-placeholder);
+  color: var(--el-text-color-placeholder);
 }
 
 .parse-status {
@@ -1111,10 +1110,10 @@ const handleRemoveEntry = async (uuid: string) => {
   gap: 6px;
   margin: 12px 14px 0;
   padding: 10px 12px;
-  border: 1px solid var(--ep-color-primary-light-7);
-  border-radius: var(--ep-border-radius-base);
-  background-color: var(--ep-color-primary-light-9);
-  color: var(--ep-text-color-regular);
+  border: 1px solid var(--el-color-primary-light-7);
+  border-radius: var(--el-border-radius-base);
+  background-color: var(--el-color-primary-light-9);
+  color: var(--el-text-color-regular);
   font-size: 13px;
   text-align: left;
 }
@@ -1127,40 +1126,40 @@ const handleRemoveEntry = async (uuid: string) => {
 
 .parse-status-hint {
   font-size: 12px;
-  color: var(--ep-text-color-secondary);
+  color: var(--el-text-color-secondary);
 }
 
 .parse-failure {
   margin: 12px 14px 0;
   padding: 12px 14px;
-  border: 1px solid var(--ep-color-warning-light-5);
-  border-left: 3px solid var(--ep-color-warning);
-  border-radius: var(--ep-border-radius-base);
-  background-color: var(--ep-color-warning-light-9);
-  color: var(--ep-text-color-regular);
+  border: 1px solid var(--el-color-warning-light-5);
+  border-left: 3px solid var(--el-color-warning);
+  border-radius: var(--el-border-radius-base);
+  background-color: var(--el-color-warning-light-9);
+  color: var(--el-text-color-regular);
   font-size: 13px;
   text-align: left;
 }
 
 .parse-failure.is-decryption_required,
 .parse-failure.is-decryption_failed {
-  border-color: var(--ep-color-warning-light-5);
-  border-left-color: var(--ep-color-warning);
-  background-color: var(--ep-color-warning-light-9);
+  border-color: var(--el-color-warning-light-5);
+  border-left-color: var(--el-color-warning);
+  background-color: var(--el-color-warning-light-9);
 }
 
 .parse-failure.is-unsupported_bill,
 .parse-failure.is-parse_failed,
 .parse-failure.is-network_error {
-  border-color: var(--ep-color-danger-light-5);
-  border-left-color: var(--ep-color-danger);
-  background-color: var(--ep-color-danger-light-9);
+  border-color: var(--el-color-danger-light-5);
+  border-left-color: var(--el-color-danger);
+  background-color: var(--el-color-danger-light-9);
 }
 
 .parse-failure.is-empty_result {
-  border-color: var(--ep-color-info-light-5);
-  border-left-color: var(--ep-color-info);
-  background-color: var(--ep-color-info-light-9);
+  border-color: var(--el-color-info-light-5);
+  border-left-color: var(--el-color-info);
+  background-color: var(--el-color-info-light-9);
 }
 
 .parse-failure-title {
@@ -1168,7 +1167,7 @@ const handleRemoveEntry = async (uuid: string) => {
   align-items: center;
   gap: 6px;
   font-weight: 600;
-  color: var(--ep-text-color-primary);
+  color: var(--el-text-color-primary);
 }
 
 .parse-failure-message {
@@ -1181,7 +1180,7 @@ const handleRemoveEntry = async (uuid: string) => {
   padding-left: 18px;
   font-size: 12px;
   line-height: 1.6;
-  color: var(--ep-text-color-secondary);
+  color: var(--el-text-color-secondary);
 }
 
 .parse-failure-actions {
@@ -1194,12 +1193,12 @@ const handleRemoveEntry = async (uuid: string) => {
 .parse-failure-guides {
   margin-top: 8px;
   font-size: 12px;
-  color: var(--ep-text-color-secondary);
+  color: var(--el-text-color-secondary);
 }
 
 .parse-failure-guides a {
   margin-left: 4px;
-  color: var(--ep-color-primary);
+  color: var(--el-color-primary);
 }
 
 .result-toolbar {
@@ -1228,23 +1227,23 @@ const handleRemoveEntry = async (uuid: string) => {
 }
 
 .anonymous-result-guide {
-  width: calc(100% - 24px);
+  width: auto;
   margin: 0 14px 12px;
 }
 
-.anonymous-result-guide.ep-alert.is-light .ep-alert__icon.is-big {
+.anonymous-result-guide.el-alert.is-light .el-alert__icon.is-big {
   width: 20px;
   margin-right: 10px;
   font-size: 20px;
 }
 
-.anonymous-result-guide.ep-alert .ep-alert__content {
+.anonymous-result-guide.el-alert .el-alert__content {
   flex: 1;
   min-width: 0;
 }
 
-.anonymous-result-guide.ep-alert.is-light .ep-alert__description {
-  color: var(--ep-text-color-regular);
+.anonymous-result-guide.el-alert.is-light .el-alert__description {
+  color: var(--el-text-color-regular);
   font-size: 13px;
   line-height: 1.6;
 }
@@ -1261,7 +1260,7 @@ const handleRemoveEntry = async (uuid: string) => {
   min-width: 0;
 }
 
-.anonymous-result-guide-body .ep-button {
+.anonymous-result-guide-body .el-button {
   flex: 0 0 auto;
 }
 </style>

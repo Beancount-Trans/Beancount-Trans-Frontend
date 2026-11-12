@@ -1,8 +1,5 @@
 <template>
     <div class="mapping-management">
-        <!-- 匿名用户提示 -->
-        <AnonymousPrompt v-model="showAnonymousPrompt" @skip="handleSkipAnonymous" />
-
         <!-- 快速创建映射 -->
         <!-- <div class="quick-create-section">
             <el-button type="primary" size="large" @click="showQuickCreateDialog">
@@ -175,10 +172,7 @@ import AccountSelector from '../common/AccountSelector.vue'
 import ExpenseMapping from './Expenses.vue'
 import IncomeMapping from './Income.vue'
 import AssetsMapping from './Assets.vue'
-import AnonymousPrompt from '../common/AnonymousPrompt.vue'
-import { hasAuthTokens } from '../../utils/auth'
 import { extractApiErrorMessage } from '../../utils/errorHelper'
-import { shouldShowAnonymousPrompt } from '~/composables/useAnonymousPrompt'
 import type { FormInstance, FormRules, TabPaneName } from 'element-plus'
 
 // 响应式数据
@@ -187,9 +181,6 @@ const activeTab = ref('expense')
 // 提示信息
 const showTooltip = ref(true)
 const payeetipContent = ref("💡 提示：关键字用于匹配账单中的描述信息，映射账户用于指定该交易应归入的账户。对方信息有助于提高映射的准确性。")
-
-// 匿名用户提示
-const showAnonymousPrompt = ref(false)
 
 // 快速创建相关
 const quickCreateDialog = ref(false)
@@ -332,42 +323,8 @@ const handleAccountChange = (account: any) => {
     quickCreateForm.value.currency = null
 }
 
-// 处理匿名用户跳过提示
-const handleSkipAnonymous = () => {
-    showAnonymousPrompt.value = false
-    // 继续显示映射管理页面，显示admin用户的共享配置
-    // 加载所有标签页的数据
-    loadAllTabData()
-}
-
-// 加载所有标签页数据
-const loadAllTabData = () => {
-    // 加载支出映射数据
-    if (expenseMappingRef.value?.fetchData) {
-        expenseMappingRef.value.fetchData()
-    }
-    // 加载收入映射数据
-    if (incomeMappingRef.value?.fetchData) {
-        incomeMappingRef.value.fetchData()
-    }
-    // 加载资产映射数据
-    if (assetsMappingRef.value?.fetchData) {
-        assetsMappingRef.value.fetchData()
-    }
-}
-
 // 组件挂载时初始化
 onMounted(() => {
-    // 检查用户是否已登录
-    const isAuthenticated = hasAuthTokens()
-
-    if (!isAuthenticated) {
-        // 未登录用户：检查是否应该显示提示（仅显示一次）
-        if (shouldShowAnonymousPrompt(false)) {
-            showAnonymousPrompt.value = true
-        }
-        // 如果用户已经看过提示，直接显示页面，显示admin用户的共享配置
-    }
     // 页面初始化
 })
 </script>
@@ -375,7 +332,7 @@ onMounted(() => {
 <style scoped>
 .mapping-management {
     padding: 20px;
-    background-color: var(--ep-bg-color);
+    background-color: var(--el-bg-color);
     min-height: 100vh;
 }
 
@@ -393,7 +350,7 @@ onMounted(() => {
 }
 
 .analytics-card {
-    background: var(--ep-fill-color-light);
+    background: var(--el-fill-color-light);
     border-radius: 8px;
     padding: 16px;
     height: 100%;
@@ -402,7 +359,7 @@ onMounted(() => {
 .analytics-title {
     font-size: 16px;
     font-weight: 600;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
     margin-bottom: 16px;
 }
 
@@ -415,7 +372,7 @@ onMounted(() => {
 
 .chart-placeholder {
     text-align: center;
-    color: var(--ep-text-color-secondary);
+    color: var(--el-text-color-secondary);
 }
 
 .chart-placeholder .el-icon {
@@ -430,7 +387,7 @@ onMounted(() => {
 
 .chart-placeholder small {
     font-size: 12px;
-    color: var(--ep-text-color-placeholder);
+    color: var(--el-text-color-placeholder);
 }
 
 .analytics-metrics {
@@ -444,28 +401,28 @@ onMounted(() => {
     justify-content: space-between;
     align-items: center;
     padding: 8px 12px;
-    background: var(--ep-bg-color);
+    background: var(--el-bg-color);
     border-radius: 6px;
-    border-left: 3px solid var(--ep-color-primary);
+    border-left: 3px solid var(--el-color-primary);
 }
 
 .metric-label {
     font-size: 14px;
-    color: var(--ep-text-color-regular);
+    color: var(--el-text-color-regular);
 }
 
 .metric-value {
     font-size: 16px;
     font-weight: 600;
-    color: var(--ep-color-success);
+    color: var(--el-color-success);
 }
 
 .metric-value.warning {
-    color: var(--ep-color-warning);
+    color: var(--el-color-warning);
 }
 
 .metric-value.danger {
-    color: var(--ep-color-danger);
+    color: var(--el-color-danger);
 }
 
 .analytics-suggestions {
@@ -478,7 +435,7 @@ onMounted(() => {
     align-items: center;
     justify-content: center;
     height: 100px;
-    color: var(--ep-color-success);
+    color: var(--el-color-success);
 }
 
 .no-suggestions .el-icon {
@@ -502,7 +459,7 @@ onMounted(() => {
     align-items: flex-start;
     gap: 8px;
     padding: 8px;
-    background: var(--ep-bg-color);
+    background: var(--el-bg-color);
     border-radius: 6px;
     font-size: 13px;
     line-height: 1.4;
@@ -514,11 +471,11 @@ onMounted(() => {
 }
 
 .suggestion-item .el-icon.warning {
-    color: var(--ep-color-warning);
+    color: var(--el-color-warning);
 }
 
 .suggestion-item .el-icon.info {
-    color: var(--ep-color-primary);
+    color: var(--el-color-primary);
 }
 
 .card-header {
@@ -529,7 +486,7 @@ onMounted(() => {
 
 
 .mapping-tabs {
-    background: var(--ep-bg-color);
+    background: var(--el-bg-color);
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }

@@ -145,8 +145,8 @@ defineExpose({ focusSearch })
   align-self: stretch;
   min-height: 0;
   overflow: hidden;
-  border-right: 1px solid var(--ep-border-color-light);
-  background: var(--ep-bg-color);
+  border-right: 1px solid var(--el-border-color-light);
+  background: var(--el-bg-color);
   transition: width 0.2s ease;
 
   &--collapsed {
@@ -185,12 +185,12 @@ defineExpose({ focusSearch })
     height: 18px;
   }
 
-  :deep(.ep-icon) {
+  :deep(.el-icon) {
     margin: 0;
   }
 
   &:hover {
-    background: var(--ep-fill-color-light);
+    background: var(--el-fill-color-light);
   }
 }
 
@@ -207,7 +207,7 @@ defineExpose({ focusSearch })
   display: flex;
   flex-direction: column;
   gap: 10px;
-  border-bottom: 1px solid var(--ep-border-color-lighter);
+  border-bottom: 1px solid var(--el-border-color-lighter);
 }
 
 .sidebar-header-row {
@@ -234,7 +234,7 @@ defineExpose({ focusSearch })
     height: 18px;
   }
 
-  :deep(.ep-icon) {
+  :deep(.el-icon) {
     margin: 0;
   }
 }
@@ -259,7 +259,7 @@ defineExpose({ focusSearch })
 
 .empty-sessions {
   padding: 24px 12px;
-  color: var(--ep-text-color-secondary);
+  color: var(--el-text-color-secondary);
   font-size: 13px;
   text-align: center;
 }
@@ -277,11 +277,11 @@ defineExpose({ focusSearch })
   &:hover,
   &.active,
   &.is-menu-open {
-    background: var(--ep-fill-color-light);
+    background: var(--el-fill-color-light);
   }
 
   &.active {
-    border: 1px solid var(--ep-color-primary-light-5);
+    border: 1px solid var(--el-color-primary-light-5);
   }
 }
 
@@ -289,7 +289,7 @@ defineExpose({ focusSearch })
   flex: 1;
   min-width: 0;
   font-size: 14px;
-  color: var(--ep-text-color-primary);
+  color: var(--el-text-color-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -311,6 +311,6 @@ defineExpose({ focusSearch })
 }
 
 .session-delete {
-  color: var(--ep-color-danger);
+  color: var(--el-color-danger);
 }
 </style>

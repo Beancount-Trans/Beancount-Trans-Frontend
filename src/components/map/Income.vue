@@ -349,7 +349,6 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { Search, Plus, Upload, Download, Edit, Delete } from '@element-plus/icons-vue'
 import axios from '../../utils/request'
 import handleRefresh from '../../utils/commonFunctions'
-import { hasAuthTokens } from '../../utils/auth'
 import { extractApiErrorMessage } from '../../utils/errorHelper'
 import * as XLSX from 'xlsx'
 import { pinyin } from 'pinyin-pro';
@@ -419,12 +418,7 @@ const fetchData = async () => {
 
 // 页面数据获取(组件挂载)
 onMounted(() => {
-    // 检查用户是否已登录
-    if (hasAuthTokens()) {
-        // 已登录用户直接加载数据
-        fetchData()
-    }
-    // 未登录用户不加载数据，等待父组件的提示处理
+    fetchData()
 })
 
 // 暴露方法给父组件调用
@@ -1034,7 +1028,7 @@ const sortByAccount = (a: Income, b: Income): number => {
 <style scoped>
 .income-mapping {
     padding: 20px;
-    background: var(--ep-bg-color);
+    background: var(--el-bg-color);
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
@@ -1047,8 +1041,8 @@ const sortByAccount = (a: Income, b: Income): number => {
     gap: 16px;
     flex-wrap: wrap;
     padding: 12px 16px;
-    background: var(--ep-fill-color-light);
-    border: 1px solid var(--ep-border-color);
+    background: var(--el-fill-color-light);
+    border: 1px solid var(--el-border-color);
     border-radius: 8px;
 }
 
@@ -1141,9 +1135,9 @@ const sortByAccount = (a: Income, b: Income): number => {
 .delete-items-list {
     max-height: 300px;
     overflow-y: auto;
-    border: 1px solid var(--ep-border-color);
+    border: 1px solid var(--el-border-color);
     border-radius: 6px;
-    background-color: var(--ep-fill-color-light);
+    background-color: var(--el-fill-color-light);
     margin-bottom: 20px;
 }
 
@@ -1152,7 +1146,7 @@ const sortByAccount = (a: Income, b: Income): number => {
     justify-content: space-between;
     align-items: center;
     padding: 12px 16px;
-    border-bottom: 1px solid var(--ep-border-color);
+    border-bottom: 1px solid var(--el-border-color);
     transition: background-color 0.2s ease;
 }
 
@@ -1161,7 +1155,7 @@ const sortByAccount = (a: Income, b: Income): number => {
 }
 
 .delete-item:hover {
-    background-color: var(--ep-fill-color-lighter);
+    background-color: var(--el-fill-color-lighter);
 }
 
 .item-info {
@@ -1178,25 +1172,25 @@ const sortByAccount = (a: Income, b: Income): number => {
 }
 
 .item-payer {
-    color: var(--ep-text-color-regular);
+    color: var(--el-text-color-regular);
     font-size: 14px;
 }
 
 .item-account {
-    color: var(--ep-text-color-secondary);
+    color: var(--el-text-color-secondary);
     font-size: 12px;
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    background-color: var(--ep-color-primary-light-9);
+    background-color: var(--el-color-primary-light-9);
     padding: 2px 6px;
     border-radius: 4px;
     display: inline-block;
 }
 
 .item-index {
-    color: var(--ep-text-color-secondary);
+    color: var(--el-text-color-secondary);
     font-size: 12px;
     font-weight: 500;
-    background-color: var(--ep-fill-color);
+    background-color: var(--el-fill-color);
     padding: 4px 8px;
     border-radius: 12px;
     min-width: 24px;
@@ -1210,7 +1204,7 @@ const sortByAccount = (a: Income, b: Income): number => {
 
 .progress-text {
     margin-top: 8px;
-    color: var(--ep-text-color-regular);
+    color: var(--el-text-color-regular);
     font-size: 14px;
 }
 
@@ -1225,7 +1219,7 @@ const sortByAccount = (a: Income, b: Income): number => {
 
 .error-item {
     margin-bottom: 4px;
-    color: var(--ep-color-danger);
+    color: var(--el-color-danger);
     font-size: 13px;
 }
 
@@ -1324,7 +1318,7 @@ const sortByAccount = (a: Income, b: Income): number => {
     margin: 0 0 12px 0;
     font-size: 14px;
     font-weight: 600;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
 }
 
 .current-tags {

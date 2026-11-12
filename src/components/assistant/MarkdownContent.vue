@@ -25,7 +25,7 @@ const html = computed(() => renderMarkdown(props.content))
 .markdown-body {
   word-break: break-word;
   line-height: 1.6;
-  color: var(--ep-text-color-primary);
+  color: var(--el-text-color-primary);
 
   :deep(p) {
     margin: 0 0 0.5em;
@@ -44,7 +44,7 @@ const html = computed(() => renderMarkdown(props.content))
     margin: 0.75em 0 0.4em;
     font-weight: 600;
     line-height: 1.4;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
 
     &:first-child {
       margin-top: 0;
@@ -67,16 +67,16 @@ const html = computed(() => renderMarkdown(props.content))
 
   :deep(strong) {
     font-weight: 600;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
   }
 
   :deep(code) {
     padding: 0.1em 0.35em;
     font-size: 0.9em;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    background: var(--ep-fill-color-darker);
+    background: var(--el-fill-color-darker);
     border-radius: 4px;
-    color: var(--ep-color-primary);
+    color: var(--el-color-primary);
   }
 
   :deep(pre) {
@@ -85,31 +85,31 @@ const html = computed(() => renderMarkdown(props.content))
     overflow-x: auto;
     font-size: 0.85em;
     line-height: 1.5;
-    background: var(--ep-fill-color-darker);
+    background: var(--el-fill-color-darker);
     border-radius: 6px;
 
     code {
       padding: 0;
       background: transparent;
-      color: var(--ep-text-color-regular);
+      color: var(--el-text-color-regular);
     }
   }
 
   :deep(blockquote) {
     margin: 0.5em 0;
     padding-left: 12px;
-    border-left: 3px solid var(--ep-border-color);
-    color: var(--ep-text-color-secondary);
+    border-left: 3px solid var(--el-border-color);
+    color: var(--el-text-color-secondary);
   }
 
   :deep(hr) {
     margin: 0.75em 0;
     border: none;
-    border-top: 1px solid var(--ep-border-color-light);
+    border-top: 1px solid var(--el-border-color-light);
   }
 
   :deep(a) {
-    color: var(--ep-color-primary);
+    color: var(--el-color-primary);
     text-decoration: none;
 
     &:hover {
@@ -129,19 +129,19 @@ const html = computed(() => renderMarkdown(props.content))
   :deep(th),
   :deep(td) {
     padding: 6px 10px;
-    border: 1px solid var(--ep-border-color-light);
+    border: 1px solid var(--el-border-color-light);
     text-align: left;
     white-space: nowrap;
   }
 
   :deep(th) {
     font-weight: 600;
-    background: var(--ep-fill-color);
-    color: var(--ep-text-color-primary);
+    background: var(--el-fill-color);
+    color: var(--el-text-color-primary);
   }
 
   :deep(tr:nth-child(even) td) {
-    background: var(--ep-fill-color-lighter);
+    background: var(--el-fill-color-lighter);
   }
 
   // 分享图等不可滚动场景：表格收缩到容器宽度，单元格内容换行，避免右侧被裁掉。

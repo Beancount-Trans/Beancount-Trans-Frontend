@@ -1,4 +1,5 @@
 import axios from '../utils/request'
+import { useCapabilities } from '../capabilities'
 
 const FAVA_INSTANCE_UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -42,7 +43,8 @@ export function joinFavaUrl(prefix: string, relativePath: string): string {
  * 先启动/解析 Fava 实例，再打开相对深链（不含 uuid 前缀的路径）。
  */
 export async function ensureFavaThenOpen(relativePath: string): Promise<boolean> {
-  if (!localStorage.getItem('access')) {
+  const { can } = useCapabilities()
+  if (!can('fava.use')) {
     return false
   }
   const response = await axios.get('/fava/', { withCredentials: true })

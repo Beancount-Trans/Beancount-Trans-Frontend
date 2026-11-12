@@ -1,6 +1,6 @@
 <template>
     <div class="settings-container">
-        <div v-if="isAuthenticated">
+        <div>
             <el-card class="settings-card" shadow="hover">
                 <template #header>
                     <div class="card-header">
@@ -10,14 +10,6 @@
                 </template>
 
                 <el-tabs v-model="activeTab" class="settings-tabs">
-                    <!-- Git 同步 -->
-                    <el-tab-pane label="Git 同步" name="git">
-                        <!-- @vue-ignore -->
-                        <git-setup v-if="!gitRepository" @created="onGitRepositoryCreated as any" />
-                        <git-repository-component v-else :repository="gitRepository" @updated="onGitRepositoryUpdated"
-                            @deleted="onGitRepositoryDeleted" />
-                    </el-tab-pane>
-
                     <!-- 账户绑定 -->
                     <el-tab-pane label="账户绑定" name="bindings">
                         <el-card shadow="never" class="section-card">
@@ -114,6 +106,14 @@
                                 </div>
                             </div>
                         </el-card>
+                    </el-tab-pane>
+
+                    <!-- 高级：本地账本 -->
+                    <el-tab-pane label="高级：本地账本" name="git">
+                        <!-- @vue-ignore -->
+                        <git-setup v-if="!gitRepository" @created="onGitRepositoryCreated as any" />
+                        <git-repository-component v-else :repository="gitRepository" @updated="onGitRepositoryUpdated"
+                            @deleted="onGitRepositoryDeleted" />
                     </el-tab-pane>
 
                     <!-- 访问令牌（MCP 客户端接入） -->
@@ -314,9 +314,9 @@
                                     <div class="security-details">
                                         <div class="security-label">
                                             <strong>TOTP 认证</strong>
-                                            <el-text type="info" size="small" style="margin-left: 8px">
+                                            <!-- <el-text type="info" size="small" style="margin-left: 8px">
                                                 （使用 Google Authenticator 等应用）
-                                            </el-text>
+                                            </el-text> -->
                                         </div>
                                         <div class="security-value">
                                             <el-text v-if="twoFactorStatus.totp_enabled" type="success"
@@ -621,11 +621,6 @@
                 </template>
             </el-dialog>
         </div>
-        <el-result v-else icon="warning" title="请先登录" sub-title="登录后即可查看和调整个人设置" class="auth-required-result">
-            <template #extra>
-                <el-button type="primary" @click="goToLogin">前往登录</el-button>
-            </template>
-        </el-result>
     </div>
 </template>
 
@@ -635,8 +630,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules, InputInstance } from 'element-plus'
 import { User, Phone, Message, Lock, DocumentCopy } from '@element-plus/icons-vue'
 import axios from '../../utils/request'
-import { hasAuthTokens } from '../../utils/auth'
 import router from '~/routers'
+import { useRoute } from 'vue-router'
 import { getGitRepository } from '../../api/git'
 import type { GitRepository } from '../../types/git'
 import {
@@ -661,7 +656,6 @@ import { copyText } from '../../utils/clipboard'
 import GitSetup from '../../components/git/GitSetup.vue'
 import GitRepositoryComponent from '../../components/git/GitRepository.vue'
 
-const isAuthenticated = ref(hasAuthTokens())
 const unauthorizedNotified = ref(false)
 
 // Git 仓库状态
@@ -723,14 +717,10 @@ const handleUnauthorized = () => {
         ElMessage.info('未认证，请登录后重试')
         unauthorizedNotified.value = true
     }
-    isAuthenticated.value = false
 }
 
-const goToLogin = () => {
-    router.push('/login')
-}
-
-const activeTab = ref('bindings')
+const route = useRoute()
+const activeTab = ref(route.query.tab === 'git' ? 'git' : 'bindings')
 const showBindPhoneDialog = ref(false)
 const showSetPasswordDialog = ref(false)
 const showTOTPDialog = ref(false)
@@ -1617,10 +1607,6 @@ watch(activeTab, (tab) => {
 })
 
 onMounted(() => {
-    if (!isAuthenticated.value) {
-        handleUnauthorized()
-        return
-    }
     fetchBindings()
     fetch2FAStatus()
     fetchGitRepository()
@@ -1633,7 +1619,7 @@ onMounted(() => {
     padding: 20px;
     max-width: 1000px;
     margin: 0 auto;
-    background: var(--ep-bg-color);
+    background: var(--el-bg-color);
     border-radius: 16px;
 }
 
@@ -1647,7 +1633,7 @@ onMounted(() => {
 
 .card-header h2 {
     margin: 0 0 8px 0;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
     font-size: 24px;
 }
 
@@ -1660,9 +1646,9 @@ onMounted(() => {
 }
 
 .danger-card {
-    border: 1px solid var(--ep-border-color);
+    border: 1px solid var(--el-border-color);
     padding: 0;
-    background: var(--ep-fill-color-light);
+    background: var(--el-fill-color-light);
 }
 
 .danger-zone {
@@ -1676,8 +1662,8 @@ onMounted(() => {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    border: 1px solid var(--ep-color-danger-light-7);
-    background: var(--ep-color-danger-light-9);
+    border: 1px solid var(--el-color-danger-light-7);
+    background: var(--el-color-danger-light-9);
     border-radius: 8px;
     padding: 20px 24px;
     gap: 24px;
@@ -1685,13 +1671,13 @@ onMounted(() => {
 
 .danger-zone__content {
     flex: 1;
-    color: var(--ep-text-color-regular);
+    color: var(--el-text-color-regular);
     line-height: 1.6;
 }
 
 .danger-zone__title {
     font-weight: 600;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
     margin-bottom: 6px;
     font-size: 16px;
 }
@@ -1701,7 +1687,7 @@ onMounted(() => {
 }
 
 .danger-zone__content p strong {
-    color: var(--ep-color-danger);
+    color: var(--el-color-danger);
 }
 
 .danger-zone__actions {
@@ -1710,17 +1696,17 @@ onMounted(() => {
 }
 
 .danger-zone__button {
-    border-color: var(--ep-color-danger);
-    color: var(--ep-color-danger);
+    border-color: var(--el-color-danger);
+    color: var(--el-color-danger);
     font-weight: 600;
     padding: 10px 20px;
 }
 
 .danger-zone__button:hover,
 .danger-zone__button:focus {
-    background: var(--ep-color-danger-light-7);
-    color: var(--ep-color-danger);
-    border-color: var(--ep-color-danger);
+    background: var(--el-color-danger-light-7);
+    color: var(--el-color-danger);
+    border-color: var(--el-color-danger);
 }
 
 .binding-item,
@@ -1729,7 +1715,7 @@ onMounted(() => {
     justify-content: space-between;
     align-items: center;
     padding: 16px 0;
-    border-bottom: 1px solid var(--ep-border-color);
+    border-bottom: 1px solid var(--el-border-color);
 }
 
 .binding-item:last-child,
@@ -1748,7 +1734,7 @@ onMounted(() => {
 .security-icon {
     font-size: 24px;
     margin-right: 12px;
-    color: var(--ep-color-primary);
+    color: var(--el-color-primary);
 }
 
 .binding-details,
@@ -1764,7 +1750,7 @@ onMounted(() => {
 
 .binding-value,
 .security-value {
-    color: var(--ep-text-color-regular);
+    color: var(--el-text-color-regular);
     font-size: 14px;
 }
 
@@ -1793,14 +1779,14 @@ onMounted(() => {
 
 .token-help {
     font-size: 15px;
-    color: var(--ep-text-color-placeholder);
+    color: var(--el-text-color-placeholder);
     cursor: default;
     transition: color 0.2s;
 }
 
 .token-help:hover,
 .token-help:focus-visible {
-    color: var(--ep-color-primary);
+    color: var(--el-color-primary);
 }
 
 .token-tip {
@@ -1819,7 +1805,7 @@ onMounted(() => {
     margin-top: 4px;
     font-size: 12px;
     line-height: 1.5;
-    color: var(--ep-text-color-secondary);
+    color: var(--el-text-color-secondary);
 }
 
 /* 共享账本卡片：沿用访问令牌卡片的视觉与交互 */
@@ -1843,15 +1829,15 @@ onMounted(() => {
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    border: 1px solid var(--ep-border-color-lighter);
+    border: 1px solid var(--el-border-color-lighter);
     border-radius: 10px;
-    background: var(--ep-fill-color-blank);
+    background: var(--el-fill-color-blank);
     text-align: left;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .token-card:hover {
-    border-color: var(--ep-color-primary-light-5);
+    border-color: var(--el-color-primary-light-5);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
@@ -1871,7 +1857,7 @@ onMounted(() => {
     min-width: 0;
     font-size: 14px;
     font-weight: 600;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1881,7 +1867,7 @@ onMounted(() => {
     margin-left: auto;
     padding-left: 12px;
     font-size: 12px;
-    color: var(--ep-text-color-secondary);
+    color: var(--el-text-color-secondary);
     white-space: nowrap;
 }
 
@@ -1923,12 +1909,12 @@ onMounted(() => {
     gap: 6px;
     margin-top: 6px;
     font-size: 12px;
-    color: var(--ep-text-color-secondary);
+    color: var(--el-text-color-secondary);
 }
 
 .token-card__prefix {
     font-family: monospace;
-    color: var(--ep-text-color-secondary);
+    color: var(--el-text-color-secondary);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1936,7 +1922,7 @@ onMounted(() => {
 
 .token-card__sep {
     flex-shrink: 0;
-    color: var(--ep-text-color-placeholder);
+    color: var(--el-text-color-placeholder);
 }
 
 .token-card__expiry {
@@ -1947,19 +1933,19 @@ onMounted(() => {
 }
 
 .token-card__expiry--default {
-    color: var(--ep-text-color-secondary);
+    color: var(--el-text-color-secondary);
 }
 
 .token-card__expiry--warning {
-    color: var(--ep-color-warning);
+    color: var(--el-color-warning);
 }
 
 .token-card__expiry--danger {
-    color: var(--ep-color-danger);
+    color: var(--el-color-danger);
 }
 
 .token-card__expiry--info {
-    color: var(--ep-text-color-placeholder);
+    color: var(--el-text-color-placeholder);
 }
 
 .token-add {
@@ -2005,33 +1991,33 @@ onMounted(() => {
     max-width: 420px;
 }
 
-:global(.settings-confirm-dialog .ep-message-box__header) {
+:global(.settings-confirm-dialog .el-message-box__header) {
     justify-content: flex-start;
     padding-bottom: 12px;
 }
 
-:global(.settings-confirm-dialog .ep-message-box__title) {
+:global(.settings-confirm-dialog .el-message-box__title) {
     font-weight: 600;
     font-size: 18px;
-    color: var(--ep-text-color-primary);
+    color: var(--el-text-color-primary);
 }
 
-:global(.settings-confirm-dialog .ep-message-box__content) {
-    color: var(--ep-text-color-regular);
+:global(.settings-confirm-dialog .el-message-box__content) {
+    color: var(--el-text-color-regular);
     line-height: 1.6;
     text-align: left;
     padding: 12px 0 0;
 }
 
-:global(.settings-confirm-dialog .ep-message-box__btns) {
+:global(.settings-confirm-dialog .el-message-box__btns) {
     justify-content: flex-end;
     gap: 12px;
     padding-top: 24px;
 }
 
 :global(.settings-confirm-primary) {
-    background-color: var(--ep-color-success);
-    border-color: var(--ep-color-success);
+    background-color: var(--el-color-success);
+    border-color: var(--el-color-success);
     border-radius: 6px;
     min-width: 96px;
     font-weight: 600;
@@ -2047,8 +2033,8 @@ onMounted(() => {
 }
 
 :global(.settings-confirm-danger) {
-    background-color: var(--ep-color-danger);
-    border-color: var(--ep-color-danger);
+    background-color: var(--el-color-danger);
+    border-color: var(--el-color-danger);
     border-radius: 6px;
     min-width: 110px;
     font-weight: 600;

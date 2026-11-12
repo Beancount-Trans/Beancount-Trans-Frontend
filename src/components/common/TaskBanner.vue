@@ -41,6 +41,9 @@ import type { ScheduledTask } from '../../types/reconciliation'
 import { subscribeTaskBannerRefresh } from '../../utils/accountEvents'
 import { continueUserTour, shouldResumeTour, getTourProgress, resumeTourFromStep, continueUserTourToStep5, saveTourProgress, destroyUserTour, markChannelSetupPending, isChannelSetupPending } from '../../utils/userTour'
 import { isRouteMatchForStep, ensureCorrectRoute } from '../../utils/tourRecovery'
+import { useCapabilities } from '../../capabilities'
+
+const { can } = useCapabilities()
 
 const router = useRouter()
 const route = useRoute()
@@ -75,8 +78,7 @@ const isDismissed = () => {
 
 // 加载待办任务数量
 async function loadPendingTasks() {
-  const accessToken = localStorage.getItem("access")
-  if (!accessToken) {
+  if (!can('task.read')) {
     pendingTaskCount.value = 0
     overdueCount.value = 0
     return
@@ -387,8 +389,8 @@ watch(pendingTaskCount, (newCount) => {
 
 <style scoped lang="scss">
 .task-banner {
-  background: linear-gradient(135deg, var(--ep-color-primary-light-9) 0%, var(--ep-color-primary-light-8) 100%);
-  border-bottom: 1px solid var(--ep-border-color-lighter);
+  background: linear-gradient(135deg, var(--el-color-primary-light-9) 0%, var(--el-color-primary-light-8) 100%);
+  border-bottom: 1px solid var(--el-border-color-lighter);
   padding: 12px 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   z-index: 1000;
@@ -409,25 +411,25 @@ watch(pendingTaskCount, (newCount) => {
     flex: 1;
 
     .banner-icon {
-      color: var(--ep-color-primary);
+      color: var(--el-color-primary);
       flex-shrink: 0;
     }
 
     .banner-text {
-      color: var(--ep-text-color-primary);
+      color: var(--el-text-color-primary);
       font-size: 14px;
 
       strong {
-        color: var(--ep-color-primary);
+        color: var(--el-color-primary);
         font-weight: 600;
       }
 
       .overdue-hint {
-        color: var(--ep-text-color-regular);
+        color: var(--el-text-color-regular);
         font-size: 13px;
 
         .overdue-count {
-          color: var(--ep-color-danger);
+          color: var(--el-color-danger);
           font-weight: 600;
         }
       }
@@ -444,15 +446,15 @@ watch(pendingTaskCount, (newCount) => {
 
 // 逾期时的样式
 .task-banner.has-overdue {
-  background: linear-gradient(135deg, var(--ep-color-danger-light-9) 0%, var(--ep-color-danger-light-8) 100%);
-  border-bottom-color: var(--ep-color-danger-light-7);
+  background: linear-gradient(135deg, var(--el-color-danger-light-9) 0%, var(--el-color-danger-light-8) 100%);
+  border-bottom-color: var(--el-color-danger-light-7);
 
   .banner-left .banner-icon {
-    color: var(--ep-color-danger);
+    color: var(--el-color-danger);
   }
 
   .banner-left .banner-text strong {
-    color: var(--ep-color-danger);
+    color: var(--el-color-danger);
   }
 }
 
