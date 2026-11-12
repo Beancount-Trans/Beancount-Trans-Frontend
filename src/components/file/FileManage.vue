@@ -31,28 +31,9 @@
                 <button ref="uploadTrigger" style="display: none"></button>
             </el-upload>
 
-            <el-input v-model="searchQuery" placeholder="搜索文件" class="search-input" clearable>
-                <template #prefix>
-                    <el-icon>
-                        <Search />
-                    </el-icon>
-                </template>
-                <template #append>
-                    <el-select v-model="selectedStatusFilter" placeholder="状态筛选" clearable style="width: 120px;"
-                        class="status-filter-select">
-                        <el-option v-for="option in statusFilterOptions" :key="option.value || 'all'"
-                            :label="option.label" :value="option.value">
-                        </el-option>
-                    </el-select>
-                </template>
-            </el-input>
-
             <el-select v-model="batchAction" placeholder="批量操作" class="batch-select"
                 :disabled="selectedItems.length === 0" @change="executeBatchAction">
                 <el-option label="解析" value="parse"></el-option>
-                <el-option label="取消解析" value="cancel"></el-option>
-                <el-option label="下载" value="download"></el-option>
-                <el-option label="删除" value="delete"></el-option>
                 <el-option label="移动" value="move"></el-option>
             </el-select>
         </div>
@@ -64,8 +45,6 @@
 
         <!-- 上传指引：空目录 / 仅文件夹 / 仅示例账单时显示 -->
         <div v-if="showUploadHint" id="tour-upload-hint" class="upload-hint-banner" role="note">
-            <el-icon class="upload-hint-banner__icon" :size="20">
-            </el-icon>
             <div class="upload-hint-banner__content">
                 <p class="upload-hint-banner__lead">
                     <template v-if="uploadHintVariant === 'sample-only'">
@@ -88,8 +67,6 @@
 
         <!-- 示例清理指引：自有账单已写入账本且仍存在示例时显示 -->
         <div v-if="showSampleCleanupHint" class="sample-cleanup-banner" role="note">
-            <el-icon class="sample-cleanup-banner__icon" :size="20">
-            </el-icon>
             <div class="sample-cleanup-banner__content">
                 <p class="sample-cleanup-banner__lead">
                     您已有账单写入账本。建议删除示例文件，避免与真实账目重复计入报表。
@@ -182,15 +159,9 @@
                 </div>
             </div>
 
-            <el-table ref="fileTableRef" :data="filteredItems" style="width: 100%"
+            <el-table ref="fileTableRef" :data="items" style="width: 100%"
                 @selection-change="handleSelectionChange" highlight-current-row class="file-table" id="tour-file-table">
                 <el-table-column type="selection" width="55" />
-
-                <el-table-column v-if="isGlobalSearch" prop="path" label="路径">
-                    <template #default="{ row }">
-                        <el-text type="info">{{ row.path || '根目录' }}</el-text>
-                    </template>
-                </el-table-column>
 
                 <el-table-column prop="name" label="名称">
                     <template #default="{ row }">
@@ -226,11 +197,11 @@
                             v-if="row.node_type === 'file' && (row.parse_status === 'failed' || row.parse_status === 'needs_password') && (row.error_message || row.parse_status === 'needs_password')"
                             :content="row.error_message || (row.parse_status === 'needs_password' ? '该文件已加密，请点击解析后输入密码重试' : '')"
                             placement="top">
-                            <el-tag :type="getStatusColor(row.parse_status || row.status)">
+                            <el-tag :type="statusTagType(row.parse_status || row.status)">
                                 {{ translateStatus(row.parse_status || row.status) }}
                             </el-tag>
                         </el-tooltip>
-                        <el-tag v-else :type="getStatusColor(row.parse_status || row.status)">
+                        <el-tag v-else :type="statusTagType(row.parse_status || row.status)">
                             {{ translateStatus(row.parse_status || row.status) }}
                         </el-tag>
                     </template>
@@ -255,11 +226,6 @@
 
                         <el-button v-if="row.node_type === 'file'" icon="Download" circle size="small"
                             :disabled="shouldDisableDownloadAndDelete" @click="downloadFile(row.id)" />
-
-                        <!-- <el-tooltip content="移动" placement="top">
-                        <el-button icon="FolderOpened" circle size="small"
-                            :disabled="shouldDisableDownloadAndDelete" @click="openMoveDialog(row)" />
-                    </el-tooltip> -->
 
                         <el-tooltip content="删除" placement="top">
                             <el-popconfirm title="将同时清除此文件的解析结果，是否继续？" @confirm="deleteItem(row)">
@@ -326,15 +292,13 @@
 </template>
 
 <script setup lang="ts">
-import { Folder, Document, Lock, UploadFilled, FolderOpened, InfoFilled } from '@element-plus/icons-vue'
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { Folder, Document, Lock, UploadFilled } from '@element-plus/icons-vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import axios, { fetchWithAuth } from '../../utils/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { TagProps } from 'element-plus'
-import { parse } from 'path'
 import {
     startUserTour,
-    continueUserTour,
     shouldResumeTour,
     getTourProgress,
     resumeTourFromStep,
@@ -347,7 +311,6 @@ import {
 } from '../../utils/userTour'
 import { emitTaskBannerRefresh } from '../../utils/accountEvents'
 import { useRouter, useRoute } from 'vue-router'
-import { checkAndResumeTour, isRouteMatchForStep } from '../../utils/tourRecovery'
 import { useCapabilities } from '../../capabilities'
 
 
@@ -371,7 +334,6 @@ const route = useRoute()
 const items = ref<FileItem[]>([])
 const breadcrumb = ref<Array<{ id: string | null, name: string }>>([])
 const currentDirectoryId = ref<string | null>(null)
-const searchQuery = ref('')
 const batchAction = ref('')
 const selectedItems = ref<FileItem[]>([])
 const createFolderDialog = ref(false)
@@ -381,14 +343,10 @@ const targetDirectoryId = ref<string | null>(null)
 const moveTreeData = ref<Array<{ id: number; name: string; children?: unknown[] }>>([])
 const moveTreeRef = ref<InstanceType<typeof import('element-plus').ElTree> | null>(null)
 const fileTableRef = ref<InstanceType<typeof import('element-plus').ElTable> | null>(null)
-const moveSingleItem = ref<FileItem | null>(null)
 const uploadProgress = ref(0)
 const isUploading = ref(false)
 const rootDirectoryId = ref<string | null>(null)
-const isGlobalSearch = ref(false);
-const globalSearchResults = ref<FileItem[]>([]);
 const uploadTrigger = ref<HTMLButtonElement | null>(null)
-const selectedStatusFilter = ref<string | null>(null)
 
 // 密码弹窗相关状态
 const passwordDialogVisible = ref(false)
@@ -399,18 +357,6 @@ const isDragActive = ref(false)
 const dragCounter = ref(0)
 const { can } = useCapabilities()
 let progressTimeoutId: ReturnType<typeof setTimeout> | null = null
-
-// 状态筛选选项配置
-const statusFilterOptions = [
-    { value: null, label: '全部状态' },
-    { value: 'unprocessed', label: '未解析' },
-    // { value: 'pending', label: '待解析' },
-    // { value: 'processing', label: '解析中' },
-    { value: 'parsed', label: '已解析' },
-    { value: 'failed', label: '解析失败' },
-    // { value: 'needs_password', label: '需要密码' },
-    { value: 'cancelled', label: '取消解析' }
-]
 
 function triggerUpload() {
     if (!can('file.write')) return;
@@ -676,11 +622,6 @@ checkTourState();
 // 定期检查导览状态变化（每500ms检查一次）
 let tourStateCheckInterval: ReturnType<typeof setInterval> | null = null;
 
-// 检查是否在导览中（通过多种方式检查）
-const isInTour = computed(() => {
-    return isInTourRef.value;
-});
-
 // 检查是否在导览步骤2（需要禁用所有文件操作：解析、下载、删除）
 const isTourStep2 = computed(() => {
     if (!isInTourRef.value) {
@@ -705,49 +646,9 @@ const shouldDisableDownloadAndDelete = computed(() => {
 // Authorization 由 utils/request 拦截器统一附加
 const headers = computed(() => ({}))
 
-watch(searchQuery, async (newQuery) => {
-    if (newQuery) {
-        isGlobalSearch.value = true;
-        globalSearchResults.value = await performGlobalSearch(newQuery);
-    } else {
-        isGlobalSearch.value = false;
-        // 清空搜索结果，显示当前目录内容
-        await loadDirectoryContent();
-    }
-});
-
-// 计算属性
-const filteredItems = computed(() => {
-    let result: FileItem[] = [];
-
-    if (isGlobalSearch.value && searchQuery.value) {
-        // 全局搜索模式 - 显示全局结果
-        result = globalSearchResults.value;
-    } else {
-        // 本地搜索模式 - 在当前目录中搜索
-        result = items.value.filter(item =>
-            item.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-        );
-    }
-
-    // 应用状态筛选（仅对文件类型生效，目录不受影响）
-    if (selectedStatusFilter.value !== null) {
-        result = result.filter(item => {
-            // 目录始终显示
-            if (item.node_type === 'directory') {
-                return true;
-            }
-            // 文件需要匹配状态筛选
-            return item.parse_status === selectedStatusFilter.value;
-        });
-    }
-
-    return result;
-});
-
 // 导览第三步要高亮的解析按钮对应的文件名（优先 TOUR_FIRST_PARSE_FILE_NAME，否则第一个文件）
 const tourParseTargetFileName = computed(() => {
-    const fileRows = filteredItems.value.filter((item) => item.node_type === 'file');
+    const fileRows = items.value.filter((item) => item.node_type === 'file');
     const preferred = fileRows.find((f) => f.name === TOUR_FIRST_PARSE_FILE_NAME);
     return (preferred && preferred.name) || (fileRows[0] && fileRows[0].name) || '';
 });
@@ -757,10 +658,6 @@ const sampleBillFileNameSet = new Set<string>(SAMPLE_BILL_FILE_NAMES);
 type UploadHintVariant = 'no-files' | 'sample-only';
 
 const uploadHintVariant = computed<UploadHintVariant | null>(() => {
-    if (isGlobalSearch.value && searchQuery.value) {
-        return null;
-    }
-
     const files = items.value.filter((item) => item.node_type === 'file');
 
     if (files.length === 0) {
@@ -796,9 +693,6 @@ const hasUserBillWrittenToLedger = computed(() =>
 );
 
 const showSampleCleanupHint = computed(() => {
-    if (isGlobalSearch.value && searchQuery.value) {
-        return false;
-    }
     return hasUserBillWrittenToLedger.value && sampleFilesInDirectory.value.length > 0;
 });
 
@@ -1025,10 +919,6 @@ function handleNodeClick(node: FileItem) {
     const isSelected = selectedItems.value.some((item) => item.id === node.id)
     fileTableRef.value?.toggleRowSelection(node, !isSelected)
     if (node.node_type === 'directory') {
-        // 重置全局搜索状态
-        isGlobalSearch.value = false;
-        searchQuery.value = '';
-
         // 更新面包屑：添加当前目录
         breadcrumb.value.push({
             id: node.id,
@@ -1089,12 +979,6 @@ async function loadDirectoryTree() {
     }
 }
 
-function openMoveDialog(item?: FileItem) {
-    moveSingleItem.value = item ?? null
-    moveDialog.value = true
-    targetDirectoryId.value = null
-}
-
 function onMoveDialogOpen() {
     targetDirectoryId.value = null
     moveTreeData.value = []
@@ -1116,7 +1000,7 @@ function onMoveTreeSelect(data: { id?: number }, _node: unknown) {
 async function executeMoveAction() {
     const targetId = targetDirectoryId.value
     if (targetId == null) return
-    const items = selectedItems.value.length ? selectedItems.value : moveSingleItem.value ? [moveSingleItem.value] : []
+    const items = selectedItems.value
     if (!items.length) {
         moveDialog.value = false
         return
@@ -1148,7 +1032,6 @@ async function executeMoveAction() {
             await Promise.all(promises)
             ElMessage.success('移动成功')
             moveDialog.value = false
-            moveSingleItem.value = null
             selectedItems.value = []
             await loadDirectoryContent()
         }
@@ -1242,76 +1125,11 @@ function executeBatchAction(action: string) {
     if (!can('file.write')) return;
     if (action === 'parse') {
         batchParse();
-    } else if (action === 'cancel') {
-        batchCancel();
-    } else if (action === 'delete') {
-        batchDelete()
     } else if (action === 'move') {
-        moveSingleItem.value = null
         moveDialog.value = true
         targetDirectoryId.value = null
     }
     batchAction.value = ''
-}
-
-// 批量删除
-async function batchDelete() {
-    if (!selectedItems.value.length) return;
-
-    try {
-        const deletePromises = selectedItems.value.map(item => {
-            if (item.node_type === 'directory') {
-                return axios.delete(`/directories/${item.id}/`, { headers: headers.value });
-            } else {
-                return axios.delete(`/files/${item.id}/`, { headers: headers.value });
-            }
-        });
-
-        await Promise.all(deletePromises);
-        ElMessage.success(`成功删除 ${selectedItems.value.length} 个项目`);
-        selectedItems.value = [];
-        await loadDirectoryContent();
-    } catch (error) {
-        ElMessage.error('批量删除失败');
-        console.error(error);
-    }
-}
-
-
-async function performGlobalSearch(query: string) {
-    try {
-        const response = await axios.get('/files/search/', {
-            params: { q: query },
-            headers: headers.value
-        });
-
-        // 处理搜索结果
-        return [
-            ...response.data.directories.map((dir: any) => ({
-                id: dir.id,
-                name: dir.name,
-                node_type: 'directory',
-                created_at: dir.created_at,
-                path: dir.path // 添加路径信息
-            })),
-            ...response.data.files.map((file: any) => ({
-                id: file.id,
-                name: file.name,
-                node_type: 'file',
-                size: file.size,
-                size_display: formatFileSize(file.size),
-                uploaded_at: file.uploaded_at,
-                content_type: file.content_type,
-                parse_status: file.parse_status,
-                error_message: file.error_message,
-                path: file.directory_name
-            }))
-        ];
-    } catch (error) {
-        ElMessage.error('搜索失败');
-        console.error(error);
-        return [];
-    }
 }
 
 // 添加日期格式化函数
@@ -1472,11 +1290,10 @@ async function submitParseTask(fileIds: string[], passwords?: Record<string, str
                 totalTasks.value = fileIds.length;
                 completedTasks.value = 0;
 
-                // 构建任务详情（兼容全局搜索模式）
+                // 构建任务详情
                 taskDetails.value = fileIds.map(id => {
                     // 在文件列表中查找对应文件
-                    const file = items.value.find(item => item.id === id) ||
-                        globalSearchResults.value.find(item => item.id === id);
+                    const file = items.value.find(item => item.id === id);
                     return {
                         file_id: id,
                         file_name: file ? file.name : id,
@@ -1493,8 +1310,7 @@ async function submitParseTask(fileIds: string[], passwords?: Record<string, str
         if (error.response?.status === 400) {
             const pendingFiles = error.response.data.pending_files || [];
             const pendingFileNames = pendingFiles.map((id: string) => {
-                const file = items.value.find(f => f.id === id) ||
-                    globalSearchResults.value.find(f => f.id === id);
+                const file = items.value.find(f => f.id === id);
                 return file ? file.name : id;
             });
             ElMessage.error(`部分文件已在处理中：${pendingFileNames.join(', ')}`);
@@ -1503,34 +1319,6 @@ async function submitParseTask(fileIds: string[], passwords?: Record<string, str
         }
         console.error(error);
     }
-}
-
-// 批量取消解析
-async function batchCancel() {
-    // 只筛选文件类型
-    const selectedFiles = selectedItems.value.filter(item => item.node_type === 'file');
-
-    if (selectedFiles.length === 0) {
-        ElMessage.warning('请选择至少一个文件进行取消解析');
-        return;
-    }
-
-    // 筛选出可以取消的文件（pending/processing/parsed状态）
-    const cancellableFiles = selectedFiles.filter(file =>
-        ['pending', 'processing', 'parsed'].includes(file.parse_status || '')
-    );
-
-    if (cancellableFiles.length === 0) {
-        ElMessage.warning('所选文件中没有可以取消解析的文件');
-        return;
-    }
-
-    if (cancellableFiles.length < selectedFiles.length) {
-        ElMessage.warning(`部分文件无法取消解析，将处理 ${cancellableFiles.length} 个文件`);
-    }
-
-    // 调用取消解析方法
-    await cancelParse(cancellableFiles.map(file => file.id));
 }
 
 // 取消解析
@@ -1682,23 +1470,21 @@ function stopPolling() {
 }
 
 // 状态标签类型
-function statusTagType(status: string): TagProps['type'] {
-    switch (status) {
-        case 'parsed':
-            return 'success'
-        case 'failed':
-            return 'danger'
-        case 'processing':
-            return 'primary'
-        case 'pending':
-            return 'warning'
-        case 'cancelled':
-            return 'info'
-        case 'needs_password':
-            return 'warning'
-        default:
-            return 'info' // 其他状态
+function statusTagType(status: string | undefined): TagProps['type'] {
+    if (!status) return 'info'
+
+    const statusMap: Record<string, TagProps['type']> = {
+        unprocessed: 'info',
+        pending: 'primary',
+        processing: 'warning',
+        parsed: 'success',
+        failed: 'danger',
+        cancelled: 'info',
+        pending_review: 'info',
+        needs_password: 'warning'
     }
+
+    return statusMap[status] || 'info'
 }
 
 
@@ -1716,22 +1502,6 @@ function translateStatus(status: string | undefined): string {
         'needs_password': '需要密码'
     };
     return statusMap[status] || status;
-}
-
-function getStatusColor(status: string | undefined): TagProps['type'] {
-    if (!status) return 'info'
-
-    const statusMap: Record<string, TagProps['type']> = {
-        unprocessed: 'info',
-        pending: 'primary',
-        processing: 'warning',
-        parsed: 'success',
-        failed: 'danger',
-        cancelled: 'info',
-        needs_password: 'warning'
-    }
-
-    return statusMap[status] || 'info'
 }
 
 </script>
@@ -1778,13 +1548,7 @@ function getStatusColor(status: string | undefined): TagProps['type'] {
 
 .batch-select {
     width: 140px;
-}
-
-.search-input {
-    width: 400px;
-    min-width: 200px;
     margin-left: auto;
-    flex-shrink: 0;
 }
 
 .flex {
@@ -1802,11 +1566,6 @@ function getStatusColor(status: string | undefined): TagProps['type'] {
 
 .file-table:hover {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.directory-tree {
-    max-height: 400px;
-    overflow-y: auto;
 }
 
 .text-right {
@@ -1842,12 +1601,6 @@ function getStatusColor(status: string | undefined): TagProps['type'] {
     gap: 12px;
 }
 
-.upload-hint-banner__icon {
-    flex-shrink: 0;
-    margin-top: 2px;
-    color: var(--el-color-warning);
-}
-
 .upload-hint-banner__content {
     flex: 1;
     min-width: 0;
@@ -1881,12 +1634,6 @@ function getStatusColor(status: string | undefined): TagProps['type'] {
     display: flex;
     align-items: flex-start;
     gap: 12px;
-}
-
-.sample-cleanup-banner__icon {
-    flex-shrink: 0;
-    margin-top: 2px;
-    color: var(--el-color-info);
 }
 
 .sample-cleanup-banner__content {
