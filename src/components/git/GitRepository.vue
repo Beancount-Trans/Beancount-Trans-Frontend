@@ -10,7 +10,6 @@
               </el-icon>
               <span class="title">Git 仓库管理</span>
             </div>
-            <el-text type="info" size="small" class="subtitle">管理您的 Git 仓库和同步设置</el-text>
           </div>
           <div class="header-right">
             <el-tag :type="repository.sync_paused ? SyncStatusType.paused : SyncStatusType[repository.sync_status]"
@@ -23,13 +22,6 @@
                 <Refresh />
               </el-icon>
               {{ syncing ? '同步中...' : (repository.sync_paused ? '恢复同步' : '立即同步') }}
-            </el-button>
-            <el-button v-if="!repository.sync_paused" type="warning" link :loading="cancellingSync"
-              :disabled="!can('git.sync')" @click="handleCancelSync">
-              <el-icon class="el-icon--left">
-                <CircleClose />
-              </el-icon>
-              {{ cancellingSync ? '清理中...' : '取消同步' }}
             </el-button>
           </div>
         </div>
@@ -307,6 +299,24 @@ git push origin {{ defaultBranch }}</code></pre>
               </div>
 
               <div class="setting-divider"></div>
+
+              <!-- 取消同步：撤回平台内的账本副本，配置保留 -->
+              <template v-if="!repository.sync_paused">
+                <div class="setting-item">
+                  <div class="setting-info">
+                    <span class="setting-label">取消同步</span>
+                    <span class="setting-desc">清空平台上的账本，解析结果保留；可随时恢复同步</span>
+                  </div>
+                  <div class="setting-actions">
+                    <el-button type="warning" plain size="small" :loading="cancellingSync" :disabled="!can('git.sync')"
+                      @click="handleCancelSync">
+                      取消同步
+                    </el-button>
+                  </div>
+                </div>
+
+                <div class="setting-divider"></div>
+              </template>
 
               <!-- 删除仓库 -->
               <div class="setting-item">
@@ -614,8 +624,8 @@ const handleAutoImportChange = async (value: string | number | boolean) => {
 const handleCancelSync = async () => {
   try {
     await ElMessageBox.confirm(
-      '将删除平台内由 Git 同步引入的账本副本，保留 trans/ 解析结果；此后不再自动拉取，可点「恢复同步」重新拉取。',
-      '确认取消同步',
+      '取消后平台上的账本会被清空（解析结果保留），远端推送也不再自动同步；随时可点「恢复同步」重新拉取。',
+      '取消同步',
       { confirmButtonText: '取消同步', cancelButtonText: '返回', type: 'warning' }
     )
   } catch {
@@ -627,7 +637,7 @@ const handleCancelSync = async () => {
     const result = await apiCancelSync()
     ElMessage.success(
       result.trans_preserved
-        ? `${result.message}（已保留 trans/ 解析结果）`
+        ? `${result.message}（已保留解析结果）`
         : result.message
     )
     emit('updated', { ...props.repository, sync_paused: true })
