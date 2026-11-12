@@ -29,14 +29,6 @@
 
       <!-- 仓库信息 -->
       <div class="repo-info-section">
-        <el-alert v-if="isLinkedRemote && showLinkedRemoteIntro" type="info" show-icon :closable="false"
-          class="linked-remote-intro" title="关联远程：还需两步">
-          <p class="linked-intro-text">
-            展开下方<strong>步骤 1、2</strong>，在 {{ providerLabel }} 配置公钥与 Webhook；如需平台写回，公钥要勾选写权限。Webhook
-            Secret 仅首次展示，请立即复制。
-          </p>
-        </el-alert>
-
         <el-descriptions border :column="3" class="repo-descriptions">
           <el-descriptions-item label="仓库名称">
             <span class="repo-name">{{ repository.repo_name }}</span>
@@ -82,28 +74,31 @@
           </el-descriptions-item>
 
           <el-descriptions-item v-if="!isLinkedRemote && repository.webhook_secret" label="Webhook Secret" :span="3">
-            <el-alert type="warning" :closable="false" show-icon class="webhook-secret-alert" title="仅首次展示，请立即复制保存"
-              description="仅展示一次；未保存需删除仓库后重新关联。" />
-            <el-input :model-value="repository.webhook_secret" readonly class="ssh-url-input mt-2" />
-            <el-button class="mt-2" size="small" type="primary" plain
-              @click="copyToClipboard(repository.webhook_secret!)">
-              <el-icon>
-                <CopyDocument />
-              </el-icon>
-              复制 Secret
-            </el-button>
+            <el-input :model-value="repository.webhook_secret" readonly class="ssh-url-input">
+              <template #append>
+                <el-button @click="copyToClipboard(repository.webhook_secret!)">
+                  <el-icon>
+                    <CopyDocument />
+                  </el-icon>
+                  复制 Secret
+                </el-button>
+              </template>
+            </el-input>
+            <p class="secret-hint">仅本页可见，复制后填入 Webhook 的 Secret 字段。</p>
           </el-descriptions-item>
 
           <el-descriptions-item v-if="!isLinkedRemote && repository.deploy_key_public && !isPlatformHosted"
             label="Deploy Key 公钥" :span="3">
-            <el-input type="textarea" :rows="3" :model-value="repository.deploy_key_public" readonly
-              class="ssh-url-input" />
-            <el-button class="mt-2" size="small" @click="copyToClipboard(repository.deploy_key_public!)">
-              <el-icon>
-                <CopyDocument />
-              </el-icon>
-              复制公钥
-            </el-button>
+            <el-input :model-value="repository.deploy_key_public" readonly class="ssh-url-input">
+              <template #append>
+                <el-button @click="copyToClipboard(repository.deploy_key_public!)">
+                  <el-icon>
+                    <CopyDocument />
+                  </el-icon>
+                  复制公钥
+                </el-button>
+              </template>
+            </el-input>
           </el-descriptions-item>
         </el-descriptions>
 
@@ -152,7 +147,8 @@
           <el-collapse-item v-if="isLinkedRemote" title="步骤 1：添加 Deploy Key 公钥（平台拉取）" name="link-deploy-key">
             <div class="instruction-content link-step-panel">
               <p>
-                在 {{ providerLabel }} 的 <strong>{{ providerDeployKeyHint }}</strong> 中粘贴下方公钥，勾选只读。
+                在 {{ providerLabel }} 的 <strong>{{ providerDeployKeyHint }}</strong>
+                中粘贴下方公钥：只用来看账本就勾选只读；需要「提交到账本」写回则要给写权限。
               </p>
               <el-input v-if="repository.deploy_key_public" :model-value="repository.deploy_key_public" readonly
                 class="ssh-url-input">
@@ -173,7 +169,7 @@
             <div class="instruction-content link-step-panel">
               <p>
                 在 {{ providerLabel }} 添加 push Webhook：Payload URL 用下方地址，Content type 选
-                <code>application/json</code>，Secret 填启用时保存的值；仅默认分支 <code>{{ defaultBranch }}</code> 的推送触发同步。
+                <code>application/json</code>，Secret 填下方 Secret（仅本页可见）。
               </p>
               <el-input v-if="repository.webhook_callback_url" :model-value="repository.webhook_callback_url" readonly
                 class="ssh-url-input">
@@ -197,12 +193,12 @@
                     </el-button>
                   </template>
                 </el-input>
-                <p class="secret-warning">
-                  Secret 仅首次展示，未保存需删除仓库后重新关联。
+                <p class="secret-hint">
+                  配好后推送到 <code>{{ defaultBranch }}</code> 即可验证：顶部状态变为「成功」。
                 </p>
               </template>
-              <p v-else-if="repository.webhook_callback_url" class="secret-missing-hint">
-                未显示 Secret：刷新后不再返回；可删除仓库后重新关联获取，或直接用「立即同步」手动拉取。
+              <p v-else-if="repository.webhook_callback_url" class="secret-hint">
+                Secret 已不在本页显示：重新关联可获取新 Secret，或直接用「立即同步」手动拉取。
               </p>
             </div>
           </el-collapse-item>
@@ -350,7 +346,7 @@ git push origin {{ defaultBranch }}</code></pre>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onBeforeUnmount } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   triggerSync as apiTriggerSync,
@@ -455,55 +451,6 @@ const advancedActivePanels = ref<string[]>([])
 /** 已成功同步过，视为完成配置：使用说明收成一行，避免已完成用户被步骤长期占据版面 */
 const isSetupDone = computed(() => Boolean(props.repository.last_sync_at))
 const showInstructions = ref(false)
-
-/** 关联远程顶部引导：每个仓库 id 仅首次进入时展示，之后写入 localStorage 不再出现 */
-const showLinkedRemoteIntro = ref(false)
-
-function linkedRemoteIntroStorageKey(repoId: number): string {
-  const u = username.value || 'anon'
-  return `git_linked_remote_intro_seen_${u}_${repoId}`
-}
-
-/**
- * 必须在「根据 storage 设置 showLinkedRemoteIntro」的 watch 之前注册。
- * 否则后者 immediate 会把 ref 直接设为 true，本 watch 看不到 false→true，永远不会写入 localStorage。
- */
-watch(
-  showLinkedRemoteIntro,
-  (show) => {
-    if (!show || !isLinkedRemote.value || !props.repository.id) return
-    const key = linkedRemoteIntroStorageKey(props.repository.id)
-    if (localStorage.getItem(key)) return
-    localStorage.setItem(key, '1')
-  },
-  { immediate: true }
-)
-
-watch(
-  () => [isLinkedRemote.value, props.repository.id] as const,
-  ([linked, repoId]) => {
-    if (!linked || !repoId) {
-      showLinkedRemoteIntro.value = false
-      return
-    }
-    const key = linkedRemoteIntroStorageKey(repoId)
-    showLinkedRemoteIntro.value = !localStorage.getItem(key)
-  },
-  { immediate: true }
-)
-
-onBeforeUnmount(() => {
-  if (
-    showLinkedRemoteIntro.value &&
-    isLinkedRemote.value &&
-    props.repository.id
-  ) {
-    localStorage.setItem(
-      linkedRemoteIntroStorageKey(props.repository.id),
-      '1'
-    )
-  }
-})
 
 /** 使用说明默认状态：未完成配置时展开当前路径的操作步骤，已完成则全部收起 */
 watch(
@@ -836,17 +783,6 @@ const deleteRepository = async () => {
   margin-bottom: 24px;
 }
 
-.linked-remote-intro {
-  margin-bottom: 16px;
-
-  .linked-intro-text {
-    margin: 0;
-    line-height: 1.6;
-    font-size: 13px;
-    color: var(--el-text-color-regular);
-  }
-}
-
 .field-hint-below {
   display: block;
   margin-top: 8px;
@@ -882,8 +818,10 @@ const deleteRepository = async () => {
   margin-top: 16px;
 }
 
-.webhook-secret-alert {
-  margin-bottom: 8px;
+.secret-hint {
+  margin: 8px 0 0 0;
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
 }
 
 // Actions Section Styles
@@ -1019,20 +957,6 @@ const deleteRepository = async () => {
     margin: 0 0 12px 0;
     line-height: 1.6;
     color: var(--el-text-color-regular);
-  }
-}
-
-.link-step-panel {
-  .secret-warning {
-    margin: 8px 0 0 0;
-    font-size: 13px;
-    color: var(--el-color-warning);
-  }
-
-  .secret-missing-hint {
-    margin: 8px 0 0 0;
-    font-size: 13px;
-    color: var(--el-text-color-secondary);
   }
 }
 

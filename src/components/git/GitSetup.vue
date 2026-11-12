@@ -353,7 +353,7 @@ const submitLink = async () => {
       external_full_name: linkForm.value.external_full_name.trim()
     })
     ElMessage.success(
-      '关联成功。请在下方「Git 仓库管理」中复制 Webhook 与公钥，并完成远程仓库配置；Webhook Secret 仅首次展示，请立即保存。'
+      '关联成功。下方已展开配置步骤，按步骤填好公钥与 Webhook 即可自动同步。'
     )
     emitGitRepositoryChanged()
     emit('created', repository)
