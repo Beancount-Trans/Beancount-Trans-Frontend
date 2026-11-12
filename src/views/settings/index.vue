@@ -48,34 +48,6 @@
                                 </div>
                             </div>
 
-                            <!-- 邮箱绑定 -->
-                            <div class="binding-item">
-                                <div class="binding-info">
-                                    <el-icon class="binding-icon">
-                                        <Message />
-                                    </el-icon>
-                                    <div class="binding-details">
-                                        <div class="binding-label">邮箱</div>
-                                        <div class="binding-value">
-                                            {{ bindings.email || '未绑定' }}
-                                            <el-tag v-if="bindings.email" type="success" size="small"
-                                                style="margin-left: 8px">
-                                                已验证
-                                            </el-tag>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="binding-actions">
-                                    <el-button v-if="!bindings.email" type="primary"
-                                        @click="showUpdateEmailDialog = true">
-                                        绑定
-                                    </el-button>
-                                    <el-button v-else type="danger" plain @click="handleUnbindEmail">
-                                        解绑
-                                    </el-button>
-                                </div>
-                            </div>
-
                             <!-- GitHub OAuth绑定 -->
                             <div class="binding-item">
                                 <div class="binding-info">
@@ -564,29 +536,6 @@
                 </template>
             </el-dialog>
 
-            <!-- 绑定/修改邮箱对话框（验证码） -->
-            <el-dialog v-model="showUpdateEmailDialog" title="绑定邮箱" width="420px">
-                <el-form ref="updateEmailFormRef" :model="updateEmailForm" :rules="updateEmailRules">
-                    <el-form-item label="邮箱" prop="email">
-                        <el-input v-model="updateEmailForm.email" type="email" placeholder="请输入邮箱" />
-                    </el-form-item>
-                    <el-form-item label="验证码" prop="code">
-                        <div class="code-input-group">
-                            <el-input v-model="updateEmailForm.code" placeholder="请输入验证码" maxlength="6" />
-                            <el-button :disabled="!updateEmailForm.email || codeSending" :loading="codeSending"
-                                @click="sendEmailBindCode">
-                                {{ codeSending ? `${countdown}s` : '发送验证码' }}
-                            </el-button>
-                        </div>
-                    </el-form-item>
-                </el-form>
-                <template #footer>
-                    <el-button @click="showUpdateEmailDialog = false">取消</el-button>
-                    <el-button type="primary" :loading="updateEmailLoading"
-                        @click="handleConfirmBindEmail">确定</el-button>
-                </template>
-            </el-dialog>
-
             <!-- 删除账户对话框 -->
             <el-dialog v-model="showDeleteAccountDialog" title="删除账户" width="500px" @open="onOpenDeleteAccountDialog"
                 @closed="resetDeleteAccountDialog">
@@ -628,7 +577,7 @@
 import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules, InputInstance } from 'element-plus'
-import { User, Phone, Message, Lock, DocumentCopy } from '@element-plus/icons-vue'
+import { User, Phone, Lock, DocumentCopy } from '@element-plus/icons-vue'
 import axios from '../../utils/request'
 import router from '~/routers'
 import { useRoute } from 'vue-router'
@@ -726,7 +675,6 @@ const showSetPasswordDialog = ref(false)
 const showTOTPDialog = ref(false)
 const showDisableTOTPDialog = ref(false)
 const showUpdateUsernameDialog = ref(false)
-const showUpdateEmailDialog = ref(false)
 const showDeleteAccountDialog = ref(false)
 
 const defaultConfirmOptions = {
@@ -741,7 +689,6 @@ const defaultConfirmOptions = {
 
 const bindings = ref<any>({
     username: '',
-    email: '',
     phone_number: null,
     phone_verified: false,
     social_accounts: [],
@@ -758,7 +705,6 @@ const totpFormRef = ref<FormInstance>()
 const disableTOTPFormRef = ref<FormInstance>()
 const setPasswordFormRef = ref<FormInstance>()
 const updateUsernameFormRef = ref<FormInstance>()
-const updateEmailFormRef = ref<FormInstance>()
 const deleteAccountFormRef = ref<FormInstance>()
 
 const bindPhoneForm = reactive({
@@ -783,11 +729,6 @@ const updateUsernameForm = reactive({
     username: ''
 })
 
-const updateEmailForm = reactive({
-    email: '',
-    code: ''
-})
-
 const deleteAccountForm = reactive({
     confirm: ''
 })
@@ -805,7 +746,6 @@ const totpLoading = ref(false)
 const disableTOTPLoading = ref(false)
 const setPasswordLoading = ref(false)
 const updateUsernameLoading = ref(false)
-const updateEmailLoading = ref(false)
 const deleteAccountLoading = ref(false)
 
 const bindPhoneRules: FormRules = {
@@ -824,17 +764,6 @@ const updateUsernameRules: FormRules = {
         { required: true, message: '请输入用户名', trigger: 'blur' },
         { min: 3, max: 150, message: '用户名长度为3-150个字符', trigger: 'blur' },
         { pattern: /^[a-zA-Z0-9_]+$/, message: '用户名只能包含字母、数字和下划线', trigger: 'blur' }
-    ]
-}
-
-const updateEmailRules: FormRules = {
-    email: [
-        { required: true, message: '请输入邮箱', trigger: 'blur' },
-        { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
-    ],
-    code: [
-        { required: true, message: '请输入验证码', trigger: 'blur' },
-        { pattern: /^\d{6}$/, message: '验证码为6位数字', trigger: 'blur' }
     ]
 }
 
@@ -929,7 +858,6 @@ const fetchBindings = async () => {
         bindings.value = res.data
         // 初始化表单
         updateUsernameForm.username = res.data.username || ''
-        updateEmailForm.email = res.data.email || ''
     } catch (error: any) {
         if (error?.response?.status === 401) {
             handleUnauthorized()
@@ -1084,61 +1012,6 @@ const handleUpdateUsername = async () => {
         ElMessage.error(error.response?.data?.error || '修改失败')
     } finally {
         updateUsernameLoading.value = false
-    }
-}
-
-// 发送邮箱绑定验证码
-const sendEmailBindCode = async () => {
-    if (!updateEmailFormRef.value) return
-    await updateEmailFormRef.value.validateField('email')
-    try {
-        const resp = await axios.post('/auth/bindings/send-email-code/', {
-            email: updateEmailForm.email
-        })
-        if (resp.status === 200) {
-            ElMessage.success('验证码已发送')
-            startCountdown()
-        }
-    } catch (e: any) {
-        ElMessage.error(e?.response?.data?.error || '发送失败')
-    }
-}
-
-// 确认绑定邮箱
-const handleConfirmBindEmail = async () => {
-    if (!updateEmailFormRef.value) return
-    await updateEmailFormRef.value.validate()
-
-    updateEmailLoading.value = true
-    try {
-        await axios.post('/auth/bindings/bind-email/', {
-            email: updateEmailForm.email,
-            code: updateEmailForm.code
-        })
-        ElMessage.success('邮箱绑定成功')
-        showUpdateEmailDialog.value = false
-        Object.assign(updateEmailForm, { email: '', code: '' })
-        await fetchBindings()
-    } catch (error: any) {
-        ElMessage.error(error.response?.data?.error || '绑定失败')
-    } finally {
-        updateEmailLoading.value = false
-    }
-}
-
-// 解绑邮箱
-const handleUnbindEmail = async () => {
-    try {
-        await ElMessageBox.confirm('确定要解绑邮箱吗？', '提示', {
-            ...defaultConfirmOptions
-        })
-        await axios.delete('/auth/bindings/unbind-email/')
-        ElMessage.success('邮箱解绑成功')
-        await fetchBindings()
-    } catch (error: any) {
-        if (error !== 'cancel') {
-            ElMessage.error(error.response?.data?.error || '解绑失败')
-        }
     }
 }
 

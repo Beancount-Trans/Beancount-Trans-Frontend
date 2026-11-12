@@ -93,42 +93,6 @@
               </el-form-item>
             </el-form>
           </el-tab-pane>
-
-          <el-tab-pane label="邮箱登录" name="email">
-            <el-form ref="emailLoginFormRef" :model="emailLoginForm" :rules="emailLoginRules" label-width="0">
-              <el-form-item prop="email">
-                <el-input v-model="emailLoginForm.email" placeholder="邮箱" size="large" clearable>
-                  <template #prefix>
-                    <el-icon>
-                      <Message />
-                    </el-icon>
-                  </template>
-                </el-input>
-              </el-form-item>
-              <el-form-item prop="code">
-                <div class="code-input-group">
-                  <el-input v-model="emailLoginForm.code" placeholder="验证码" size="large" maxlength="6" clearable
-                    @keyup.enter="handleEmailLogin">
-                    <template #prefix>
-                      <el-icon>
-                        <Message />
-                      </el-icon>
-                    </template>
-                  </el-input>
-                  <el-button :disabled="!canSendEmailCode || emailCodeSending" :loading="emailCodeSending"
-                    @click="sendEmailLoginCode">
-                    {{ emailCodeSending ? `${emailCountdown}s` : '发送验证码' }}
-                  </el-button>
-                </div>
-              </el-form-item>
-              <el-form-item>
-                <el-button type="primary" size="large" class="login-button" :loading="loginLoading"
-                  @click="handleEmailLogin">
-                  验证码登录
-                </el-button>
-              </el-form-item>
-            </el-form>
-          </el-tab-pane>
         </el-tabs>
 
         <!-- OAuth登录 -->
@@ -191,14 +155,10 @@ onMounted(async () => {
 const codeSending = ref(false)
 const countdown = ref(60)
 let countdownTimer: number | null = null
-const emailCodeSending = ref(false)
-const emailCountdown = ref(60)
-let emailCountdownTimer: number | null = null
 
 // 表单引用
 const usernameLoginFormRef = ref<FormInstance>()
 const phoneLoginFormRef = ref<FormInstance>()
-const emailLoginFormRef = ref<FormInstance>()
 
 // 用户名登录表单
 const usernameLoginForm = reactive({
@@ -210,12 +170,6 @@ const usernameLoginForm = reactive({
 // 手机号登录表单
 const phoneLoginForm = reactive({
   phone_number: '',
-  code: ''
-})
-
-// 邮箱登录表单
-const emailLoginForm = reactive({
-  email: '',
   code: ''
 })
 
@@ -240,17 +194,6 @@ const phoneLoginRules: FormRules = {
   ]
 }
 
-const emailLoginRules: FormRules = {
-  email: [
-    { required: true, message: '请输入邮箱地址', trigger: 'blur' },
-    { type: 'email', message: '请输入正确的邮箱地址', trigger: ['blur', 'change'] }
-  ],
-  code: [
-    { required: true, message: '请输入验证码', trigger: 'blur' },
-    { pattern: /^\d{6}$/, message: '验证码为6位数字', trigger: 'blur' }
-  ]
-}
-
 // 手机号格式化
 const normalizePhone = (phone: string): string => {
   const trimmed = phone.trim()
@@ -262,11 +205,6 @@ const normalizePhone = (phone: string): string => {
 // 是否可以发送验证码（登录）
 const canSendCode = computed(() => {
   return phoneLoginForm.phone_number.length === 11
-})
-
-// 是否可以发送邮箱验证码
-const canSendEmailCode = computed(() => {
-  return emailLoginForm.email.trim().length > 0
 })
 
 // 开始倒计时
@@ -283,19 +221,6 @@ const startCountdown = () => {
   }, 1000)
 }
 
-const startEmailCountdown = () => {
-  emailCodeSending.value = true
-  emailCountdown.value = 60
-  if (emailCountdownTimer) clearInterval(emailCountdownTimer)
-  emailCountdownTimer = window.setInterval(() => {
-    emailCountdown.value--
-    if (emailCountdown.value <= 0) {
-      emailCodeSending.value = false
-      if (emailCountdownTimer) clearInterval(emailCountdownTimer)
-    }
-  }, 1000)
-}
-
 // 发送登录验证码
 const sendLoginCode = async () => {
   if (!phoneLoginFormRef.value) return
@@ -308,24 +233,6 @@ const sendLoginCode = async () => {
     if (resp.status === 200) {
       ElMessage.success('验证码已发送')
       startCountdown()
-    }
-  } catch (e: any) {
-    ElMessage.error(e?.response?.data?.error || '发送失败')
-  }
-}
-
-// 发送邮箱登录验证码
-const sendEmailLoginCode = async () => {
-  if (!emailLoginFormRef.value) return
-  await emailLoginFormRef.value.validateField('email')
-
-  try {
-    const resp = await axios.post('/auth/email/send-code/', {
-      email: emailLoginForm.email.trim()
-    })
-    if (resp.status === 200) {
-      ElMessage.success('验证码已发送')
-      startEmailCountdown()
     }
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.error || '发送失败')
@@ -470,47 +377,6 @@ const handlePhoneLoginByCode = async () => {
     }
 
     // 检查是否需要2FA
-    // if (res.data.requires_2fa) {
-    //   ElMessage.info('请完成双因素认证')
-    //   // TODO: 跳转到2FA验证页面
-    // }
-
-    goAfterLogin()
-  } catch (error: any) {
-    ElMessage.error(error.response?.data?.error || '登录失败')
-  } finally {
-    loginLoading.value = false
-  }
-}
-
-// 邮箱验证码登录
-const handleEmailLogin = async () => {
-  if (!emailLoginFormRef.value) return
-  await emailLoginFormRef.value.validate()
-
-  loginLoading.value = true
-  try {
-    const res = await axios.post('/auth/email/login-by-code/', {
-      email: emailLoginForm.email.trim(),
-      code: emailLoginForm.code
-    })
-
-    const { setAuthTokens } = await import('../../utils/auth')
-    setAuthTokens(
-      res.data.access,
-      res.data.refresh,
-      res.data.user.username
-    )
-
-    ElMessage.success('登录成功')
-
-    // 检查是否是新用户，如果是则延迟触发待办横幅刷新
-    if (res.data.is_new_user) {
-      setTimeout(() => {
-        emitTaskBannerRefresh()
-      }, 2000) // 延迟2秒，确保后端完成账户和待办的创建
-    }
-
     // if (res.data.requires_2fa) {
     //   ElMessage.info('请完成双因素认证')
     //   // TODO: 跳转到2FA验证页面
