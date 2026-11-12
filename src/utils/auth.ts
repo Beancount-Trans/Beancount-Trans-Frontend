@@ -5,6 +5,9 @@ export const setAuthTokens = (accessToken: string, refreshToken: string, usernam
   if (username) {
     localStorage.setItem('username', username)
   }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('bct-auth-changed'))
+  }
   console.log('JWT令牌已设置')
 }
 
@@ -13,6 +16,9 @@ export const clearAuthTokens = () => {
   localStorage.removeItem('access')
   localStorage.removeItem('refresh')
   localStorage.removeItem('username')
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('bct-auth-changed'))
+  }
   console.log('JWT令牌已清除')
 }
 

@@ -1,16 +1,18 @@
 <template>
-  <el-config-provider namespace="ep" :locale="locale">
+  <el-config-provider :locale="locale">
     <BaseHeader />
     <TaskBanner />
     <div class="flex main-container">
-      <BaseSide />
       <div
         class="main-content"
         :class="{ 'main-content--assistant': isAssistantRoute }"
         w="full"
       >
-        <Logos v-if="!isAssistantRoute" my="4" />
-        <router-view />
+        <CapabilityGate
+          v-if="requiredCapability && !can(requiredCapability)"
+          :capability="requiredCapability"
+        />
+        <router-view v-else />
       </div>
     </div>
   </el-config-provider>
@@ -21,16 +23,24 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import TaskBanner from './components/common/TaskBanner.vue'
+import CapabilityGate from './components/common/CapabilityGate.vue'
+import { useCapabilities } from './capabilities'
+import type { Capability } from './capabilities'
 
 const locale = zhCn
 const route = useRoute()
-const isAssistantRoute = computed(() => route.path.startsWith('/assistant'))
+const requiredCapability = computed(() => route.meta.capability as Capability | undefined)
+const { can } = useCapabilities()
+const gated = computed(() => !!requiredCapability.value && !can(requiredCapability.value))
+// 门禁提示页按普通页面布局，避免 Copilot 的全高布局把提示卡拉伸成大框
+const isAssistantRoute = computed(() => route.path.startsWith('/assistant') && !gated.value)
 </script>
 
 <style>
 #app {
   text-align: center;
-  color: var(--ep-text-color-primary);
+  color: var(--text-primary);
+  background: var(--bg);
   height: 100vh;
   display: flex;
   flex-direction: column;

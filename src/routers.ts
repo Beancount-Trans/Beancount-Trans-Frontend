@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { hasAuthTokens } from './utils/auth'
+import { getSessionTier } from './capabilities'
 
 // 引入组件
 import Trans from "./components/trans/Trans.vue"
@@ -31,36 +31,35 @@ const router = createRouter({
     {
       path: '/',
       name: "index",
-      // 根路径：已登录进入文件管理，未登录进入解析页（解析支持匿名使用）
-      redirect: () => (hasAuthTokens() ? '/file' : '/trans')
+      // 根路径：已登录进入文件管理，游客进入解析页（游客只保留解析闭环）
+      redirect: () => (getSessionTier() === 'guest' ? '/trans' : '/file')
     },
     { path: '/auth/github/token', component: AuthenticateByGithubToken },
-    { path: '/trans', name: "trans", component: Trans },
-    { path: '/format', name: "format", component: Format },
-    { path: '/file', name: "filemanage", component: FileManage },
-    { path: '/config/accounts', name: "accountManagement", component: AccountManagement },
-    { path: '/config/tags', name: "tagManagement", component: TagManagement },
-    { path: '/config/mappings', name: "mappingManagement", component: MappingManagement },
+    { path: '/trans', name: "trans", component: Trans, meta: { capability: 'ledger.parse' } },
+    { path: '/format', name: "format", component: Format, meta: { capability: 'config.read' } },
+    { path: '/file', name: "filemanage", component: FileManage, meta: { capability: 'file.read' } },
+    { path: '/config/accounts', name: "accountManagement", component: AccountManagement, meta: { capability: 'config.read' } },
+    { path: '/config/tags', name: "tagManagement", component: TagManagement, meta: { capability: 'config.read' } },
+    { path: '/config/mappings', name: "mappingManagement", component: MappingManagement, meta: { capability: 'config.read' } },
     // 模板管理
-    { path: '/template/accounts', name: "accountTemplates", component: AccountTemplates },
-    { path: '/template/mappings', name: "mappingTemplates", component: MappingTemplates },
+    { path: '/template/accounts', name: "accountTemplates", component: AccountTemplates, meta: { capability: 'config.read' } },
+    { path: '/template/mappings', name: "mappingTemplates", component: MappingTemplates, meta: { capability: 'config.read' } },
     // 对账功能
-    { path: '/tasks', name: "reconciliationList", component: ReconciliationList },
-    { path: '/tasks/:id', name: "reconciliationForm", component: ReconciliationForm },
+    { path: '/tasks', name: "reconciliationList", component: ReconciliationList, meta: { capability: 'task.read' } },
+    { path: '/tasks/:id', name: "reconciliationForm", component: ReconciliationForm, meta: { capability: 'task.read' } },
     // 条目审核功能
-    { path: '/entry-review', name: "entryReviewForm", component: ParseReviewForm },
+    { path: '/entry-review', name: "entryReviewForm", component: ParseReviewForm, meta: { capability: 'entryReview.use' } },
     // Copilot
-    { path: '/assistant/:sessionId?', name: 'assistant', component: AssistantView },
+    { path: '/assistant/:sessionId?', name: 'assistant', component: AssistantView, meta: { capability: 'assistant.use' } },
     { path: '/login', name: "login", component: Login },
     { path: '/phone-binding', name: "phoneBinding", component: PhoneBinding },
-    { path: '/settings', name: "settings", component: Settings },
+    { path: '/settings', name: "settings", component: Settings, meta: { capability: 'settings.manage' } },
   ]
 })
 
 // 路由守卫：检查手机号绑定状态和导览恢复
 router.beforeEach(async (to, from, next) => {
-  const token = localStorage.getItem('access');
-  const username = localStorage.getItem('username');
+  const isAuthenticated = getSessionTier() !== 'guest';
 
   // 检查是否需要恢复导览（在认证检查之前，因为导览恢复可能需要跳转）
   try {
@@ -95,7 +94,7 @@ router.beforeEach(async (to, from, next) => {
   // 如果是登录页面，检查是否已登录
   if (to.path === '/login') {
     // 如果已登录，重定向到文件管理页面
-    if (token && username) {
+    if (isAuthenticated) {
       next('/file');
     } else {
       // 未登录用户，允许访问登录页面
@@ -111,9 +110,8 @@ router.beforeEach(async (to, from, next) => {
     return;
   }
 
-  // 如果没有token，允许匿名访问（用于访问admin用户数据）
-  if (!token || !username) {
-    // 匿名用户允许访问，后端会返回id=1用户的数据
+  // 游客只放行解析页；其余页面由 App.vue 的 CapabilityGate 接管
+  if (!isAuthenticated) {
     next();
     return;
   }
