@@ -1,8 +1,9 @@
 <template>
   <div class="assistant-layout">
+    <div v-if="sidebarOverlay" class="sidebar-scrim" @click="sidebarOpen = false" />
     <AssistantSessionSidebar ref="sessionSidebarRef" :sessions="sessions" :sessions-loading="sessionsLoading"
       v-model:search-query="searchQuery" :active-session-id="activeSessionId" :collapsed="!sidebarOpen"
-      @new-chat="handleNewChat" @select="handleSelectSession" @rename="handleRenameSession"
+      :overlay="sidebarOverlay" @new-chat="handleNewChat" @select="handleSelectSession" @rename="handleRenameSession"
       @delete="handleDeleteSession" @search="fetchSessions" @collapse="sidebarOpen = false"
       @expand="sidebarOpen = true" />
 
@@ -36,10 +37,17 @@
       <div class="chat-container" ref="chatContainerRef" :class="{ 'chat-container--welcome': messages.length === 0 }"
         v-loading="sessionLoading" @scroll.passive="handleChatScroll">
         <div v-if="messages.length === 0" class="welcome-panel">
-          <el-icon :size="48" color="var(--el-color-primary)">
-            <ChatDotRound />
-          </el-icon>
-          <p class="welcome-text">欢迎回来</p>
+          <svg class="welcome-logo" viewBox="0 0 1024 1024" role="img" aria-label="财见">
+            <g fill="none" stroke-width="23" stroke-linecap="round" stroke-linejoin="round">
+              <path stroke="currentColor"
+                d="M 103,163 L 568,515 Q 589,531 609,515 L 906,281 Q 928,264 908,245 L 802,163" />
+              <path stroke="currentColor"
+                d="M 104,322 L 568,674 Q 590,691 611,674 L 906,440 Q 927,423 907,404 L 853,361" />
+              <path stroke="var(--action)"
+                d="M 104,481 L 568,833 Q 590,850 611,833 L 906,599 Q 928,582 907,563 L 853,520" />
+            </g>
+          </svg>
+          <!-- <p class="welcome-text">欢迎回来</p> -->
           <p class="welcome-readonly">Copilot 只读查询账本，不会改账。</p>
           <Transition name="example-chip" mode="out-in">
             <div class="example-chips" :key="examplePage">
@@ -60,7 +68,7 @@
             :model-value="selectedIndices.has(index)" :disabled="sharing" @click.stop
             @change="(val: CheckboxValueType) => toggleShareSelection(index, val === true)" />
           <div class="message-bubble">
-            <div class="message-role">{{ msg.role === 'user' ? '你' : 'Copilot' }}</div>
+            <div v-if="msg.role === 'assistant'" class="message-role">Copilot</div>
             <div v-if="msg.role === 'user'" class="user-message">
               <template v-if="editingIndex === index">
                 <el-input v-model="editDraft" type="textarea" :autosize="{ minRows: 2, maxRows: 8 }" :disabled="loading"
@@ -101,42 +109,38 @@
                 class="message-content message-content--assistant" />
               <div v-if="msg.role === 'assistant' && !msg.streaming && msg.content && !isInterruptedAssistant(msg)"
                 class="feedback-bar" @click.stop>
-                <el-button size="small" text @click="handleCopyMarkdown(index)">
+                <el-button size="small" text class="feedback-btn" title="复制 Markdown" aria-label="复制 Markdown"
+                  @click="handleCopyMarkdown(index)">
                   <el-icon>
                     <DocumentCopy />
                   </el-icon>
-                  复制
                 </el-button>
-                <el-button v-if="!shareSelectMode" size="small" text :disabled="loading || sharing"
-                  @click="handleRegenerate(index)">
+                <el-button v-if="!shareSelectMode" size="small" text class="feedback-btn" title="重新生成" aria-label="重新生成"
+                  :disabled="loading || sharing" @click="handleRegenerate(index)">
                   <el-icon>
                     <Refresh />
                   </el-icon>
-                  重新生成
                 </el-button>
-                <el-button v-if="!shareSelectMode" size="small" text :disabled="sharing"
-                  @click="handleShareClick(index)">
+                <el-button v-if="!shareSelectMode" size="small" text class="feedback-btn" title="分享" aria-label="分享"
+                  :disabled="sharing" @click="handleShareClick(index)">
                   <el-icon>
                     <Share />
                   </el-icon>
-                  分享
                 </el-button>
                 <span class="feedback-divider" />
-                <el-button size="small" text :type="msg.feedback === 'like' ? 'primary' : 'default'"
-                  :loading="msg.feedbackSubmitting" :disabled="msg.feedbackSubmitting || sharing"
-                  @click="handleLike(index)">
+                <el-button size="small" text class="feedback-btn" title="喜欢" aria-label="喜欢"
+                  :type="msg.feedback === 'like' ? 'primary' : 'default'" :loading="msg.feedbackSubmitting"
+                  :disabled="msg.feedbackSubmitting || sharing" @click="handleLike(index)">
                   <el-icon>
                     <CircleCheck />
                   </el-icon>
-                  喜欢
                 </el-button>
-                <el-button size="small" text :type="msg.feedback === 'dislike' ? 'danger' : 'default'"
-                  :loading="msg.feedbackSubmitting" :disabled="msg.feedbackSubmitting || sharing"
-                  @click="handleDislike(index)">
+                <el-button size="small" text class="feedback-btn" title="不喜欢" aria-label="不喜欢"
+                  :type="msg.feedback === 'dislike' ? 'danger' : 'default'" :loading="msg.feedbackSubmitting"
+                  :disabled="msg.feedbackSubmitting || sharing" @click="handleDislike(index)">
                   <el-icon>
                     <CircleClose />
                   </el-icon>
-                  不喜欢
                 </el-button>
               </div>
               <div v-if="isInterruptedAssistant(msg) && !shareSelectMode" class="interrupted-bar" @click.stop>
@@ -219,7 +223,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { CheckboxValueType, InputInstance } from 'element-plus'
-import { ChatDotRound, CircleCheck, CircleClose, DocumentCopy, EditPen, Refresh, Share } from '@element-plus/icons-vue'
+import { CircleCheck, CircleClose, DocumentCopy, EditPen, Refresh, Share } from '@element-plus/icons-vue'
 import AssistantSessionSidebar from '../../components/assistant/AssistantSessionSidebar.vue'
 import AssistantShareCard from '../../components/assistant/AssistantShareCard.vue'
 import AssistantThinkingBlock from '../../components/assistant/AssistantThinkingBlock.vue'
@@ -282,10 +286,25 @@ const {
 })
 
 const SIDEBAR_OPEN_KEY = 'assistant-sidebar-open'
-const sidebarOpen = ref(localStorage.getItem(SIDEBAR_OPEN_KEY) !== '0')
+const SIDEBAR_QUERY = '(max-width: 1024px)'
+const sidebarMedia = window.matchMedia(SIDEBAR_QUERY)
+const isNarrow = ref(sidebarMedia.matches)
+const sidebarOpen = ref(
+  isNarrow.value ? false : localStorage.getItem(SIDEBAR_OPEN_KEY) !== '0',
+)
+const sidebarOverlay = computed(() => isNarrow.value && sidebarOpen.value)
+
+function handleSidebarMediaChange(event: MediaQueryListEvent) {
+  isNarrow.value = event.matches
+  sidebarOpen.value = event.matches
+    ? false
+    : localStorage.getItem(SIDEBAR_OPEN_KEY) !== '0'
+}
 
 watch(sidebarOpen, (open) => {
-  localStorage.setItem(SIDEBAR_OPEN_KEY, open ? '1' : '0')
+  if (!isNarrow.value) {
+    localStorage.setItem(SIDEBAR_OPEN_KEY, open ? '1' : '0')
+  }
 })
 
 const sessionSidebarRef = ref<{ focusSearch: () => void } | null>(null)
@@ -508,6 +527,9 @@ function handleNewChat() {
   exitShareSelectMode()
   // 开启新会话时换一组示例问句
   advanceExamplePage()
+  if (isNarrow.value) {
+    sidebarOpen.value = false
+  }
   startNewChat()
 }
 
@@ -518,6 +540,9 @@ function handleSelectSession(id: string) {
   cancelEdit()
   exitShareSelectMode()
   stickToBottom.value = true
+  if (isNarrow.value) {
+    sidebarOpen.value = false
+  }
   // 立即切换当前会话，避免路由参数延迟更新时把消息发到上一个会话
   activeSessionId.value = id
   router.push(`/assistant/${id}`)
@@ -694,16 +719,19 @@ onMounted(() => {
   fetchSessions()
   fetchSharedLedgers()
   window.addEventListener('keydown', handleShortcut)
+  sidebarMedia.addEventListener('change', handleSidebarMediaChange)
 })
 
 onUnmounted(() => {
   abortSubscription()
   window.removeEventListener('keydown', handleShortcut)
+  sidebarMedia.removeEventListener('change', handleSidebarMediaChange)
 })
 </script>
 
 <style scoped lang="scss">
 .assistant-layout {
+  position: relative;
   display: flex;
   height: 100%;
   min-height: 0;
@@ -717,6 +745,7 @@ onUnmounted(() => {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  background: var(--surface);
 
   &--share-select {
     padding-bottom: 88px;
@@ -724,8 +753,18 @@ onUnmounted(() => {
 }
 
 .setup-alert {
-  margin: 12px 16px 0;
+  align-self: center;
+  width: min(800px, calc(100% - 48px));
+  margin: 12px auto 0;
   flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.sidebar-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: var(--el-overlay-color-lighter);
 }
 
 .welcome-text {
@@ -752,33 +791,45 @@ onUnmounted(() => {
 .chat-container {
   flex: 1;
   overflow-y: auto;
-  padding: 16px 24px;
-  background: var(--el-fill-color-blank);
+  padding: 24px;
+  background: var(--surface);
   min-height: 0;
 
   &--welcome {
-    overflow: hidden;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
   }
 }
 
 .welcome-panel {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  min-height: 0;
-  padding: 24px 16px;
+  width: 100%;
+  max-width: 800px;
+  margin: auto;
+  padding: 32px 16px;
   text-align: center;
 }
 
+.welcome-logo {
+  width: 72px;
+  height: 72px;
+  color: var(--text-primary);
+}
+
 .example-chips {
-  display: flex;
-  flex-wrap: wrap;
+  width: 100%;
+  max-width: 560px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  justify-content: center;
+
+  :deep(.el-button) {
+    width: 100%;
+    margin-left: 0;
+  }
 }
 
 // 示例问句换组时淡入淡出
@@ -794,12 +845,15 @@ onUnmounted(() => {
 
 .message-row {
   display: flex;
-  margin-bottom: 12px;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto 20px;
 
   &.user {
     justify-content: flex-end;
 
     .message-bubble {
+      max-width: min(680px, 80%);
       background: var(--el-color-primary-light-9);
       border-color: var(--el-color-primary-light-7);
     }
@@ -809,8 +863,10 @@ onUnmounted(() => {
     justify-content: flex-start;
 
     .message-bubble {
-      background: var(--el-fill-color-light);
-      border-color: var(--el-border-color);
+      max-width: 100%;
+      padding: 0;
+      background: transparent;
+      border-color: transparent;
     }
   }
 
@@ -832,7 +888,6 @@ onUnmounted(() => {
 }
 
 .message-bubble {
-  max-width: 85%;
   padding: 10px 14px;
   border-radius: 12px;
   border: 1px solid transparent;
@@ -851,6 +906,10 @@ onUnmounted(() => {
 
   &--user {
     white-space: pre-wrap;
+  }
+
+  &--assistant {
+    font-size: 15px;
   }
 
   &--streaming {
@@ -903,12 +962,21 @@ onUnmounted(() => {
 
 .feedback-bar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 4px;
-  margin-top: 8px;
-  padding-top: 4px;
-  border-top: 1px solid var(--el-border-color-lighter);
+  gap: 2px;
+  margin-top: 6px;
+  padding-top: 0;
+  border-top: none;
+
+  :deep(.el-button + .el-button) {
+    margin-left: 0;
+  }
+}
+
+.feedback-btn {
+  padding: 4px 6px;
+  height: auto;
 }
 
 .feedback-divider {
@@ -1019,18 +1087,18 @@ onUnmounted(() => {
 .input-area {
   flex-shrink: 0;
   padding: 12px 24px 20px;
-  border-top: 1px solid var(--el-border-color-lighter);
-  background: var(--el-bg-color);
+  border-top: 1px solid var(--border);
+  background: var(--surface);
 }
 
 .composer {
-  max-width: 840px;
+  max-width: 800px;
   margin: 0 auto;
   width: 100%;
-  border: 1px solid var(--el-border-color);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 8px 12px 10px;
-  background: var(--el-fill-color-blank);
+  background: var(--el-fill-color-light);
 
   :deep(.el-textarea__inner) {
     box-shadow: none;
@@ -1061,5 +1129,50 @@ onUnmounted(() => {
   gap: 12px;
   align-items: center;
   flex-shrink: 0;
+}
+
+@media (max-width: 1024px) {
+  .chat-container {
+    padding: 16px;
+  }
+
+  .input-area {
+    padding: 10px 16px 16px;
+  }
+
+  .setup-alert {
+    width: calc(100% - 32px);
+  }
+}
+
+@media (max-width: 640px) {
+  .chat-container {
+    padding: 12px;
+  }
+
+  .input-area {
+    padding: 8px 12px 12px;
+  }
+
+  .message-row {
+    margin-bottom: 16px;
+  }
+
+  .message-row.user .message-bubble {
+    max-width: 92%;
+  }
+
+  .welcome-panel {
+    padding: 24px 8px;
+  }
+
+  .example-chips {
+    grid-template-columns: 1fr;
+  }
+
+  .composer-footer {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
 }
 </style>

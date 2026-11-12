@@ -1,10 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="72 63 887 887">
   <title>财见</title>
-  <desc>墨底纸线，至多一根行动蓝。</desc>
-  <rect width="512" height="512" rx="96" fill="#0E1215"/>
-  <g transform="scale(0.5)" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="23">
-    <path d="M 103,163 L 568,515 Q 589,531 609,515 L 906,281 Q 928,264 908,245 L 802,163" stroke="#F7F6F2"/>
-    <path d="M 104,322 L 568,674 Q 590,691 611,674 L 906,440 Q 927,423 907,404 L 853,361" stroke="#F7F6F2"/>
-    <path d="M 104,481 L 568,833 Q 590,850 611,833 L 906,599 Q 928,582 907,563 L 853,520" stroke="#6FA3CB"/>
+  <desc>无底色线条标签图标；深色标签栏自动切换为纸白线条。</desc>
+  <style>
+    .ink { stroke: #14181a; }
+    .action { stroke: #1b5079; }
+
+    @media (prefers-color-scheme: dark) {
+      .ink { stroke: #f7f6f2; }
+      .action { stroke: #6fa3cb; }
+    }
+  </style>
+  <g fill="none" stroke-width="46" stroke-linecap="round" stroke-linejoin="round">
+    <path class="ink"
+      d="M 103,163 L 568,515 Q 589,531 609,515 L 906,281 Q 928,264 908,245 L 802,163" />
+    <path class="ink"
+      d="M 104,322 L 568,674 Q 590,691 611,674 L 906,440 Q 927,423 907,404 L 853,361" />
+    <path class="action"
+      d="M 104,481 L 568,833 Q 590,850 611,833 L 906,599 Q 928,582 907,563 L 853,520" />
   </g>
 </svg>

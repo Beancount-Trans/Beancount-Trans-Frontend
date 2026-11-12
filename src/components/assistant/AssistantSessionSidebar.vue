@@ -1,7 +1,10 @@
 <template>
   <aside
     class="assistant-sidebar"
-    :class="{ 'assistant-sidebar--collapsed': collapsed }"
+    :class="{
+      'assistant-sidebar--collapsed': collapsed,
+      'assistant-sidebar--overlay': overlay,
+    }"
   >
     <div v-if="collapsed" class="sidebar-rail">
       <el-button class="rail-btn" text @click="emit('expand')">
@@ -86,6 +89,7 @@ const props = defineProps<{
   searchQuery: string
   activeSessionId?: string
   collapsed?: boolean
+  overlay?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -153,6 +157,15 @@ defineExpose({ focusSearch })
     width: 52px;
     display: flex;
     flex-direction: column;
+  }
+
+  &--overlay {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 30;
+    box-shadow: var(--el-box-shadow);
   }
 }
 
@@ -312,5 +325,15 @@ defineExpose({ focusSearch })
 
 .session-delete {
   color: var(--el-color-danger);
+}
+
+@media (max-width: 480px) {
+  .assistant-sidebar--overlay {
+    width: min(86vw, 260px);
+  }
+
+  .assistant-sidebar--overlay .assistant-sidebar-inner {
+    width: 100%;
+  }
 }
 </style>
