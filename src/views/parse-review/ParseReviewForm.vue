@@ -29,7 +29,7 @@
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item v-for="file in reparseSourceFiles" :key="file.key" :command="file.file_id">
-                重新解析「{{ file.file_name }}」
+                {{ file.file_name }}
               </el-dropdown-item>
             </el-dropdown-menu>
           </template>
