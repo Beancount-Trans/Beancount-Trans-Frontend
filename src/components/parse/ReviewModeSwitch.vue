@@ -7,11 +7,13 @@
     <el-tooltip placement="top">
       <template #content>
         <div class="review-mode-tooltip">
-          <div>表单模式：直接点选分类、账户与标签；日期、商户等在「更多信息」中调整。</div>
+          <div>表单模式：点选分类、账户与标签。</div>
           <div>原文模式：直接编辑 Beancount 条目。</div>
         </div>
       </template>
-      <el-icon class="review-mode-tip"><InfoFilled /></el-icon>
+      <el-icon class="review-mode-tip">
+        <InfoFilled />
+      </el-icon>
     </el-tooltip>
   </div>
 </template>
