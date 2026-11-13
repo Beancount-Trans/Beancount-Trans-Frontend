@@ -1,3 +1,31 @@
+## [5.21.0](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/compare/5.20.0...5.21.0) (2026-11-13)
+
+### Features
+
+* **account-management:** 展示账户托管态并禁用受限操作 ([93fb58e](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/93fb58e30a2e9fa00b2479031762c81fe9685cbc))
+* **account-management:** 引导收尾交接账户与映射并补审核页兜底提示 ([b58fc8e](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/b58fc8e4b71eeec1fcc50677a9771a1728f4b076))
+* **account-management:** 新用户引导配置支付宝对账周期并完成首次对账 ([55f6702](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/55f6702d5c2ba638ee4fc7638780002afc94d540))
+* **account-management:** 账户树支持按路径与描述搜索 ([3a63ae4](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/3a63ae427507370fef58362b122f542a05d68024))
+* **account:** 账户树按根类型分组并对接账户对账 ([4c5f164](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/4c5f1643539b575b666e3e7a4a5b52e5c7182313))
+* **account:** 账户表单与详情支持多币种 ([9a484ef](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/9a484ef72431bb15d9a6ead73ab344f05deb90e4))
+* **branding:** 顶栏与页面图标改为财见品牌 ([cb5c17d](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/cb5c17dd3757b895e55b1632b58f8590630ddecc))
+* **capability:** 按会话层级收敛路由入口 ([c3b3a33](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/c3b3a338b11ad3ed6cd10d87f8355ff99047596d))
+* **config:** 解析设置支持开关资产账户自动补齐 ([dbb848d](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/dbb848d6f8676bc8a650d3155edaf4d0fe528427))
+* **git:** 高级设置支持自动导入账本新增账户 ([85f3489](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/85f348940b6475bc291409073042077e433567ab))
+* **parse:** 条目支持行内排除，清空文本不再删除条目 ([5f59f51](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/5f59f51639ebce598e927084f9d8250149565b9c))
+* **reconciliation:** 对账时间点默认沿用当天或上一条已完成对账 ([c4d81a4](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/c4d81a455c6fc0038b09e3143840fbe42f502f96))
+* **review:** 新增仅需关注与全部视图切换 ([9d4eeca](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/9d4eeca0047841e3d232b05bf52db9afcc2222f5))
+* **review:** 新增表单/原文模式切换与结构化条目编辑 ([4a7b903](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/4a7b903565cf4ad0957610c649add19d13a68f7c))
+* **trans:** 未登录解析结果引导登录并自动重解析 ([d503949](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/d5039499cb41bd9fbdcdc54add03bd67c7f2871c))
+* **trans:** 登录用户解析页提示多账单合并去重入口 ([1f7c35c](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/1f7c35c6b812a1bac56a8aa58a0eb8bfd2a9b556))
+* **trans:** 解析结果条目编辑回车即保存 ([c8f3d05](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/c8f3d056fd9f291dadb4e44ff0052e3dc299bc8e))
+
+### Bug Fixes
+
+* **account-management:** 修正账户管理的提示逻辑与文案 ([c3d6736](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/c3d6736d7f01dadd18da273624a8dae023a5dd18))
+* **account-management:** 账本已关闭账户可清理并单独归类 ([e069071](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/e06907126ce8e61dc07a67766af59861e74c6553))
+* 修复对账周期表单会复用之前周期的缺陷 ([f7a9efd](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/f7a9efd538bff360245c6c316b1cc1483153f6c7))
+
 ## [5.20.0](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/compare/5.19.0...5.20.0) (2026-11-02)
 
 ### Features
