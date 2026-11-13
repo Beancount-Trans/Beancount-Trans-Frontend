@@ -1,19 +1,30 @@
 <template>
   <div class="simple-entry">
     <template v-if="parsed.ok">
-      <div class="simple-entry-head">
-        <span class="simple-entry-date">{{ parsed.date }}</span>
-        <span class="simple-entry-payee">{{ parsed.payee || '未填写商户' }}</span>
-        <span v-if="parsed.note" class="simple-entry-note">{{ parsed.note }}</span>
-        <span v-if="amountInfo" class="simple-entry-amount">{{ amountInfo }}</span>
-      </div>
-
-      <div v-if="accounts.length" class="simple-entry-accounts">
-        <span v-for="(account, index) in accounts" :key="`${account}-${index}`" class="simple-entry-account"
-          :title="account">
+      <div class="simple-entry-accounts" :class="{ 'is-busy': savingAccount }">
+        <div v-for="(account, index) in accounts" :key="`${account}-${index}`" class="simple-entry-account">
           <span class="simple-entry-account-label">{{ accountLabels[index] }}</span>
-          <span class="simple-entry-account-name">{{ accountLabel(account) }}</span>
-        </span>
+          <el-popover v-if="!disabled && accountDirectory.length" v-model:visible="accountPopover[index]" placement="bottom-start"
+            :width="340" trigger="click">
+            <template #reference>
+              <button type="button" class="simple-entry-account-name is-editable" :title="account">
+                <span class="simple-entry-account-text">{{ accountLabel(account) }}</span>
+                <el-icon class="simple-entry-account-edit">
+                  <EditPen />
+                </el-icon>
+              </button>
+            </template>
+            <div class="simple-entry-account-panel">
+              <div class="simple-entry-account-panel-title">选择{{ accountLabels[index] }}</div>
+              <el-select :model-value="account" filterable placeholder="搜索账户，回车确认" style="width: 100%"
+                @change="(value: string) => handleAccountChange(index, value)">
+                <el-option v-for="item in accountOptionsFor(index)" :key="item.value" :label="item.label"
+                  :value="item.value" />
+              </el-select>
+            </div>
+          </el-popover>
+          <span v-else class="simple-entry-account-name" :title="account">{{ accountLabel(account) }}</span>
+        </div>
       </div>
 
       <div v-if="otherSide" class="other-account-tip">
@@ -22,28 +33,44 @@
           : '未匹配分类，已记为 Other 兜底账户；加一条映射后下次自动归类' }}
       </div>
 
-      <div v-if="parsed.tags.length || availableTags.length" class="simple-entry-tags">
-        <el-tag v-for="tag in parsed.tags" :key="tag" size="small" :closable="!disabled"
-          @close="handleRemoveTag(tag)">
-          {{ tag }}
-        </el-tag>
-        <el-popover v-if="!disabled && availableTags.length" v-model:visible="tagPopoverVisible" placement="bottom-start"
-          :width="320" trigger="click">
+      <div class="simple-entry-meta">
+        <span class="simple-entry-meta-text" :title="metaTitle">{{ metaText }}</span>
+        <el-popover v-if="!disabled && (parsed.tags.length || availableTags.length)" v-model:visible="tagPopoverVisible"
+          placement="bottom-end" :width="300" trigger="click">
           <template #reference>
-            <el-button size="small" text class="simple-entry-add-tag">+ 标签</el-button>
+            <button type="button" class="simple-entry-tags-trigger" :title="parsed.tags.join(' ') || '添加标签'">
+              <template v-if="visibleTags.length">
+                <span v-for="tag in visibleTags" :key="tag" class="simple-entry-tag">#{{ tag }}</span>
+                <span v-if="hiddenTagCount" class="simple-entry-tag-more">+{{ hiddenTagCount }}</span>
+              </template>
+              <span v-else class="simple-entry-tag-add">+ 标签</span>
+            </button>
           </template>
-          <el-select v-model="pendingTag" filterable size="small" placeholder="搜索标签" style="width: 100%"
-            @change="handleAddTag">
-            <el-option v-for="tag in availableTags" :key="tag.full_path" :label="tag.full_path" :value="tag.full_path">
-              <span>{{ tag.full_path }}</span>
-              <span v-if="tag.description" class="tag-option-desc">{{ tag.description }}</span>
-            </el-option>
-          </el-select>
+          <div class="simple-entry-tag-panel">
+            <div class="simple-entry-tag-panel-title">标签</div>
+            <div class="simple-entry-tag-list">
+              <el-tag v-for="tag in parsed.tags" :key="tag" size="small" closable @close="handleRemoveTag(tag)">
+                {{ tag }}
+              </el-tag>
+              <span v-if="!parsed.tags.length" class="simple-entry-tag-empty">暂无标签</span>
+            </div>
+            <el-select v-if="availableTags.length" v-model="pendingTag" filterable size="small" placeholder="搜索标签"
+              style="width: 100%" @change="handleAddTag">
+              <el-option v-for="tag in availableTags" :key="tag.full_path" :label="tag.full_path" :value="tag.full_path">
+                <span>{{ tag.full_path }}</span>
+                <span v-if="tag.description" class="tag-option-desc">{{ tag.description }}</span>
+              </el-option>
+            </el-select>
+          </div>
         </el-popover>
-      </div>
-
-      <div v-if="!disabled" class="simple-entry-footer">
-        <el-button size="small" type="primary" plain @click="emit('edit')">修改</el-button>
+        <button v-else-if="parsed.tags.length" type="button" class="simple-entry-tags-trigger is-static"
+          :title="parsed.tags.join(' ')">
+          <span v-for="tag in visibleTags" :key="tag" class="simple-entry-tag">#{{ tag }}</span>
+          <span v-if="hiddenTagCount" class="simple-entry-tag-more">+{{ hiddenTagCount }}</span>
+        </button>
+        <el-button v-if="!disabled" size="small" text class="simple-entry-more" @click="emit('edit')">
+          更多
+        </el-button>
       </div>
     </template>
 
@@ -63,6 +90,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { EditPen } from '@element-plus/icons-vue'
 import { otherAccountSide } from '../../composables/useParseEntryPreview'
 import { parseBeancountEntry } from '../../utils/beancount-entry'
 import type { FormattedEntry } from '../../types/parse-review'
@@ -71,8 +99,12 @@ const props = defineProps<{
   entry: FormattedEntry
   disabled?: boolean
   accountDescriptions: Record<string, string>
+  /** 账户目录（账户路径 + 描述），为空时不提供行内改账户 */
+  accountDirectory: Array<{ account: string; description: string }>
   tagOptions: Array<{ full_path: string; description: string; enable: boolean }>
   onPatchTag: (action: 'add' | 'remove', tagPath: string) => Promise<void>
+  /** 行内修改过账账户：lineIndex 为 Beancount 原文行号 */
+  onChangeAccount: (lineIndex: number, account: string) => Promise<unknown>
 }>()
 
 const emit = defineEmits<{ edit: [] }>()
@@ -117,6 +149,17 @@ const accountLabels = computed(() => {
 
 const accountLabel = (account: string) => props.accountDescriptions[account] || account
 
+/** 参考信息：日期 · 商户 · 金额，单行展示；完整备注放在 title 里 */
+const metaText = computed(() => {
+  const payee = parsed.value.payee || '未填写商户'
+  return [parsed.value.date, payee, amountInfo.value].filter(Boolean).join(' · ')
+})
+
+const metaTitle = computed(() => {
+  const payee = parsed.value.payee || '未填写商户'
+  return [parsed.value.date, payee, parsed.value.note, amountInfo.value].filter(Boolean).join(' · ')
+})
+
 const fallback = computed(() => {
   const row = props.entry.original_row
   return {
@@ -128,8 +171,63 @@ const fallback = computed(() => {
   }
 })
 
+// ---------------------------------------------------------------- 行内改账户
+
+const accountPopover = ref<Record<number, boolean>>({})
+const savingAccount = ref(false)
+
+const allowedRootsFor = (index: number) => {
+  if (index === 1) return ['Assets', 'Liabilities', 'Equity']
+  const root = rootOf(parsed.value.postings[0]?.account || '')
+  if (root === 'Expenses') return ['Expenses']
+  if (root === 'Income') return ['Income']
+  if (root === 'Assets' || root === 'Liabilities' || root === 'Equity') {
+    return ['Assets', 'Liabilities', 'Equity']
+  }
+  return ['Assets', 'Expenses', 'Income', 'Liabilities', 'Equity']
+}
+
+const accountOptionsFor = (index: number) => {
+  const current = parsed.value.postings[index]?.account || ''
+  const roots = allowedRootsFor(index)
+  const options = props.accountDirectory
+    .filter((item) => roots.some((root) => item.account === root || item.account.startsWith(`${root}:`)))
+    .map((item) => ({
+      value: item.account,
+      label: item.description ? `${item.account}（${item.description}）` : item.account
+    }))
+  if (current && !options.some((item) => item.value === current)) {
+    options.unshift({ value: current, label: current })
+  }
+  return options
+}
+
+const handleAccountChange = async (index: number, account: string) => {
+  accountPopover.value[index] = false
+  const posting = parsed.value.postings[index]
+  if (props.disabled || savingAccount.value || !posting || !account || account === posting.account) {
+    return
+  }
+  savingAccount.value = true
+  try {
+    await props.onChangeAccount(posting.lineIndex, account)
+    ElMessage.success('账户已更新')
+  } catch (error: any) {
+    ElMessage.error(error?.response?.data?.error || '更新账户失败')
+  } finally {
+    savingAccount.value = false
+  }
+}
+
+// ---------------------------------------------------------------- 标签
+
 const tagPopoverVisible = ref(false)
 const pendingTag = ref('')
+
+/** 标签默认只露 2 个，其余收进悬浮层 */
+const MAX_VISIBLE_TAGS = 2
+const visibleTags = computed(() => parsed.value.tags.slice(0, MAX_VISIBLE_TAGS))
+const hiddenTagCount = computed(() => Math.max(0, parsed.value.tags.length - MAX_VISIBLE_TAGS))
 
 const availableTags = computed(() => {
   const existing = new Set(parsed.value.tags.map((tag) => tag.toLowerCase()))
@@ -187,10 +285,6 @@ const handleRemoveTag = async (tagPath: string) => {
   color: var(--el-text-color-primary);
 }
 
-.simple-entry-note {
-  color: var(--el-text-color-regular);
-}
-
 .simple-entry-amount {
   margin-left: auto;
   font-variant-numeric: tabular-nums;
@@ -201,13 +295,18 @@ const handleRemoveTag = async (tagPath: string) => {
 .simple-entry-accounts {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 16px;
+  gap: 6px 20px;
+
+  &.is-busy {
+    opacity: 0.7;
+    pointer-events: none;
+  }
 }
 
 .simple-entry-account {
   display: inline-flex;
   align-items: baseline;
-  gap: 4px;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -217,10 +316,77 @@ const handleRemoveTag = async (tagPath: string) => {
 }
 
 .simple-entry-account-name {
+  min-width: 0;
   color: var(--el-text-color-regular);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+button.simple-entry-account-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+button.simple-entry-account-name:hover {
+  color: var(--el-color-primary);
+}
+
+.simple-entry-account-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.simple-entry-account-edit {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--el-text-color-placeholder);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+button.simple-entry-account-name:hover .simple-entry-account-edit,
+button.simple-entry-account-name:focus-visible .simple-entry-account-edit {
+  opacity: 1;
+}
+
+.simple-entry-account-panel-title {
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.simple-entry-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.simple-entry-meta-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.simple-entry-more {
+  flex-shrink: 0;
+  height: auto;
+  padding: 0 2px;
+  font-size: 12px;
 }
 
 .other-account-tip {
@@ -229,15 +395,63 @@ const handleRemoveTag = async (tagPath: string) => {
   color: var(--el-color-warning);
 }
 
-.simple-entry-tags {
+.simple-entry-tags-trigger {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  flex-shrink: 0;
+  max-width: 50%;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: var(--el-text-color-secondary);
+  cursor: pointer;
+}
+
+.simple-entry-tags-trigger:hover {
+  color: var(--el-color-primary);
+}
+
+.simple-entry-tags-trigger.is-static {
+  cursor: default;
+}
+
+.simple-entry-tags-trigger.is-static:hover {
+  color: var(--el-text-color-secondary);
+}
+
+.simple-entry-tag {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.simple-entry-tag-more,
+.simple-entry-tag-add {
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--el-text-color-placeholder);
+}
+
+.simple-entry-tag-panel-title {
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.simple-entry-tag-list {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+  margin-bottom: 10px;
 }
 
-.simple-entry-add-tag {
-  padding: 0 4px;
+.simple-entry-tag-empty {
+  font-size: 12px;
+  color: var(--el-text-color-placeholder);
 }
 
 .tag-option-desc {
@@ -249,10 +463,5 @@ const handleRemoveTag = async (tagPath: string) => {
 .simple-entry-fallback {
   font-size: 12px;
   color: var(--el-color-warning);
-}
-
-.simple-entry-footer {
-  display: flex;
-  justify-content: flex-end;
 }
 </style>

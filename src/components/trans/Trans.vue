@@ -334,7 +334,7 @@ const hasEntries = computed(() => formattedEntries.value.length > 0)
 
 const emptyResultPlaceholder = computed(() =>
   reviewMode.value === 'simple'
-    ? '上传支付宝 / 微信 / 银行账单后，这里会显示可核对的收支记录。\n\n你可以用表单修改日期、商户、金额、分类与账户，不需要了解 Beancount。'
+    ? '上传支付宝 / 微信 / 银行账单后，这里会显示可核对的收支记录。\n\n直接点选分类、账户和标签即可；日期、商户等参考信息收在「更多信息」里，不需要了解 Beancount。'
     : '解析结果如下：\n\n2022-06-19 * "温州市数据管理发展集团有限公司" "HIK-停车缴费-洞头人民路停车场(人民路区域共享)"\n    time: "15:27:44"\n    uuid: "2022061922001474561419808812"\n    status: "ALiPay - 交易成功"\n    Expenses:TransPort:Private:Park +5.00 CNY\n    Liabilities:CreditCard:Bank:CITIC:C6428 -5.00 CNY\n'
 )
 

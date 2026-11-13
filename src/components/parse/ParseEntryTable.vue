@@ -73,8 +73,9 @@
       <template #default="scope">
         <div :class="getEntryClasses(scope.row.uuid, scope.row.edited_formatted)">
           <ParseEntrySimpleSummary :entry="scope.row" :disabled="disabled"
-            :account-descriptions="accountDescriptionByName" :tag-options="flatTagsForAssist"
-            :on-patch-tag="patchTagForRow(scope.row)" @edit="openSimpleEditor(scope.row)" />
+            :account-descriptions="accountDescriptionByName" :account-directory="flatAccounts"
+            :tag-options="flatTagsForAssist" :on-patch-tag="patchTagForRow(scope.row)"
+            :on-change-account="changeAccountForRow(scope.row)" @edit="openSimpleEditor(scope.row)" />
           <div v-if="errorEntries[scope.row.uuid]" class="validation-message error-message">
             {{ errorEntries[scope.row.uuid] }}
           </div>
@@ -249,7 +250,7 @@
   </Teleport>
 
   <ParseEntrySimpleEditor v-model="simpleEditorVisible" :entry="simpleEditorEntry" :disabled="disabled"
-    :accounts="flatAccounts" :on-save="handleSimpleSave" />
+    :on-save="handleSimpleSave" />
 </template>
 
 <script setup lang="ts">
@@ -263,6 +264,7 @@ import {
   defaultAssetMappingKeyFromOriginalRow
 } from '../../composables/useInlineMappingDialog'
 import { useParseEntryPreview, otherAccountSide } from '../../composables/useParseEntryPreview'
+import { buildBeancountEntry, parseBeancountEntry } from '../../utils/beancount-entry'
 import AccountSelector from '../common/AccountSelector.vue'
 import TagSelector from '../common/TagSelector.vue'
 import ParseEntrySimpleSummary from './ParseEntrySimpleSummary.vue'
@@ -477,6 +479,22 @@ const openSimpleEditor = (row: FormattedEntry) => {
 
 const patchTagForRow = (row: FormattedEntry) => (action: 'add' | 'remove', tagPath: string) =>
   patchRowTag(row, action, tagPath)
+
+/** 行内改账户：只替换目标过账行的账户，其余内容原样保留 */
+const changeAccountForRow = (row: FormattedEntry) => async (lineIndex: number, account: string) => {
+  const parsed = parseBeancountEntry(row.edited_formatted)
+  if (!parsed.ok) {
+    throw new Error('该条目结构特殊，请切换到「原文」修改')
+  }
+  const nextText = buildBeancountEntry(parsed, {
+    accountChanges: [{ lineIndex, account }]
+  }).replace(/\n+$/, '')
+  if (nextText === row.edited_formatted) {
+    return
+  }
+  row.edited_formatted = nextText
+  return props.onPersistEdit(row.uuid, nextText, { silent: true })
+}
 
 const handleSimpleSave = async (text: string) => {
   const row = simpleEditorEntry.value
