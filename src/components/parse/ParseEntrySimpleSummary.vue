@@ -25,6 +25,43 @@
           </el-popover>
           <span v-else class="simple-entry-account-name" :title="account">{{ accountLabel(account) }}</span>
         </div>
+
+        <!-- 标签：与账户同行，右对齐 -->
+        <div class="simple-entry-tags">
+          <el-popover v-if="!disabled && (parsed.tags.length || availableTags.length)" v-model:visible="tagPopoverVisible"
+            placement="bottom-end" :width="300" trigger="click">
+            <template #reference>
+              <button type="button" class="simple-entry-tags-trigger" :title="parsed.tags.join(' ') || '添加标签'">
+                <template v-if="visibleTags.length">
+                  <span v-for="tag in visibleTags" :key="tag" class="simple-entry-tag">#{{ tag }}</span>
+                  <span v-if="hiddenTagCount" class="simple-entry-tag-more">+{{ hiddenTagCount }}</span>
+                </template>
+                <span v-else class="simple-entry-tag-add">+ 标签</span>
+              </button>
+            </template>
+            <div class="simple-entry-tag-panel">
+              <div class="simple-entry-tag-panel-title">标签</div>
+              <div class="simple-entry-tag-list">
+                <el-tag v-for="tag in parsed.tags" :key="tag" size="small" closable @close="handleRemoveTag(tag)">
+                  {{ tag }}
+                </el-tag>
+                <span v-if="!parsed.tags.length" class="simple-entry-tag-empty">暂无标签</span>
+              </div>
+              <el-select v-if="availableTags.length" v-model="pendingTag" filterable size="small" placeholder="搜索标签"
+                style="width: 100%" @change="handleAddTag">
+                <el-option v-for="tag in availableTags" :key="tag.full_path" :label="tag.full_path" :value="tag.full_path">
+                  <span>{{ tag.full_path }}</span>
+                  <span v-if="tag.description" class="tag-option-desc">{{ tag.description }}</span>
+                </el-option>
+              </el-select>
+            </div>
+          </el-popover>
+          <button v-else-if="parsed.tags.length" type="button" class="simple-entry-tags-trigger is-static"
+            :title="parsed.tags.join(' ')">
+            <span v-for="tag in visibleTags" :key="tag" class="simple-entry-tag">#{{ tag }}</span>
+            <span v-if="hiddenTagCount" class="simple-entry-tag-more">+{{ hiddenTagCount }}</span>
+          </button>
+        </div>
       </div>
 
       <div v-if="otherSide === 'asset'" class="other-account-tip">
@@ -32,40 +69,7 @@
       </div>
 
       <div class="simple-entry-meta">
-        <span class="simple-entry-meta-text" :title="metaTitle">{{ metaText }}</span>
-        <el-popover v-if="!disabled && (parsed.tags.length || availableTags.length)" v-model:visible="tagPopoverVisible"
-          placement="bottom-end" :width="300" trigger="click">
-          <template #reference>
-            <button type="button" class="simple-entry-tags-trigger" :title="parsed.tags.join(' ') || '添加标签'">
-              <template v-if="visibleTags.length">
-                <span v-for="tag in visibleTags" :key="tag" class="simple-entry-tag">#{{ tag }}</span>
-                <span v-if="hiddenTagCount" class="simple-entry-tag-more">+{{ hiddenTagCount }}</span>
-              </template>
-              <span v-else class="simple-entry-tag-add">+ 标签</span>
-            </button>
-          </template>
-          <div class="simple-entry-tag-panel">
-            <div class="simple-entry-tag-panel-title">标签</div>
-            <div class="simple-entry-tag-list">
-              <el-tag v-for="tag in parsed.tags" :key="tag" size="small" closable @close="handleRemoveTag(tag)">
-                {{ tag }}
-              </el-tag>
-              <span v-if="!parsed.tags.length" class="simple-entry-tag-empty">暂无标签</span>
-            </div>
-            <el-select v-if="availableTags.length" v-model="pendingTag" filterable size="small" placeholder="搜索标签"
-              style="width: 100%" @change="handleAddTag">
-              <el-option v-for="tag in availableTags" :key="tag.full_path" :label="tag.full_path" :value="tag.full_path">
-                <span>{{ tag.full_path }}</span>
-                <span v-if="tag.description" class="tag-option-desc">{{ tag.description }}</span>
-              </el-option>
-            </el-select>
-          </div>
-        </el-popover>
-        <button v-else-if="parsed.tags.length" type="button" class="simple-entry-tags-trigger is-static"
-          :title="parsed.tags.join(' ')">
-          <span v-for="tag in visibleTags" :key="tag" class="simple-entry-tag">#{{ tag }}</span>
-          <span v-if="hiddenTagCount" class="simple-entry-tag-more">+{{ hiddenTagCount }}</span>
-        </button>
+        <span class="simple-entry-meta-text" :title="metaText">{{ metaText }}</span>
         <el-button v-if="!disabled" size="small" text class="simple-entry-more" @click="emit('edit')">
           更多
         </el-button>
@@ -147,13 +151,8 @@ const accountLabels = computed(() => {
 
 const accountLabel = (account: string) => props.accountDescriptions[account] || account
 
-/** 参考信息：日期 · 商户 · 金额，单行展示；完整备注放在 title 里 */
+/** 参考信息：日期 · 商户 · 备注 · 金额，单行展示 */
 const metaText = computed(() => {
-  const payee = parsed.value.payee || '未填写商户'
-  return [parsed.value.date, payee, amountInfo.value].filter(Boolean).join(' · ')
-})
-
-const metaTitle = computed(() => {
   const payee = parsed.value.payee || '未填写商户'
   return [parsed.value.date, payee, parsed.value.note, amountInfo.value].filter(Boolean).join(' · ')
 })
@@ -293,12 +292,22 @@ const handleRemoveTag = async (tagPath: string) => {
 .simple-entry-accounts {
   display: flex;
   flex-wrap: wrap;
+  align-items: baseline;
   gap: 6px 20px;
 
   &.is-busy {
     opacity: 0.7;
     pointer-events: none;
   }
+}
+
+/** 标签与账户同行，右对齐；空间不足时整体换行，不被裁切 */
+.simple-entry-tags {
+  display: flex;
+  align-items: baseline;
+  flex-shrink: 0;
+  max-width: 100%;
+  margin-left: auto;
 }
 
 .simple-entry-account {
@@ -398,7 +407,7 @@ button.simple-entry-account-name:focus-visible .simple-entry-account-edit {
   align-items: baseline;
   gap: 4px;
   flex-shrink: 0;
-  max-width: 50%;
+  max-width: 100%;
   overflow: hidden;
   padding: 0;
   margin: 0;
