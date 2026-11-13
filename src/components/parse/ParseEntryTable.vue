@@ -1,14 +1,6 @@
 <template>
   <el-table v-if="entries.length > 0" :data="entries" row-key="uuid" style="width: 100%" border
     highlight-current-row :row-class-name="rowClassName">
-    <el-table-column v-if="props.showSourceFile" label="来源账单" width="180" show-overflow-tooltip>
-      <template #default="scope">
-        <el-tag v-if="scope.row.source === 'copilot'" type="info" size="small">Copilot 记账</el-tag>
-        <template v-else>
-          {{ scope.row.file_name || (scope.row.file_id != null ? `文件 #${scope.row.file_id}` : '-') }}
-        </template>
-      </template>
-    </el-table-column>
     <el-table-column v-if="mode === 'advanced'" label="Beancount 条目预览" min-width="400">
       <template #default="scope">
         <div :class="getEntryClasses(scope.row.uuid, scope.row.edited_formatted)">
@@ -163,7 +155,7 @@
   </el-table>
 
   <!-- 空状态 -->
-  <el-empty v-else :description="props.emptyDescription || '暂无解析结果'" />
+  <el-empty v-else description="暂无解析结果" />
 
   <!-- 内联映射对话框（新增 / 编辑） -->
   <el-dialog v-model="mappingDialog.visible" :title="mappingDialogTitle" width="600px">
@@ -310,10 +302,6 @@ const props = withDefaults(defineProps<{
   onRemoveEntry?: (uuid: string) => Promise<void>
   /** 新增/编辑映射前的登录检查（首页匿名试用需要） */
   requireAuth?: () => boolean
-  /** 是否展示「来源账单」列（统一条目审核场景） */
-  showSourceFile?: boolean
-  /** 空状态文案 */
-  emptyDescription?: string
 }>(), {
   mode: 'advanced'
 })

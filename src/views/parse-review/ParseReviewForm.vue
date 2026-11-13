@@ -42,12 +42,21 @@
 
     <!-- 加载状态 -->
     <div v-loading="loading.results" class="content-container" :class="{ 'is-review-expired': reviewExpired }">
-      <!-- 审核结果表格 -->
-      <ParseEntryTable :entries="visibleEntries" :error-entries="errorEntries"
-        :validation-warnings="validationWarnings" :disabled="reviewExpired" :show-source-file="true"
-        :empty-description="emptyDescription" :mode="reviewMode"
-        :on-reparse="handleTableReparse" :on-persist-edit="persistEntryEdit" :on-patch-tags="handleTablePatchTags"
-        :on-remove-entry="removeEntryFromReview" />
+      <!-- 审核结果：按来源账单分组 -->
+      <el-empty v-if="entryGroups.length === 0" :description="emptyDescription" />
+      <div v-else class="entry-groups">
+        <section v-for="group in entryGroups" :key="group.key" class="entry-group">
+          <header class="entry-group-header">
+            <el-tag v-if="group.source === 'copilot'" type="info" size="small">Copilot 记账</el-tag>
+            <span v-else class="entry-group-title">{{ group.file_name }}</span>
+            <span class="entry-group-count">{{ group.entries.length }} 条</span>
+          </header>
+          <ParseEntryTable :entries="group.entries" :error-entries="errorEntries"
+            :validation-warnings="validationWarnings" :disabled="reviewExpired" :mode="reviewMode"
+            :on-reparse="handleTableReparse" :on-persist-edit="persistEntryEdit"
+            :on-patch-tags="handleTablePatchTags" :on-remove-entry="removeEntryFromReview" />
+        </section>
+      </div>
     </div>
 
     <!-- 底部操作栏 -->
@@ -172,6 +181,11 @@ interface ReviewSource {
   file_name: string
 }
 
+/** 来源分组：来源元信息 + 当前可见条目 */
+interface ReviewEntryGroup extends ReviewSource {
+  entries: FormattedEntry[]
+}
+
 /** 来源键：虚拟来源（Copilot / 循环待办）共用一个来源，其余按 file_id 区分 */
 const sourceKey = (entry: FormattedEntry): string =>
   entry.source && entry.source !== 'file' ? entry.source : String(entry.file_id)
@@ -182,29 +196,34 @@ const VIRTUAL_SOURCE_LABELS: Record<'copilot' | 'recurring', string> = {
   recurring: '循环待办',
 }
 
+/** 解析条目对应的来源元信息 */
+const resolveSourceMeta = (entry: FormattedEntry): ReviewSource => {
+  const key = sourceKey(entry)
+  const source = entry.source ?? 'file'
+  if (source === 'copilot' || source === 'recurring') {
+    return {
+      key,
+      source,
+      file_id: null,
+      file_name: entry.file_name || VIRTUAL_SOURCE_LABELS[source]
+    }
+  }
+  return {
+    key,
+    source: 'file',
+    file_id: entry.file_id ?? null,
+    file_name:
+      entry.file_name ||
+      (entry.file_id != null ? `文件 #${entry.file_id}` : '未知来源')
+  }
+}
+
 const sourceFiles = computed<ReviewSource[]>(() => {
   const seen = new Map<string, ReviewSource>()
   for (const entry of formattedEntries.value) {
-    const key = sourceKey(entry)
-    if (seen.has(key)) continue
-    const source = entry.source ?? 'file'
-    if (source === 'copilot' || source === 'recurring') {
-      seen.set(key, {
-        key,
-        source,
-        file_id: null,
-        file_name: entry.file_name || VIRTUAL_SOURCE_LABELS[source]
-      })
-      continue
-    }
-    seen.set(key, {
-      key,
-      source: 'file',
-      file_id: entry.file_id ?? null,
-      file_name:
-        entry.file_name ||
-        (entry.file_id != null ? `文件 #${entry.file_id}` : '未知来源')
-    })
+    const meta = resolveSourceMeta(entry)
+    if (seen.has(meta.key)) continue
+    seen.set(meta.key, meta)
   }
   return [...seen.values()]
 })
@@ -223,15 +242,27 @@ const copilotEntryCount = computed(
   () => formattedEntries.value.filter((entry) => entry.source === 'copilot').length
 )
 
-/** 当前展示范围下的条目：全部模式下需关注条目排在前面 */
+/** 当前展示范围下的条目 */
 const visibleEntries = computed(() => {
-  const attention = formattedEntries.value.filter((entry) => entry.needs_review !== false)
   if (reviewScope.value === 'attention') {
-    return attention
+    return formattedEntries.value.filter((entry) => entry.needs_review !== false)
   }
-  return attention.concat(
-    formattedEntries.value.filter((entry) => entry.needs_review === false)
-  )
+  return formattedEntries.value
+})
+
+/** 当前可见条目按来源分组，组顺序按首次出现，组内保持原顺序 */
+const entryGroups = computed<ReviewEntryGroup[]>(() => {
+  const groups = new Map<string, ReviewEntryGroup>()
+  for (const entry of visibleEntries.value) {
+    const meta = resolveSourceMeta(entry)
+    const group = groups.get(meta.key)
+    if (group) {
+      group.entries.push(entry)
+      continue
+    }
+    groups.set(meta.key, { ...meta, entries: [entry] })
+  }
+  return [...groups.values()]
 })
 
 /** 「仅需关注」且存在自动通过条目时，给出空态说明 */
@@ -868,6 +899,29 @@ onMounted(() => {
     pointer-events: none;
     opacity: 0.75;
   }
+}
+
+.entry-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.entry-group-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.entry-group-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.entry-group-count {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
 }
 
 .expired-banner {
