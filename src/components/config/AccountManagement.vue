@@ -150,19 +150,19 @@
                                 <div class="mapping-stats">
                                     <el-tooltip v-if="selectedAccount.mapping_count.expense > 0"
                                         :content="getExpenseMappingTooltip()" placement="top" effect="dark">
-                                        <el-tag type="warning" style="cursor: help;">
+                                        <el-tag type="warning" style="cursor: default;">
                                             {{ selectedAccount.mapping_count.expense }}支出
                                         </el-tag>
                                     </el-tooltip>
                                     <el-tooltip v-if="selectedAccount.mapping_count.assets > 0"
                                         :content="getAssetsMappingTooltip()" placement="top" effect="dark">
-                                        <el-tag type="success" style="cursor: help;">
+                                        <el-tag type="success" style="cursor: default;">
                                             {{ selectedAccount.mapping_count.assets }}资产
                                         </el-tag>
                                     </el-tooltip>
                                     <el-tooltip v-if="selectedAccount.mapping_count.income > 0"
                                         :content="getIncomeMappingTooltip()" placement="top" effect="dark">
-                                        <el-tag type="primary" style="cursor: help;">
+                                        <el-tag type="primary" style="cursor: default;">
                                             {{ selectedAccount.mapping_count.income }}收入
                                         </el-tag>
                                     </el-tooltip>

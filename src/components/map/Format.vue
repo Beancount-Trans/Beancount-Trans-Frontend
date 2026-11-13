@@ -678,7 +678,7 @@ const resetToDefault = async () => {
 
 .tip-icon {
     color: var(--el-text-color-secondary, var(--el-text-color-secondary));
-    cursor: help;
+    cursor: default;
 }
 
 .tip-icon--static {
