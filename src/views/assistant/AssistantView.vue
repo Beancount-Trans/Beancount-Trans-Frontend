@@ -182,7 +182,7 @@
       <div v-if="!shareSelectMode" class="input-area">
         <div class="composer">
           <el-input ref="composerInputRef" v-model="inputText" type="textarea" :autosize="{ minRows: 1, maxRows: 8 }"
-            placeholder="给 Beancount-Trans Copilot 发送消息" :disabled="!canChat || loading" resize="none"
+            placeholder="给财见 Copilot 发送消息" :disabled="!canChat || loading" resize="none"
             @keydown.enter.exact.prevent="handleSend" />
           <div class="composer-footer">
             <span class="composer-meta">{{ modelLabel }}</span>

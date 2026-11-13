@@ -82,7 +82,7 @@ const driverObj = driver({
     // 步骤 1：欢迎
     {
       popover: {
-        title: '🎉 欢迎使用 Beancount-Trans',
+        title: '🎉 欢迎使用财见',
         description: '我们已为您准备了示例账单文件，让我们一起体验如何将账单转换为 Fava 专业报表！',
         side: 'center' as unknown as DriverStepSide,
         align: 'center'

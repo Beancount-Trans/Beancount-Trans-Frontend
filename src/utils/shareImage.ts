@@ -23,7 +23,7 @@ export async function sharePngBlob(blob: Blob, filename: string): Promise<void> 
   const file = new File([blob], filename, { type: 'image/png' })
   const shareData = {
     files: [file],
-    title: 'Beancount-Trans',
+    title: '财见',
   }
 
   if (navigator.canShare?.(shareData)) {
