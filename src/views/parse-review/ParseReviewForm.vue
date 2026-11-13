@@ -5,8 +5,9 @@
       <div class="header-left">
         <h2>条目审核</h2>
         <el-text type="info" size="small" style="display: block; margin-top: 4px;">
-          需关注 {{ attentionEntryCount }} 条 · 已自动通过 {{ autoPassedEntryCount }} 条 · {{ fileSourceCount }} 个账单<template v-if="copilotEntryCount > 0"> · Copilot 记账 {{
-            copilotEntryCount }} 条</template>
+          需关注 {{ attentionEntryCount }} 条 · 已自动通过 {{ autoPassedEntryCount }} 条 · {{ fileSourceCount }} 个账单<template
+            v-if="copilotEntryCount > 0"> · Copilot 记账 {{
+              copilotEntryCount }} 条</template>
         </el-text>
         <!-- <el-text v-if="remainingTime" type="info" size="small" style="display: block; margin-top: 4px;">
           剩余时间：{{ remainingTime }}
@@ -14,7 +15,7 @@
       </div>
       <div class="header-right">
         <el-radio-group v-model="reviewScope" size="small" @change="loadResults">
-          <el-radio-button label="attention">仅需关注 {{ attentionEntryCount }}</el-radio-button>
+          <el-radio-button label="attention">需关注 {{ attentionEntryCount }}</el-radio-button>
           <el-radio-button label="all">全部 {{ entryCount }}</el-radio-button>
         </el-radio-group>
         <ReviewModeSwitch />
@@ -53,8 +54,8 @@
           </header>
           <ParseEntryTable :entries="group.entries" :error-entries="errorEntries"
             :validation-warnings="validationWarnings" :disabled="reviewExpired" :mode="reviewMode"
-            :on-reparse="handleTableReparse" :on-persist-edit="persistEntryEdit"
-            :on-patch-tags="handleTablePatchTags" :on-remove-entry="removeEntryFromReview" />
+            :on-reparse="handleTableReparse" :on-persist-edit="persistEntryEdit" :on-patch-tags="handleTablePatchTags"
+            :on-remove-entry="removeEntryFromReview" />
         </section>
       </div>
     </div>
