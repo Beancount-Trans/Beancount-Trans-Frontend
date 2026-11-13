@@ -18,13 +18,6 @@
       <div class="form-content">
         <!-- 基本信息区 -->
         <el-form :model="formData" label-width="100px" class="desktop-form">
-          <el-form-item label="币种">
-            <el-select v-model="formData.currency" @change="onCurrencyChange" style="width: 100%">
-              <el-option v-for="balance in availableCurrencies" :key="balance.currency"
-                :label="`${balance.currency} (余额: ${balance.expected_balance.toFixed(2)})`" :value="balance.currency" />
-            </el-select>
-          </el-form-item>
-
           <el-form-item label="对账时间点">
             <div class="timing-selector">
               <el-radio-group v-model="formData.reconciliationTiming">
@@ -55,13 +48,24 @@
             <div class="balance-comparison">
               <div class="balance-item">
                 <div class="balance-label">预期余额</div>
-                <div class="balance-value">{{ formData.expectedBalance.toFixed(2) }}</div>
+                <div class="balance-value">
+                  <span class="balance-number">{{ formData.expectedBalance.toFixed(2) }}</span>
+                  <el-select v-if="availableCurrencies.length > 1" v-model="formData.currency" size="small"
+                    class="balance-unit-select" title="切换对账币种" @change="onCurrencyChange">
+                    <el-option v-for="balance in availableCurrencies" :key="balance.currency" :label="balance.currency"
+                      :value="balance.currency" />
+                  </el-select>
+                  <span v-else class="balance-unit">{{ formData.currency }}</span>
+                </div>
               </div>
               <div class="balance-separator">→</div>
               <div class="balance-item">
                 <div class="balance-label">实际余额</div>
-                <el-input-number v-model="formData.actualBalance" :controls="false" :precision="2" placeholder="输入实际余额"
-                  style="width: 100%" />
+                <div class="actual-input-row">
+                  <el-input-number v-model="formData.actualBalance" :controls="false" :precision="2"
+                    placeholder="输入实际余额" style="width: 100%" />
+                  <span class="balance-unit">{{ formData.currency }}</span>
+                </div>
               </div>
               <div v-if="formData.actualBalance !== undefined && formData.actualBalance !== null && hasBaseDifference"
                 class="difference-badge"
@@ -103,9 +107,9 @@
                     @change="(account) => handleAccountChange(row, account)" />
                 </template>
               </el-table-column>
-              <el-table-column label="金额" min-width="200">
+              <el-table-column label="金额" width="155">
                 <template #default="{ row }">
-                  <el-input-number v-model="row.amount" :controls="false" :precision="2" placeholder="留空自动分配剩余金额"
+                  <el-input-number v-model="row.amount" :controls="false" :precision="2" placeholder="留空自动分配"
                     style="width: 100%" />
                 </template>
               </el-table-column>
@@ -820,7 +824,7 @@ function handleBack() {
 
   :deep(.el-card) {
     width: 100%;
-    max-width: 1200px;
+    max-width: 700px;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   }
 
@@ -907,10 +911,73 @@ function handleBack() {
       }
 
       .balance-value {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding-left: 43px;
         font-size: 24px;
         color: var(--el-color-primary);
         font-weight: 600;
         line-height: 1.4;
+      }
+
+      .balance-unit {
+        font-size: 13px;
+        font-weight: 500;
+        line-height: 1;
+        color: var(--el-text-color-secondary);
+        white-space: nowrap;
+      }
+
+      .actual-input-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+
+        :deep(.el-input-number) {
+          flex: 1 1 auto;
+          min-width: 0;
+        }
+      }
+
+      // 币种作为预期余额的单位小字：默认无边框，悬停/聚焦时才显现为可切换控件
+      .balance-unit-select {
+        width: 78px;
+        flex-shrink: 0;
+
+        :deep(.el-select__wrapper),
+        :deep(.el-select .el-input__wrapper) {
+          min-height: 24px;
+          height: 24px;
+          padding: 0 4px;
+          background: transparent;
+          box-shadow: none;
+          border-radius: 4px;
+          transition: background-color 0.2s;
+
+          &:hover {
+            background: var(--el-fill-color);
+          }
+
+          &.is-focus {
+            background: var(--el-bg-color);
+            box-shadow: 0 0 0 1px var(--el-color-primary) inset;
+          }
+        }
+
+        :deep(.el-select__selected-item),
+        :deep(.el-select .el-input__inner) {
+          font-size: 13px;
+          font-weight: 500;
+          color: var(--el-text-color-secondary);
+        }
+
+        :deep(.el-select__caret),
+        :deep(.el-select .el-input__suffix) {
+          color: var(--el-text-color-placeholder);
+        }
       }
     }
 
