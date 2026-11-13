@@ -1,11 +1,20 @@
 <template>
-  <el-table v-if="entries.length > 0" :data="entries" row-key="uuid" style="width: 100%" border highlight-current-row>
+  <el-table v-if="entries.length > 0" :data="entries" row-key="uuid" style="width: 100%" border
+    highlight-current-row :row-class-name="rowClassName">
     <el-table-column v-if="props.showSourceFile" label="来源账单" width="180" show-overflow-tooltip>
       <template #default="scope">
         <el-tag v-if="scope.row.source === 'copilot'" type="info" size="small">Copilot 记账</el-tag>
         <template v-else>
           {{ scope.row.file_name || (scope.row.file_id != null ? `文件 #${scope.row.file_id}` : '-') }}
         </template>
+      </template>
+    </el-table-column>
+    <el-table-column v-if="props.showReviewStatus" label="审核状态" width="110">
+      <template #default="scope">
+        <el-tooltip v-if="scope.row.needs_review" placement="top" :content="reviewReasonLabel(scope.row)">
+          <el-tag type="warning" size="small">需关注</el-tag>
+        </el-tooltip>
+        <el-tag v-else type="success" effect="plain" size="small">自动通过</el-tag>
       </template>
     </el-table-column>
     <el-table-column v-if="mode === 'advanced'" label="Beancount 条目预览" min-width="400">
@@ -162,7 +171,7 @@
   </el-table>
 
   <!-- 空状态 -->
-  <el-empty v-else description="暂无解析结果" />
+  <el-empty v-else :description="props.emptyDescription || '暂无解析结果'" />
 
   <!-- 内联映射对话框（新增 / 编辑） -->
   <el-dialog v-model="mappingDialog.visible" :title="mappingDialogTitle" width="600px">
@@ -311,6 +320,10 @@ const props = withDefaults(defineProps<{
   requireAuth?: () => boolean
   /** 是否展示「来源账单」列（统一条目审核场景） */
   showSourceFile?: boolean
+  /** 是否展示「审核状态」列（审核页「全部」视图） */
+  showReviewStatus?: boolean
+  /** 空状态文案 */
+  emptyDescription?: string
 }>(), {
   mode: 'advanced'
 })
@@ -318,6 +331,25 @@ const props = withDefaults(defineProps<{
 const entries = toRef(props, 'entries')
 const disabled = computed(() => props.disabled === true)
 const mode = computed(() => props.mode)
+
+const REVIEW_REASON_LABELS: Record<string, string> = {
+  asset_fallback: '付款账户未识别（Assets:Other）',
+  category_fallback: '分类未识别（Other 兜底账户）',
+  balance_fallback: '平衡账户兜底，请核对付款方式',
+  unparsable: '条目结构特殊，建议直接核对原文'
+}
+
+/** 需关注条目的悬停说明 */
+const reviewReasonLabel = (entry: FormattedEntry) => {
+  const base = entry.review_reason
+    ? REVIEW_REASON_LABELS[entry.review_reason] || '需要人工确认'
+    : '需要人工确认'
+  return entry.review_account ? `${base}：${entry.review_account}` : base
+}
+
+/** 自动通过条目使用淡色样式，不影响行内编辑与排除 */
+const rowClassName = ({ row }: { row: FormattedEntry }) =>
+  row.needs_review === false ? 'auto-passed-row' : ''
 
 const {
   isEntryTextEditMode,
@@ -506,6 +538,10 @@ const handleSimpleSave = async (text: string) => {
 </script>
 
 <style scoped lang="scss">
+:deep(.auto-passed-row) {
+  opacity: 0.72;
+}
+
 .entry-preview-wrapper {
   position: relative;
   flex-shrink: 0;

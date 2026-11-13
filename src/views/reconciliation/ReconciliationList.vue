@@ -153,7 +153,7 @@
                 条目审核
               </div>
               <div class="entry-count">
-                共 {{ task.entry_count ?? 0 }} 条待审核条目
+                需确认 {{ task.attention_entry_count ?? task.entry_count ?? 0 }} 条 · 共 {{ task.entry_count ?? 0 }} 条
               </div>
               <div class="parse-review-footer">
                 <div class="remaining-time">

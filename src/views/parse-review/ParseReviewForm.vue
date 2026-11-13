@@ -5,7 +5,7 @@
       <div class="header-left">
         <h2>条目审核</h2>
         <el-text type="info" size="small" style="display: block; margin-top: 4px;">
-          共 {{ entryCount }} 条 · {{ fileSourceCount }} 个账单<template v-if="copilotEntryCount > 0"> · Copilot 记账 {{
+          需关注 {{ attentionEntryCount }} 条 · 已自动通过 {{ autoPassedEntryCount }} 条 · {{ fileSourceCount }} 个账单<template v-if="copilotEntryCount > 0"> · Copilot 记账 {{
             copilotEntryCount }} 条</template>
         </el-text>
         <!-- <el-text v-if="remainingTime" type="info" size="small" style="display: block; margin-top: 4px;">
@@ -13,6 +13,10 @@
         </el-text> -->
       </div>
       <div class="header-right">
+        <el-radio-group v-model="reviewScope" size="small" @change="loadResults">
+          <el-radio-button label="attention">仅需关注 {{ attentionEntryCount }}</el-radio-button>
+          <el-radio-button label="all">全部 {{ entryCount }}</el-radio-button>
+        </el-radio-group>
         <ReviewModeSwitch />
         <el-dropdown v-if="reparseSourceFiles.length > 0" :disabled="reviewExpired" @command="handleReparseAll">
           <el-button :loading="loading.reparseAll" :disabled="reviewExpired">
@@ -39,14 +43,18 @@
     <!-- 加载状态 -->
     <div v-loading="loading.results" class="content-container" :class="{ 'is-review-expired': reviewExpired }">
       <!-- 审核结果表格 -->
-      <ParseEntryTable :entries="formattedEntries" :error-entries="errorEntries"
-        :validation-warnings="validationWarnings" :disabled="reviewExpired" :show-source-file="true" :mode="reviewMode"
+      <ParseEntryTable :entries="visibleEntries" :error-entries="errorEntries"
+        :validation-warnings="validationWarnings" :disabled="reviewExpired" :show-source-file="true"
+        :show-review-status="reviewScope === 'all'" :empty-description="emptyDescription" :mode="reviewMode"
         :on-reparse="handleTableReparse" :on-persist-edit="persistEntryEdit" :on-patch-tags="handleTablePatchTags"
         :on-remove-entry="removeEntryFromReview" />
     </div>
 
     <!-- 底部操作栏 -->
     <div class="action-bar">
+      <el-text v-if="autoPassedEntryCount > 0" type="info" size="small" class="auto-passed-hint">
+        确认写入会一并写入 {{ autoPassedEntryCount }} 条已自动通过条目。
+      </el-text>
       <el-button v-if="reviewMode === 'advanced'" @click="handlePreview"
         :disabled="formattedEntries.length === 0 || reviewExpired">
         预览
@@ -121,6 +129,10 @@ const router = useRouter()
 const { mode: reviewMode } = useReviewMode()
 
 const entryCount = ref(0)
+const attentionEntryCount = ref(0)
+const autoPassedEntryCount = ref(0)
+/** 页面级展示范围：仅需关注（默认）/ 全部 */
+const reviewScope = ref<'attention' | 'all'>('attention')
 const formattedEntries = ref<FormattedEntry[]>([])
 const reviewExpiresAt = ref<number | null>(null)
 const loading = ref({
@@ -210,6 +222,25 @@ const fileSourceCount = computed(() => reparseSourceFiles.value.length)
 const copilotEntryCount = computed(
   () => formattedEntries.value.filter((entry) => entry.source === 'copilot').length
 )
+
+/** 当前展示范围下的条目：全部模式下需关注条目排在前面 */
+const visibleEntries = computed(() => {
+  const attention = formattedEntries.value.filter((entry) => entry.needs_review !== false)
+  if (reviewScope.value === 'attention') {
+    return attention
+  }
+  return attention.concat(
+    formattedEntries.value.filter((entry) => entry.needs_review === false)
+  )
+})
+
+/** 「仅需关注」且存在自动通过条目时，给出空态说明 */
+const emptyDescription = computed(() => {
+  if (reviewScope.value === 'attention' && autoPassedEntryCount.value > 0) {
+    return `没有需要人工确认的条目，${autoPassedEntryCount.value} 条已按分类自动通过；点击「确认写入」即入账。`
+  }
+  return '暂无解析结果'
+})
 
 const findSourceByKey = (key: string): ReviewSource | undefined =>
   sourceFiles.value.find((item) => item.key === key)
@@ -344,6 +375,8 @@ const loadResults = async () => {
     const result = response.data
 
     entryCount.value = result.entry_count
+    attentionEntryCount.value = result.attention_entry_count
+    autoPassedEntryCount.value = result.auto_passed_entry_count
     reviewExpiresAt.value = result.review_expires_at
 
     // 确保每条记录都有 edited_formatted，并去除末尾的换行符；保留来源账单信息
@@ -822,6 +855,7 @@ onMounted(() => {
 
   .header-right {
     display: flex;
+    align-items: center;
     gap: 12px;
   }
 }
@@ -846,6 +880,11 @@ onMounted(() => {
   gap: 12px;
   padding-top: 16px;
   border-top: 1px solid var(--el-border-color);
+}
+
+.auto-passed-hint {
+  margin-right: auto;
+  align-self: center;
 }
 
 .preview-textarea {

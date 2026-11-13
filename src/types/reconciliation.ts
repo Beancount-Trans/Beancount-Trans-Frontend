@@ -39,6 +39,7 @@ export interface ScheduledTask {
   account_type: string | null
   review_expires_at?: number | null  // 条目审核待办的用户审核截止时间（Unix 时间戳，秒）
   entry_count?: number | null  // 条目审核待办的待审核条目数
+  attention_entry_count?: number | null  // 条目审核待办中需要人工审核的条目数
   recurring_label?: string | null  // 循环待办展示标签（取定义内容派生）
   next_run_date?: string | null  // 循环待办：本次待办完成后的下一次待办生成日期
   created: string

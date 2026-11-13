@@ -45,6 +45,15 @@ export interface EntrySourceLocator {
 }
 
 /**
+ * 条目审核关注度原因：仅兜底账户与结构异常需要人工审核
+ */
+export type EntryReviewReason =
+  | 'asset_fallback'
+  | 'category_fallback'
+  | 'balance_fallback'
+  | 'unparsable'
+
+/**
  * 格式化条目
  */
 export interface FormattedEntry {
@@ -67,6 +76,12 @@ export interface FormattedEntry {
   file_id?: number | null
   /** 来源账单文件名（统一条目审核接口返回）；Copilot 为 'Copilot 记账'，循环待办为定义标题 */
   file_name?: string
+  /** 是否需要人工审核；false 表示已自动通过，仅在「全部」视图展示 */
+  needs_review?: boolean
+  /** 需要人工审核的原因 */
+  review_reason?: EntryReviewReason | null
+  /** 命中兜底规则的账户 */
+  review_account?: string | null
 }
 
 /**
@@ -75,6 +90,10 @@ export interface FormattedEntry {
 export interface EntryReviewResults {
   entries: FormattedEntry[]
   entry_count: number
+  /** 需要人工审核的条目数 */
+  attention_entry_count: number
+  /** 已自动通过的条目数 */
+  auto_passed_entry_count: number
   /** 整体审核截止时间（Unix 时间戳，秒），无有效条目时为 null */
   review_expires_at: number | null
 }
