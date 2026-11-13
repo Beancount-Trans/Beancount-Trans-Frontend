@@ -9,14 +9,6 @@
         </template>
       </template>
     </el-table-column>
-    <el-table-column v-if="props.showReviewStatus" label="审核状态" width="110">
-      <template #default="scope">
-        <el-tooltip v-if="scope.row.needs_review" placement="top" :content="reviewReasonLabel(scope.row)">
-          <el-tag type="warning" size="small">需关注</el-tag>
-        </el-tooltip>
-        <el-tag v-else type="success" effect="plain" size="small">自动通过</el-tag>
-      </template>
-    </el-table-column>
     <el-table-column v-if="mode === 'advanced'" label="Beancount 条目预览" min-width="400">
       <template #default="scope">
         <div :class="getEntryClasses(scope.row.uuid, scope.row.edited_formatted)">
@@ -320,8 +312,6 @@ const props = withDefaults(defineProps<{
   requireAuth?: () => boolean
   /** 是否展示「来源账单」列（统一条目审核场景） */
   showSourceFile?: boolean
-  /** 是否展示「审核状态」列（审核页「全部」视图） */
-  showReviewStatus?: boolean
   /** 空状态文案 */
   emptyDescription?: string
 }>(), {
@@ -331,21 +321,6 @@ const props = withDefaults(defineProps<{
 const entries = toRef(props, 'entries')
 const disabled = computed(() => props.disabled === true)
 const mode = computed(() => props.mode)
-
-const REVIEW_REASON_LABELS: Record<string, string> = {
-  asset_fallback: '付款账户未识别（Assets:Other）',
-  category_fallback: '分类未识别（Other 兜底账户）',
-  balance_fallback: '平衡账户兜底，请核对付款方式',
-  unparsable: '条目结构特殊，建议直接核对原文'
-}
-
-/** 需关注条目的悬停说明 */
-const reviewReasonLabel = (entry: FormattedEntry) => {
-  const base = entry.review_reason
-    ? REVIEW_REASON_LABELS[entry.review_reason] || '需要人工确认'
-    : '需要人工确认'
-  return entry.review_account ? `${base}：${entry.review_account}` : base
-}
 
 /** 自动通过条目使用淡色样式，不影响行内编辑与排除 */
 const rowClassName = ({ row }: { row: FormattedEntry }) =>

@@ -27,10 +27,8 @@
         </div>
       </div>
 
-      <div v-if="otherSide" class="other-account-tip">
-        {{ otherSide === 'asset'
-          ? '付款账户未识别，已暂记为 Assets:Other'
-          : '未匹配分类，已记为 Other 兜底账户；加一条映射后下次自动归类' }}
+      <div v-if="otherSide === 'asset'" class="other-account-tip">
+        付款账户未识别，已暂记为 Assets:Other
       </div>
 
       <div class="simple-entry-meta">

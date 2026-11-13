@@ -45,7 +45,7 @@
       <!-- 审核结果表格 -->
       <ParseEntryTable :entries="visibleEntries" :error-entries="errorEntries"
         :validation-warnings="validationWarnings" :disabled="reviewExpired" :show-source-file="true"
-        :show-review-status="reviewScope === 'all'" :empty-description="emptyDescription" :mode="reviewMode"
+        :empty-description="emptyDescription" :mode="reviewMode"
         :on-reparse="handleTableReparse" :on-persist-edit="persistEntryEdit" :on-patch-tags="handleTablePatchTags"
         :on-remove-entry="removeEntryFromReview" />
     </div>
