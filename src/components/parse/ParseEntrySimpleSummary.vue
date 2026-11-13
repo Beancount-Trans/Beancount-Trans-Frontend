@@ -64,10 +64,6 @@
         </div>
       </div>
 
-      <div v-if="otherSide === 'asset'" class="other-account-tip">
-        付款账户未识别，已暂记为 Assets:Other
-      </div>
-
       <div class="simple-entry-meta">
         <span class="simple-entry-meta-text" :title="metaText">{{ metaText }}</span>
         <el-button v-if="!disabled" size="small" text class="simple-entry-more" @click="emit('edit')">
@@ -93,7 +89,6 @@
 import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { EditPen } from '@element-plus/icons-vue'
-import { otherAccountSide } from '../../composables/useParseEntryPreview'
 import { parseBeancountEntry } from '../../utils/beancount-entry'
 import type { FormattedEntry } from '../../types/parse-review'
 
@@ -112,7 +107,6 @@ const props = defineProps<{
 const emit = defineEmits<{ edit: [] }>()
 
 const parsed = computed(() => parseBeancountEntry(props.entry.edited_formatted))
-const otherSide = computed(() => otherAccountSide(props.entry.edited_formatted))
 
 const rootOf = (account: string) => account.split(':')[0] || ''
 
@@ -394,12 +388,6 @@ button.simple-entry-account-name:focus-visible .simple-entry-account-edit {
   height: auto;
   padding: 0 2px;
   font-size: 12px;
-}
-
-.other-account-tip {
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--el-color-warning);
 }
 
 .simple-entry-tags-trigger {
