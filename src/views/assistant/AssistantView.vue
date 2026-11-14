@@ -230,6 +230,7 @@ import AssistantThinkingBlock from '../../components/assistant/AssistantThinking
 import MarkdownContent from '../../components/assistant/MarkdownContent.vue'
 import { useAssistantChat } from '../../composables/useAssistantChat'
 import { useAssistantSessions } from '../../composables/useAssistantSessions'
+import { takePendingFirstReport } from '../../composables/useFirstReport'
 import { ensureFavaThenOpen } from '../../composables/useFavaDeepLink'
 import { listSharedLedgers } from '../../api/assistant'
 import { copyText } from '../../utils/clipboard'
@@ -713,6 +714,29 @@ watch(deepThinkSupported, (supported) => {
     deepThink.value = false
   }
 })
+
+/**
+ * 首期月报：解析页写入成功后带入的提问，在欢迎区自动发送。
+ * 仅消费一次；Copilot 暂不可用时把提问留在输入框，不丢上下文。
+ */
+const pendingReportHandled = ref(false)
+watch(
+  () => [statusLoading.value, status.value] as const,
+  () => {
+    if (pendingReportHandled.value) return
+    if (statusLoading.value || !status.value) return
+    const pending = takePendingFirstReport()
+    if (!pending) return
+    pendingReportHandled.value = true
+
+    if (!canChat.value || activeSessionId.value || messages.value.length > 0) {
+      inputText.value = pending.prompt
+      return
+    }
+    void send(pending.prompt)
+  },
+  { immediate: true },
+)
 
 onMounted(() => {
   fetchStatus()

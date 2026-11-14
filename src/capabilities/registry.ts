@@ -49,7 +49,7 @@ export const CAPABILITY_REASON: Partial<Record<Capability, CapabilityReason>> = 
   },
   'file.read': {
     title: '文件管理需要登录',
-    description: '登录后可上传、管理并写入自己的账本。',
+    description: '登录后可上传、管理账单文件。',
     actionText: '登录 / 注册',
   },
   'config.read': {

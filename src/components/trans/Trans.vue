@@ -101,14 +101,15 @@
     <el-button v-if="reviewMode === 'advanced'" @click="handlePreview">
       预览
     </el-button>
-    <el-button type="primary" :icon="DocumentChecked" @click="handleWriteCollect" :loading="writing">
+    <el-button v-if="isAuthenticated" type="primary" :icon="DocumentChecked" @click="handleWriteCollect"
+      :loading="writing">
       写入账本
     </el-button>
     <ReviewModeSwitch class="toolbar-mode-switch" />
   </div>
 
   <CapabilityNotice v-if="hasEntries && !isAuthenticated" class="anonymous-result-guide" capability="ledger.write"
-    description="登录后自动匹配并补齐你的银行卡、信用卡等账户，减少记到「Other 兜底账户」。" :before-action="preserveGuestParse" />
+    description="登录后自动补齐银行卡、信用卡等账户，减少记到「Other 账户」，同时写入你的自有账本并生成本期消费月报。" :before-action="preserveGuestParse" />
 
   <el-input v-if="!hasEntries && !uploading && !parseFailure" class="result-textarea" type="textarea" :rows="30"
     readonly :value="''" :placeholder="emptyResultPlaceholder" />
@@ -116,8 +117,7 @@
   <div v-else class="table-container">
     <ParseEntryTable :entries="formattedEntries" :error-entries="errorEntries" :validation-warnings="validationWarnings"
       :mode="reviewMode" :on-reparse="handleTableReparse" :on-persist-edit="handlePersistEdit"
-      :on-patch-tags="handlePatchTags" :on-remove-entry="handleRemoveEntry"
-      :require-auth="() => can('ledger.write')" />
+      :on-patch-tags="handlePatchTags" :on-remove-entry="handleRemoveEntry" :require-auth="() => can('ledger.write')" />
   </div>
 
   <el-dialog v-model="showPreviewDialog" title="预览所有条目" width="80%">
@@ -144,7 +144,7 @@ import { UploadFilled, DocumentCopy, DocumentChecked, Lock, Loading, WarningFill
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from '../../utils/request'
-import { getAccessToken, setLoginRedirect } from '../../utils/auth'
+import { getAccessToken } from '../../utils/auth'
 import ParseEntryTable from '../parse/ParseEntryTable.vue'
 import ReviewModeSwitch from '../parse/ReviewModeSwitch.vue'
 import CapabilityNotice from '../common/CapabilityNotice.vue'
@@ -157,6 +157,15 @@ import {
 } from '../../utils/parse-review-preview'
 import { applyTagOverridesToHeader } from '../../utils/beancount-header-tags'
 import { writeCollectEntries, getBillSupportStatus } from '../../api/translate'
+import { getAssistantStatus } from '../../api/assistant'
+import {
+  buildFirstReportPrompt,
+  clearGuestWriteIntent,
+  deriveEntriesPeriod,
+  hasGuestWriteIntent,
+  markGuestWriteIntent,
+  setPendingFirstReport
+} from '../../composables/useFirstReport'
 import {
   clearParseDraft,
   loadParseDraft,
@@ -305,7 +314,7 @@ const uploadRef = ref<any>()
 const passwordInputRef = ref<InputInstance>()
 /** 当前选中的账单文件，未登录时登录成功后会用它自动重新解析 */
 const pendingFile = ref<File | null>(null)
-const { can } = useCapabilities()
+const { can, hasGit, refresh } = useCapabilities()
 const isAuthenticated = computed(() => can('ledger.write'))
 const uploading = ref(false)
 const uploadPercent = ref(0)
@@ -620,7 +629,7 @@ const handleUploadProgress = (evt: { percent?: number }) => {
   uploadPercent.value = Math.round(evt?.percent || 0)
 }
 
-const handleUploadSuccess = (response: any, file: any) => {
+const handleUploadSuccess = async (response: any, file: any) => {
   uploading.value = false
   uploadPercent.value = 100
   if (file.status === 'error') return
@@ -651,6 +660,16 @@ const handleUploadSuccess = (response: any, file: any) => {
   parseFailure.value = null
   // 新解析结果取代旧结果，清掉可能存在的登录前草稿
   clearParseDraft()
+
+  // 游客登录回跳后的重解析：提示本次结果已按本人账户配置生成
+  if (isAuthenticated.value && hasGuestWriteIntent()) {
+    const track = await resolvePostLoginTrack()
+    ElMessage.info(
+      track === 'ledger'
+        ? '已按你的账本配置重新解析，缺失账户已自动补齐；确认后可写入。'
+        : '已用你的账户重新解析；确认写入后即可生成本期月报。'
+    )
+  }
 }
 
 const handleUploadError = (err: any, _file: any) => {
@@ -726,36 +745,59 @@ onMounted(async () => {
   )
 })
 
-/** 登录前暂存当前文件与结果，登录成功后回跳 /trans 自动重新解析 */
+/** 登录后按账本形态分流：已绑定 Git 账本的存量用户走账户补齐，其余走首期月报 */
+async function resolvePostLoginTrack(): Promise<'report' | 'ledger'> {
+  await refresh()
+  return hasGit.value ? 'ledger' : 'report'
+}
+
+/** 登录前暂存当前文件、结果与写入意图，登录成功后回跳 /trans 自动重新解析 */
 const preserveGuestParse = async () => {
   if (pendingFile.value) {
     await savePendingParseFile(pendingFile.value)
   }
   saveParseDraft(formattedEntries.value)
+  markGuestWriteIntent()
+}
+
+/** Copilot 不可用时给出配置指引，不影响已完成的写入 */
+async function promptToConfigureCopilot(entryCount: number): Promise<void> {
+  try {
+    await ElMessageBox.confirm(
+      `账单已写入账本（${entryCount} 条）。配置接口地址、模型与密钥后，可基于账本生成月报。`,
+      '生成月报需要先配置 Copilot',
+      { confirmButtonText: '去配置', cancelButtonText: '稍后', type: 'info' }
+    )
+    router.push('/format')
+  } catch {
+    // 用户选择稍后
+  }
+}
+
+/** 写入成功后进入 Copilot，由助手页自动发送首期提问 */
+async function openFirstReport(prompt: string, entryCount: number): Promise<void> {
+  try {
+    const { data } = await getAssistantStatus()
+    const canUseAssistant =
+      data.api_key_configured && (data.ledger_exists || Boolean(data.has_usable_shared_ledger))
+    if (!canUseAssistant) {
+      await promptToConfigureCopilot(entryCount)
+      return
+    }
+    setPendingFirstReport(prompt)
+    ElMessage.info('正在为你生成本期月报…')
+    router.push('/assistant')
+  } catch {
+    await promptToConfigureCopilot(entryCount)
+  }
 }
 
 /**
  * 写入账本：把当前结果校验后追加写入 trans/collect.bean。
- * 未登录时先引导登录，并把解析结果暂存为草稿，登录后回跳恢复。
+ * 仅登录用户可见；未登录用户走结果页的登录提示条。
  */
 const handleWriteCollect = async () => {
   if (!hasEntries.value || writing.value) return
-
-  if (!can('ledger.write')) {
-    saveParseDraft(formattedEntries.value)
-    try {
-      await ElMessageBox.confirm(
-        '当前解析结果已暂存在本页，登录成功后会自动恢复。',
-        '写入账本需登录',
-        { confirmButtonText: '去登录', cancelButtonText: '取消', type: 'warning' }
-      )
-    } catch {
-      return
-    }
-    setLoginRedirect('/trans')
-    router.push('/login')
-    return
-  }
 
   try {
     await ElMessageBox.confirm(
@@ -769,6 +811,11 @@ const handleWriteCollect = async () => {
 
   writing.value = true
   try {
+    // 仅游客链路需要：写入前先算好账单周期与首期提问
+    const isGuestFirstWrite = hasGuestWriteIntent()
+    const period = isGuestFirstWrite ? deriveEntriesPeriod(formattedEntries.value) : null
+    const prompt = isGuestFirstWrite ? buildFirstReportPrompt(period) : null
+
     const { data } = await writeCollectEntries(
       formattedEntries.value.map((entry) => ({
         uuid: entry.uuid,
@@ -783,6 +830,17 @@ const handleWriteCollect = async () => {
     showPreviewDialog.value = false
     previewContent.value = ''
     clearParseDraft()
+
+    // 已登录用户的日常写入到此结束，不进入月报链路
+    if (!isGuestFirstWrite) return
+    clearGuestWriteIntent()
+
+    const track = await resolvePostLoginTrack()
+    if (track === 'ledger' || !prompt) {
+      ElMessage.info('已按你的账本配置自动补齐缺失账户；可在「设置 → 高级：本地账本」同步到 Git 账本。')
+      return
+    }
+    await openFirstReport(prompt, data.entry_count)
   } catch (error: any) {
     const payload = error?.response?.data
     const failedEntries = Array.isArray(payload?.error_entries) ? payload.error_entries : []
