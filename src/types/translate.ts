@@ -22,6 +22,8 @@ export interface WriteCollectResponse {
   entry_count: number
   /** 写入目标（固定为 trans/collect.bean） */
   bean: string
+  /** 本次是否为该用户账本的首次写入（用于首期月报） */
+  is_first_write?: boolean
 }
 
 /**

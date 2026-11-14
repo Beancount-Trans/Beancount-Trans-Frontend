@@ -345,7 +345,7 @@ const hasEntries = computed(() => formattedEntries.value.length > 0)
 
 const emptyResultPlaceholder = computed(() =>
   reviewMode.value === 'simple'
-    ? '上传支付宝 / 微信 / 银行账单后，这里会显示可核对的收支记录。\n\n直接点选分类、账户和标签即可；日期、商户等参考信息收在「更多信息」里，不需要了解 Beancount。'
+    ? '上传支付宝 / 微信 / 银行账单后，这里会显示可核对的收支记录。\n\n直接点选分类、账户和标签即可；日期、商户等参考信息收在「更多信息」里。'
     : '解析结果如下：\n\n2022-06-19 * "温州市数据管理发展集团有限公司" "HIK-停车缴费-洞头人民路停车场(人民路区域共享)"\n    time: "15:27:44"\n    uuid: "2022061922001474561419808812"\n    status: "ALiPay - 交易成功"\n    Expenses:TransPort:Private:Park +5.00 CNY\n    Liabilities:CreditCard:Bank:CITIC:C6428 -5.00 CNY\n'
 )
 
@@ -811,10 +811,9 @@ const handleWriteCollect = async () => {
 
   writing.value = true
   try {
-    // 仅游客链路需要：写入前先算好账单周期与首期提问
-    const isGuestFirstWrite = hasGuestWriteIntent()
-    const period = isGuestFirstWrite ? deriveEntriesPeriod(formattedEntries.value) : null
-    const prompt = isGuestFirstWrite ? buildFirstReportPrompt(period) : null
+    // 写入前先算好账单周期与首期提问；是否触发由后端返回的首次写入判断决定
+    const period = deriveEntriesPeriod(formattedEntries.value)
+    const prompt = buildFirstReportPrompt(period)
 
     const { data } = await writeCollectEntries(
       formattedEntries.value.map((entry) => ({
@@ -830,13 +829,15 @@ const handleWriteCollect = async () => {
     showPreviewDialog.value = false
     previewContent.value = ''
     clearParseDraft()
-
-    // 已登录用户的日常写入到此结束，不进入月报链路
-    if (!isGuestFirstWrite) return
     clearGuestWriteIntent()
 
+    // 只有该用户账本的首次写入才进入首期月报；老用户与 Git 用户不打扰
+    // 兼容旧后端：字段缺失时回落到游客写入意图
+    const isFirstWrite = data.is_first_write ?? hasGuestWriteIntent()
+    if (!isFirstWrite) return
+
     const track = await resolvePostLoginTrack()
-    if (track === 'ledger' || !prompt) {
+    if (track === 'ledger') {
       ElMessage.info('已按你的账本配置自动补齐缺失账户；可在「设置 → 高级：本地账本」同步到 Git 账本。')
       return
     }

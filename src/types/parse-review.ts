@@ -233,6 +233,8 @@ export interface ConfirmWriteResponse {
     file_id: number
     entry_count: number
   }>
+  /** 本次是否为该用户账本的首次写入（用于首期月报） */
+  is_first_write?: boolean
 }
 
 export interface ReparseAllRequest {

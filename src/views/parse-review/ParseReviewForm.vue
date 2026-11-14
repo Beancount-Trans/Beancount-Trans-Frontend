@@ -134,9 +134,16 @@ import type {
   UpdateTagsRequest
 } from '../../types/parse-review'
 import { emitTaskBannerRefresh } from '../../utils/accountEvents'
+import { useCapabilities } from '../../capabilities'
+import {
+  buildFirstReportPrompt,
+  deriveEntriesPeriod,
+  setPendingFirstReport
+} from '../../composables/useFirstReport'
 
 const router = useRouter()
 const { mode: reviewMode } = useReviewMode()
+const { hasGit, refresh: refreshCapabilities } = useCapabilities()
 
 const entryCount = ref(0)
 const attentionEntryCount = ref(0)
@@ -718,12 +725,27 @@ const handleConfirmWrite = async () => {
     }
 
     const copilotCount = copilotEntryCount.value
-    await confirmWrite()
+    const { data } = await confirmWrite()
     ElMessage.success(
       copilotCount > 0
         ? `确认写入成功，其中 ${copilotCount} 条 Copilot 记账条目已追加写入 collect.bean`
         : '确认写入成功'
     )
+
+    // 首次写入且不是 Git 用户：直接进入 Copilot 生成首期月报
+    if (data.is_first_write) {
+      await refreshCapabilities()
+      if (!hasGit.value) {
+        const period = deriveEntriesPeriod(formattedEntries.value)
+        setPendingFirstReport(buildFirstReportPrompt(period))
+        ElMessage.info('正在为你生成本期月报…')
+        router.push('/assistant')
+        setTimeout(() => {
+          emitTaskBannerRefresh()
+        }, 500)
+        return
+      }
+    }
 
     // 返回待办列表
     router.push('/tasks')
