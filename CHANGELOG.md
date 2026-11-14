@@ -1,3 +1,9 @@
+## [5.24.0](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/compare/5.23.0...5.24.0) (2026-11-14)
+
+### Features
+
+* **assistant:** 首期月报后提供 Fava 编辑器清理入口 ([efb4c03](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/efb4c039ce39a0a6b3098add9075b5fdfbc9bd0b))
+
 ## [5.23.0](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/compare/5.22.0...5.23.0) (2026-11-14)
 
 ### Features
