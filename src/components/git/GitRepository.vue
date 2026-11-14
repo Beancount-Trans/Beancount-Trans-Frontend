@@ -256,9 +256,27 @@ git push origin {{ defaultBranch }}</code></pre>
               <div class="advanced-title">高级设置</div>
             </template>
             <div class="advanced-settings">
+              <!-- 导出账本：Git 用户在此直接下载当前账本副本 -->
+              <div class="setting-item first-item">
+                <div class="setting-info">
+                  <span class="setting-label">导出账本</span>
+                  <span class="setting-desc">打包当前账本为 ZIP，可直接用 Fava 或本地 Beancount 打开</span>
+                </div>
+                <div class="setting-actions">
+                  <el-button type="primary" plain size="small" :loading="exportingLedger" @click="handleLedgerExport">
+                    <el-icon class="el-icon--left">
+                      <Download />
+                    </el-icon>
+                    {{ exportingLedger ? '导出中...' : '导出账本' }}
+                  </el-button>
+                </div>
+              </div>
+
+              <div class="setting-divider"></div>
+
               <!-- Deploy Key 重置（平台托管 / 其他非关联远程场景） -->
               <template v-if="!isLinkedRemote">
-                <div class="setting-item first-item">
+                <div class="setting-item">
                   <div class="setting-info">
                     <span class="setting-label">重置 Deploy Key</span>
                     <span class="setting-desc">旧密钥立即失效，需重新配置 SSH</span>
@@ -281,7 +299,7 @@ git push origin {{ defaultBranch }}</code></pre>
               </template>
 
               <!-- 自动导入账本新增账户 -->
-              <div class="setting-item" :class="{ 'first-item': isLinkedRemote }">
+              <div class="setting-item">
                 <div class="setting-info">
                   <span class="setting-label">自动导入账本新增账户</span>
                   <span class="setting-desc">
@@ -360,6 +378,7 @@ import {
 } from '../../api/git'
 import { emitGitRepositoryChanged } from '../../utils/accountEvents'
 import { useCapabilities } from '../../capabilities'
+import { useLedgerExport } from '../../composables/useLedgerExport'
 import {
   SyncStatusText,
   SyncStatusType,
@@ -384,6 +403,7 @@ const downloadingKey = ref(false)
 const regeneratingKey = ref(false)
 const committingTrans = ref(false)
 const { can, username: capabilityUsername } = useCapabilities()
+const { exporting: exportingLedger, handleExport: handleLedgerExport } = useLedgerExport()
 const deletingRepository = ref(false)
 const cancellingSync = ref(false)
 const savingAutoImportSettings = ref(false)

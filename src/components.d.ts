@@ -75,6 +75,7 @@ declare module '@vue/runtime-core' {
     GitRepository: typeof import('./components/git/GitRepository.vue')['default']
     GitSetup: typeof import('./components/git/GitSetup.vue')['default']
     Income: typeof import('./components/map/Income.vue')['default']
+    LedgerExportCard: typeof import('./components/ledger/LedgerExportCard.vue')['default']
     MappingManagement: typeof import('./components/map/MappingManagement.vue')['default']
     MappingTemplates: typeof import('./components/template/MappingTemplates.vue')['default']
     MarkdownContent: typeof import('./components/assistant/MarkdownContent.vue')['default']

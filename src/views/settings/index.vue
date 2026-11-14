@@ -82,6 +82,7 @@
 
                     <!-- 高级：本地账本 -->
                     <el-tab-pane label="本地账本" name="git">
+                        <ledger-export-card v-if="!gitRepository" />
                         <!-- @vue-ignore -->
                         <git-setup v-if="!gitRepository" @created="onGitRepositoryCreated as any" />
                         <git-repository-component v-else :repository="gitRepository" @updated="onGitRepositoryUpdated"
@@ -604,6 +605,7 @@ import type {
 import { copyText } from '../../utils/clipboard'
 import GitSetup from '../../components/git/GitSetup.vue'
 import GitRepositoryComponent from '../../components/git/GitRepository.vue'
+import LedgerExportCard from '../../components/ledger/LedgerExportCard.vue'
 
 const unauthorizedNotified = ref(false)
 
