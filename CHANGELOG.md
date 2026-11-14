@@ -1,3 +1,9 @@
+## [5.24.1](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/compare/5.24.0...5.24.1) (2026-11-14)
+
+### Bug Fixes
+
+* **fava:** 单标签直达 collect 编辑器并消除打开失败误报 ([050fdb5](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/050fdb58c98ca505085a1610f628365457c7dfdb))
+
 ## [5.24.0](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/compare/5.23.0...5.24.0) (2026-11-14)
 
 ### Features
