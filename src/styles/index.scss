@@ -28,6 +28,13 @@ html.dark {
   color-scheme: dark;
 }
 
+// 主按钮文字使用 on-action 语义色：暗色主题下品牌蓝变亮，白字对比度不足
+.el-button--primary:not(.is-text):not(.is-link):not(.is-plain) {
+  --el-button-text-color: var(--on-action);
+  --el-button-hover-text-color: var(--on-action);
+  --el-button-active-text-color: var(--on-action);
+}
+
 // 全局覆盖：清除对账列表日期选择器的边框（使用更具体的选择器）
 .reconciliation-list .date-info .date-picker {
   // width: 120px;

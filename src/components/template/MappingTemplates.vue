@@ -393,7 +393,7 @@ watch(activeType, () => {
 
 .template-description {
     margin: 10px 0;
-    color: #606266;
+    color: var(--text-secondary);
 }
 
 .items-table {
@@ -421,7 +421,7 @@ watch(activeType, () => {
 .template-actions {
     margin-top: 15px;
     padding-top: 15px;
-    border-top: 1px solid #ebeef5;
+    border-top: 1px solid var(--el-border-color-lighter);
     display: flex;
     justify-content: flex-end;
 }

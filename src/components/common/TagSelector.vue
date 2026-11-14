@@ -475,7 +475,7 @@ defineExpose({
     margin: 0;
     font-size: 14px;
     font-weight: 600;
-    color: #303133;
+    color: var(--el-text-color-primary);
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
 }
 

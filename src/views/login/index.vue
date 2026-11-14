@@ -475,6 +475,7 @@ const loginWithGitHub = () => {
 .code-input-group {
   display: flex;
   gap: 8px;
+  width: 100%;
 }
 
 .code-input-group :deep(.el-input) {
@@ -511,7 +512,7 @@ const loginWithGitHub = () => {
 
 :deep(.el-input__wrapper) {
   box-shadow: 0 0 0 1px var(--el-border-color) inset;
-  background-color: var(--el-color-white, var(--el-bg-color));
+  background-color: var(--el-input-bg-color, var(--el-fill-color-blank));
 }
 
 :deep(.el-input__wrapper:hover) {
