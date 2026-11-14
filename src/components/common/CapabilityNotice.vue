@@ -2,7 +2,9 @@
   <div v-if="!allowed" class="capability-notice" :class="{ 'capability-notice--dense': dense }">
     <div class="capability-notice__text">
       <strong class="capability-notice__title">{{ resolved.title }}</strong>
-      <span class="capability-notice__description">{{ resolved.description }}</span>
+      <span class="capability-notice__description">
+        <slot name="description">{{ resolved.description }}</slot>
+      </span>
     </div>
     <el-button type="primary" size="small" @click="handlePrimary">{{ resolved.actionText }}</el-button>
   </div>

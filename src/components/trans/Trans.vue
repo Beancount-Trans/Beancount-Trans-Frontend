@@ -109,13 +109,21 @@
   </div>
 
   <CapabilityNotice v-if="hasEntries && !isAuthenticated" class="anonymous-result-guide" capability="ledger.write"
-    description="登录后自动补齐银行卡、信用卡等账户，减少记到「Other 账户」，同时写入你的自有账本并生成本期消费月报。" :before-action="preserveGuestParse" />
+    :before-action="preserveGuestParse">
+    <template #description>
+      登录后自动补齐<button type="button" class="missing-assets-trigger" :class="{ 'is-active': onlyMissingAssets }"
+        :title="onlyMissingAssets ? '再次点击恢复显示全部条目' : '点击只看资产账户缺失（Assets:Other）的条目'" @click="toggleMissingAssetFilter">
+        缺失 <template v-if="onlyMissingAssets">（{{ missingAssetEntries.length
+          }}）</template></button>的银行卡、信用卡等账户，减少记到「Other
+      账户」，同时写入你的自有账本并生成本期消费月报。
+    </template>
+  </CapabilityNotice>
 
   <el-input v-if="!hasEntries && !uploading && !parseFailure" class="result-textarea" type="textarea" :rows="30"
     readonly :value="''" :placeholder="emptyResultPlaceholder" />
 
   <div v-else class="table-container">
-    <ParseEntryTable :entries="formattedEntries" :error-entries="errorEntries" :validation-warnings="validationWarnings"
+    <ParseEntryTable :entries="tableEntries" :error-entries="errorEntries" :validation-warnings="validationWarnings"
       :mode="reviewMode" :on-reparse="handleTableReparse" :on-persist-edit="handlePersistEdit"
       :on-patch-tags="handlePatchTags" :on-remove-entry="handleRemoveEntry" :require-auth="() => can('ledger.write')" />
   </div>
@@ -148,6 +156,7 @@ import { getAccessToken } from '../../utils/auth'
 import ParseEntryTable from '../parse/ParseEntryTable.vue'
 import ReviewModeSwitch from '../parse/ReviewModeSwitch.vue'
 import CapabilityNotice from '../common/CapabilityNotice.vue'
+import { otherAccountSide } from '../../composables/useParseEntryPreview'
 import { useCapabilities } from '../../capabilities'
 import { useReviewMode } from '../../composables/useReviewMode'
 import { BILLS_EXPORT_DOCS_URL } from '../../utils/userTour'
@@ -342,6 +351,49 @@ const savingPreview = ref(false)
 const writing = ref(false)
 
 const hasEntries = computed(() => formattedEntries.value.length > 0)
+
+/**
+ * 游客结果页：只看资产账户缺失（Assets:Other）的条目。
+ * 入口是未登录提示条里的「缺失的」，不额外占用工具栏。
+ */
+const onlyMissingAssets = ref(false)
+
+const missingAssetEntries = computed(() =>
+  formattedEntries.value.filter(
+    (entry) => otherAccountSide(entry.edited_formatted || entry.formatted) === 'asset'
+  )
+)
+
+const tableEntries = computed(() =>
+  onlyMissingAssets.value ? missingAssetEntries.value : formattedEntries.value
+)
+
+function toggleMissingAssetFilter() {
+  if (onlyMissingAssets.value) {
+    onlyMissingAssets.value = false
+    return
+  }
+  if (missingAssetEntries.value.length === 0) {
+    ElMessage.info('当前结果里没有资产账户缺失的条目')
+    return
+  }
+  onlyMissingAssets.value = true
+}
+
+// 登录后提示条不再展示，避免结果表停留在「只看缺失」视图
+watch(isAuthenticated, (authenticated) => {
+  if (authenticated) onlyMissingAssets.value = false
+})
+
+// 缺失条目被逐条补齐后自动恢复全部视图
+watch(missingAssetEntries, (entries) => {
+  if (!onlyMissingAssets.value || entries.length > 0) return
+  onlyMissingAssets.value = false
+  // 重新上传清空结果时不提示「已处理完」
+  if (formattedEntries.value.length > 0) {
+    ElMessage.success('资产账户缺失的条目已全部处理，已恢复显示全部结果')
+  }
+})
 
 const emptyResultPlaceholder = computed(() =>
   reviewMode.value === 'simple'
@@ -1312,6 +1364,27 @@ const handleRemoveEntry = async (uuid: string) => {
 .anonymous-result-guide {
   width: auto;
   margin: 0 14px 12px;
+}
+
+/* 提示条内「缺失的」：点击切换为只看资产账户缺失的条目 */
+.missing-assets-trigger {
+  font: inherit;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  color: var(--el-color-primary);
+  text-decoration: underline dashed;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.missing-assets-trigger:hover {
+  color: var(--el-color-primary-light-3);
+}
+
+.missing-assets-trigger.is-active {
+  font-weight: 600;
 }
 
 .anonymous-result-guide.el-alert.is-light .el-alert__icon.is-big {
