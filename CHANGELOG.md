@@ -1,3 +1,9 @@
+## [5.22.0](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/compare/5.21.0...5.22.0) (2026-11-14)
+
+### Features
+
+* **review:** 游客默认原文并将复制结果并入预览 ([79d9dbd](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/79d9dbdcaebc067a77ea3de8129d8d0023d45382))
+
 ## [5.21.0](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/compare/5.20.0...5.21.0) (2026-11-13)
 
 ### Features
