@@ -98,9 +98,6 @@
   </div>
 
   <div v-if="hasEntries" class="result-toolbar">
-    <el-button v-if="reviewMode === 'advanced'" type="success" :icon="DocumentCopy" @click="copyResponseData">
-      复制结果
-    </el-button>
     <el-button v-if="reviewMode === 'advanced'" @click="handlePreview">
       预览
     </el-button>
@@ -127,10 +124,15 @@
     <el-input v-model="previewContent" type="textarea" :rows="20" class="preview-textarea"
       placeholder="可以在此处编辑所有条目，编辑后点击保存按钮将更新到列表中" />
     <template #footer>
-      <el-button @click="showPreviewDialog = false">取消</el-button>
-      <el-button type="primary" @click="handleSavePreview" :loading="savingPreview">
-        保存
-      </el-button>
+      <div class="preview-footer">
+        <el-button type="success" :icon="DocumentCopy" class="preview-copy" @click="copyPreviewContent">
+          复制结果
+        </el-button>
+        <el-button @click="showPreviewDialog = false">取消</el-button>
+        <el-button type="primary" @click="handleSavePreview" :loading="savingPreview">
+          保存
+        </el-button>
+      </div>
     </template>
   </el-dialog>
 </template>
@@ -688,9 +690,10 @@ const handleUploadError = (err: any, _file: any) => {
   }
 }
 
-const copyResponseData = async () => {
+/** 预览弹窗内复制：复制当前预览文本（含未保存的修改） */
+const copyPreviewContent = async () => {
   try {
-    await navigator.clipboard.writeText(joinedEditedText.value)
+    await navigator.clipboard.writeText(previewContent.value)
     // 复制即视为结果已导出，清掉登录前草稿，刷新后不再恢复
     clearParseDraft()
     ElMessage.success('复制成功')
@@ -1206,9 +1209,12 @@ const handleRemoveEntry = async (uuid: string) => {
 
 .result-toolbar {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   align-items: center;
   gap: 8px;
+  /* 与上传卡片左边距一致，避免首个按钮超出卡片边界 */
+  margin-left: 14px;
   margin-top: 16px;
   margin-bottom: 8px;
 }
@@ -1232,6 +1238,16 @@ const handleRemoveEntry = async (uuid: string) => {
 .preview-textarea textarea {
   font-family: Monaco, Consolas, 'Courier New', monospace;
   font-size: 12px;
+}
+
+.preview-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.preview-copy {
+  margin-right: auto;
 }
 
 .anonymous-result-guide {

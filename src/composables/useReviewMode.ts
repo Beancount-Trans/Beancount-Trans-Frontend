@@ -5,19 +5,26 @@
  */
 
 import { ref } from 'vue'
+import { getSessionTier } from '../capabilities/store'
 
 export type ReviewMode = 'simple' | 'advanced'
 
 const STORAGE_KEY = 'bct_review_mode'
 
+/** 无本地选择时：游客首次解析直接看原文，登录用户默认表单 */
+function defaultMode(): ReviewMode {
+  return getSessionTier() === 'guest' ? 'advanced' : 'simple'
+}
+
 function readStoredMode(): ReviewMode {
   if (typeof window === 'undefined') return 'simple'
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY)
-    return stored === 'advanced' ? 'advanced' : 'simple'
+    if (stored === 'simple' || stored === 'advanced') return stored
   } catch {
-    return 'simple'
+    // localStorage 不可用时使用默认值
   }
+  return defaultMode()
 }
 
 const mode = ref<ReviewMode>(readStoredMode())

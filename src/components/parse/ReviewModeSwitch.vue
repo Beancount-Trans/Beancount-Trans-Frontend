@@ -4,7 +4,7 @@
       <el-radio-button label="simple">表单</el-radio-button>
       <el-radio-button label="advanced">原文</el-radio-button>
     </el-radio-group>
-    <el-tooltip placement="top">
+    <el-tooltip v-if="showTip" placement="top">
       <template #content>
         <div class="review-mode-tooltip">
           <div>表单模式：点选分类、账户与标签。</div>
@@ -21,6 +21,8 @@
 <script setup lang="ts">
 import { InfoFilled } from '@element-plus/icons-vue'
 import { useReviewMode, type ReviewMode } from '../../composables/useReviewMode'
+
+withDefaults(defineProps<{ showTip?: boolean }>(), { showTip: true })
 
 const { mode, setMode } = useReviewMode()
 

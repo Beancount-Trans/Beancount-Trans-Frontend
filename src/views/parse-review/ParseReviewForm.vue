@@ -18,7 +18,7 @@
           <el-radio-button label="attention">需关注 {{ attentionEntryCount }}</el-radio-button>
           <el-radio-button label="all">全部 {{ entryCount }}</el-radio-button>
         </el-radio-group>
-        <ReviewModeSwitch />
+        <ReviewModeSwitch :show-tip="false" />
         <el-dropdown v-if="reparseSourceFiles.length > 0" :disabled="reviewExpired" @command="handleReparseAll">
           <el-button :loading="loading.reparseAll" :disabled="reviewExpired">
             重新解析
