@@ -141,10 +141,12 @@ const cleanToken = async () => {
  * 新标签打开（若被拦截则提示，但不跳转当前页）
  */
 const openInNewTab = (url: string) => {
-  const win = window.open(url, '_blank', 'noopener,noreferrer')
+  // 不用 noopener 参数：部分浏览器会因此返回 null，导致误判为“被拦截”
+  const win = window.open(url, '_blank')
   if (!win) {
     return false
   }
+  win.opener = null
   return true
 }
 

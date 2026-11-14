@@ -421,17 +421,16 @@ async function openFavaForCleanup() {
   }
   openingFavaEditor.value = true
   try {
-    const opened = await ensureFavaEditorThenOpen()
-    if (opened) {
-      ElMessage.success('已在新标签打开 Fava 编辑器')
+    const result = await ensureFavaEditorThenOpen()
+    if (!result.opened) {
+      ElMessage.error('Fava 暂不可用，请稍后重试')
       return
     }
-    const fallback = await ensureFavaThenOpen('')
-    if (fallback) {
-      ElMessage.warning('未能直达编辑器，已打开 Fava 首页，请从侧栏进入「编辑器」')
-    } else {
-      ElMessage.error('Fava 暂不可用，请稍后重试')
-    }
+    ElMessage.success(
+      result.editor
+        ? '已在新标签打开 Fava 编辑器'
+        : '已打开 Fava 首页，请从侧栏进入「编辑器」'
+    )
   } catch {
     ElMessage.error('Fava 暂不可用，请稍后重试')
   } finally {

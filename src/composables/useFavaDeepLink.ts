@@ -4,9 +4,20 @@ import { useCapabilities } from '../capabilities'
 const FAVA_INSTANCE_UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-function openInNewTab(url: string): boolean {
-  const win = window.open(url, '_blank', 'noopener,noreferrer')
-  return win !== null
+/** Fava 容器内 collect 账本的绝对路径（用户资产目录挂载在 /Assets） */
+const FAVA_COLLECT_BEAN_PATH = '/Assets/trans/collect.bean'
+
+/**
+ * 在用户点击的同步栈里先开一个空白标签，等接口返回后再导航。
+ * 避免 await 之后 window.open 被浏览器拦截，也不再依赖它的返回值判断是否打开。
+ */
+function openPendingTab(): Window | null {
+  const win = window.open('', '_blank')
+  if (!win) {
+    return null
+  }
+  win.opener = null
+  return win
 }
 
 /**
@@ -65,33 +76,62 @@ export async function ensureFavaThenOpen(relativePath: string): Promise<boolean>
   if (!can('fava.use')) {
     return false
   }
-  const response = await axios.get('/fava/', { withCredentials: true })
-  const prefix = resolveFavaPrefix(response)
-  if (!prefix) {
+  const win = openPendingTab()
+  if (!win) {
     return false
   }
-  const targetUrl = joinFavaUrl(prefix, relativePath)
-  const absolute = new URL(targetUrl, window.location.origin).toString()
-  return openInNewTab(absolute)
+  try {
+    const response = await axios.get('/fava/', { withCredentials: true })
+    const prefix = resolveFavaPrefix(response)
+    if (!prefix) {
+      win.close()
+      return false
+    }
+    const targetUrl = joinFavaUrl(prefix, relativePath)
+    const absolute = new URL(targetUrl, window.location.origin).toString()
+    win.location.href = absolute
+    return true
+  } catch (error) {
+    win.close()
+    throw error
+  }
 }
 
 /**
- * 直接打开 Fava 编辑器。动态模式可从重定向 URL 解析账本 slug；
- * 静态模式无法解析时回落到 Fava 首页。
+ * 直接打开 Fava 编辑器，并定位到 collect 账本。
+ * 动态模式从重定向 URL 解析账本 slug；静态模式无法解析时回落到 Fava 首页。
+ * 一次调用只打开一个标签。
  */
-export async function ensureFavaEditorThenOpen(): Promise<boolean> {
+export interface FavaEditorOpenResult {
+  opened: boolean
+  editor: boolean
+}
+
+export async function ensureFavaEditorThenOpen(): Promise<FavaEditorOpenResult> {
   const { can } = useCapabilities()
   if (!can('fava.use')) {
-    return false
+    return { opened: false, editor: false }
   }
-  const response = await axios.get('/fava/', { withCredentials: true })
-  const prefix = resolveFavaPrefix(response)
-  if (!prefix) {
-    return false
+  const win = openPendingTab()
+  if (!win) {
+    return { opened: false, editor: false }
   }
-  const slug = resolveFavaSlug(response)
-  const relativePath = slug ? `${slug}/editor/` : ''
-  const targetUrl = joinFavaUrl(prefix, relativePath)
-  const absolute = new URL(targetUrl, window.location.origin).toString()
-  return openInNewTab(absolute)
+  try {
+    const response = await axios.get('/fava/', { withCredentials: true })
+    const prefix = resolveFavaPrefix(response)
+    if (!prefix) {
+      win.close()
+      return { opened: false, editor: false }
+    }
+    const slug = resolveFavaSlug(response)
+    const relativePath = slug
+      ? `${slug}/editor/?file_path=${encodeURIComponent(FAVA_COLLECT_BEAN_PATH)}`
+      : ''
+    const absolute = new URL(joinFavaUrl(prefix, relativePath), window.location.origin).toString()
+    win.location.href = absolute
+    return { opened: true, editor: Boolean(slug) }
+  } catch (error) {
+    win.close()
+    throw error
+  }
 }
