@@ -1,3 +1,10 @@
+## [5.26.0](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/compare/5.25.0...5.26.0) (2026-11-14)
+
+### Features
+
+* **settings:** 本地账本支持一键导出 ZIP ([85cedda](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/85ceddabb196ec0835c908c1193f48161354db72))
+* **trans:** 游客可按缺失资产账户筛选解析结果 ([fbaf463](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/fbaf463eb3c724ff41f85b168a96d36ef910f7eb))
+
 ## [5.25.0](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/compare/5.24.1...5.25.0) (2026-11-14)
 
 ### Features
