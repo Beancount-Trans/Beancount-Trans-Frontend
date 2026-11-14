@@ -59,6 +59,20 @@
           </Transition>
         </div>
 
+        <div v-if="showFirstReportHint" class="first-report-hint">
+          <div class="first-report-hint__text">
+            本期数据已写入 <code>trans/collect.bean</code>。如需清除，打开 Fava 编辑器，按整条交易（从日期行到最后一条 posting）删除后保存。
+          </div>
+          <div class="first-report-hint__actions">
+            <el-button size="small" type="primary" :loading="openingFavaEditor" @click="openFavaForCleanup">
+              打开 Fava 编辑器
+            </el-button>
+            <el-button size="small" text @click="showFirstReportHint = false">
+              知道了
+            </el-button>
+          </div>
+        </div>
+
         <div v-for="(msg, index) in messages" :key="index" class="message-row" :class="{
           [msg.role]: true,
           'share-selectable': shareSelectMode && canShareAssistantMessage(msg),
@@ -231,7 +245,7 @@ import MarkdownContent from '../../components/assistant/MarkdownContent.vue'
 import { useAssistantChat } from '../../composables/useAssistantChat'
 import { useAssistantSessions } from '../../composables/useAssistantSessions'
 import { takePendingFirstReport } from '../../composables/useFirstReport'
-import { ensureFavaThenOpen } from '../../composables/useFavaDeepLink'
+import { ensureFavaEditorThenOpen, ensureFavaThenOpen } from '../../composables/useFavaDeepLink'
 import { listSharedLedgers } from '../../api/assistant'
 import { copyText } from '../../utils/clipboard'
 import {
@@ -316,6 +330,9 @@ const stickToBottom = ref(true)
 const editingIndex = ref<number | null>(null)
 const editDraft = ref('')
 const openingFavaPath = ref<string | null>(null)
+/** 首期月报后的清理提示（仅本次首期握手触发） */
+const showFirstReportHint = ref(false)
+const openingFavaEditor = ref(false)
 const STICK_THRESHOLD_PX = 80
 
 const modelLabel = computed(() => status.value?.assistant_model?.trim() || '')
@@ -394,6 +411,31 @@ async function handleOpenFavaPath(relativePath: string) {
     ElMessage.error('打开 Fava 失败')
   } finally {
     openingFavaPath.value = null
+  }
+}
+
+/** 首期数据清理：直达 Fava 编辑器，解析不到 slug 时回落到 Fava 首页 */
+async function openFavaForCleanup() {
+  if (openingFavaEditor.value) {
+    return
+  }
+  openingFavaEditor.value = true
+  try {
+    const opened = await ensureFavaEditorThenOpen()
+    if (opened) {
+      ElMessage.success('已在新标签打开 Fava 编辑器')
+      return
+    }
+    const fallback = await ensureFavaThenOpen('')
+    if (fallback) {
+      ElMessage.warning('未能直达编辑器，已打开 Fava 首页，请从侧栏进入「编辑器」')
+    } else {
+      ElMessage.error('Fava 暂不可用，请稍后重试')
+    }
+  } catch {
+    ElMessage.error('Fava 暂不可用，请稍后重试')
+  } finally {
+    openingFavaEditor.value = false
   }
 }
 
@@ -728,6 +770,7 @@ watch(
     const pending = takePendingFirstReport()
     if (!pending) return
     pendingReportHandled.value = true
+    showFirstReportHint.value = true
 
     if (!canChat.value || activeSessionId.value || messages.value.length > 0) {
       inputText.value = pending.prompt
@@ -823,6 +866,39 @@ onUnmounted(() => {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+  }
+}
+
+.first-report-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--status-neutral);
+  color: var(--on-status-neutral);
+  font-size: 13px;
+  line-height: 1.6;
+
+  &__text {
+    min-width: 0;
+  }
+
+  &__actions {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  code {
+    padding: 1px 4px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.06);
+    font-size: 12px;
   }
 }
 
