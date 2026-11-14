@@ -1,3 +1,9 @@
+## [5.23.0](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/compare/5.22.0...5.23.0) (2026-11-14)
+
+### Features
+
+* **trans:** 游客登录写入后自动生成首期月报 ([610fe5a](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/610fe5a5ff26b256e04cb083d8e198716a0029d8))
+
 ## [5.22.0](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/compare/5.21.0...5.22.0) (2026-11-14)
 
 ### Features
