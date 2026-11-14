@@ -1,3 +1,9 @@
+## [5.25.0](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/compare/5.24.1...5.25.0) (2026-11-14)
+
+### Features
+
+* **assistant:** 首次写入触发首期月报 ([5e46cd9](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/commit/5e46cd91093f52e29dff3e383b41fa2a1e3170c7))
+
 ## [5.24.1](https://github.com/Beancount-Trans/Beancount-Trans-Frontend/compare/5.24.0...5.24.1) (2026-11-14)
 
 ### Bug Fixes
