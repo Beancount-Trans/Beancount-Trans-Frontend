@@ -114,7 +114,7 @@
       登录后自动补齐<button type="button" class="missing-assets-trigger" :class="{ 'is-active': onlyMissingAssets }"
         :title="onlyMissingAssets ? '再次点击恢复显示全部条目' : '点击只看资产账户缺失（Assets:Other）的条目'" @click="toggleMissingAssetFilter">
         缺失 <template v-if="onlyMissingAssets">（{{ missingAssetEntries.length
-          }}）</template></button>的银行卡、信用卡等账户，减少记到「Other
+          }}）</template></button>的储蓄卡、信用卡等账户，减少记到「Other
       账户」，同时写入你的自有账本并生成本期消费月报。
     </template>
   </CapabilityNotice>
